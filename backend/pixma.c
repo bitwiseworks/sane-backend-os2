@@ -68,11 +68,15 @@
 # include "../include/sane/sanei_config.h"
 # include "../include/sane/sanei_jpeg.h"
 
+#include "pixma_common.h"
+
+#ifndef PDBG
 #ifdef NDEBUG
 # define PDBG(x)
 #else
 #  define PDBG(x) IF_DBG(x)
 #endif /* NDEBUG */
+#endif /* PDBG */
 
 #ifdef __GNUC__
 # define UNUSED(v) (void) v
@@ -679,14 +683,18 @@ control_option (pixma_sane_t * ss, SANE_Int n,
             clamp_value (ss, n, v, info);
             for (i = 0; i != 4096; i++)
               ss->gamma_table[i] = *((SANE_Int *) v + i);
+            PDBG (pixma_dbg (4, "*control_option***** SANE_ACTION_SET_VALUE ***** \n"));
+            PDBG (pixma_hexdump (4, ss->gamma_table, 4096));
             break;
           case SANE_ACTION_GET_VALUE:
             for (i = 0; i != 4096; i++)
               *((SANE_Int *) v + i) = ss->gamma_table[i];
+            PDBG (pixma_dbg (4, "*control_option***** SANE_ACTION_GET_VALUE ***** \n"));
             break;
           case SANE_ACTION_SET_AUTO:
             pixma_fill_gamma_table (AUTO_GAMMA, ss->gamma_table,
                   sizeof (ss->gamma_table));
+            PDBG (pixma_dbg (4, "*control_option***** SANE_ACTION_SET_AUTO ***** \n"));
             break;
           default:
             return SANE_STATUS_UNSUPPORTED;

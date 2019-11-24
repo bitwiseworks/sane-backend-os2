@@ -570,21 +570,27 @@ send_gamma_table (pixma_t * s)
       pixma_set_be16 (0x0804, data + 2);
       if (lut)
         {
+          PDBG (pixma_dbg (4, "*send_gamma_table***** Use LUT ***** \n"));
+          PDBG (pixma_hexdump (4, lut, 2048));
           int i;
           for (i = 0; i < 1024; i++)
             {
               int j = (i << 2) + (i >> 8);
+              //PDBG (pixma_dbg (4, "*send_gamma_table***** Use LUT: i=%d, j=%d ***** \n", i, j));
               data[4 + 2 * i + 0] = lut[j];
               data[4 + 2 * i + 1] = lut[j];
             }
         }
       else
         {
+          PDBG (pixma_dbg (4, "*send_gamma_table***** Generate Table ***** \n"));
           int i;
           pixma_fill_gamma_table (DEFAULT_GAMMA, data + 4, 2048);
+          PDBG (pixma_hexdump (4, data + 4, 2048));
           for (i = 0; i < 1024; i++)
             {
               int j = (i << 1) + (i >> 9);
+              //PDBG (pixma_dbg (4, "*send_gamma_table***** Generate Table: i=%d, j=%d ***** \n", i, j));
               data[4 + 2 * i + 0] = data[4 + j];
               data[4 + 2 * i + 1] = data[4 + j];
             }
