@@ -572,6 +572,9 @@ send_gamma_table (pixma_t * s)
         {
           PDBG (pixma_dbg (4, "*send_gamma_table***** Use LUT ***** \n"));
           PDBG (pixma_hexdump (4, lut, 2048));
+#if 1
+          memcpy (data + 4, lut, 2048);
+#else
           int i;
           for (i = 0; i < 1024; i++)
             {
@@ -580,13 +583,15 @@ send_gamma_table (pixma_t * s)
               data[4 + 2 * i + 0] = lut[j];
               data[4 + 2 * i + 1] = lut[j];
             }
+#endif
         }
       else
         {
           PDBG (pixma_dbg (4, "*send_gamma_table***** Generate Table ***** \n"));
-          int i;
           pixma_fill_gamma_table (DEFAULT_GAMMA, data + 4, 2048);
           PDBG (pixma_hexdump (4, data + 4, 2048));
+#if 0
+          int i;
           for (i = 0; i < 1024; i++)
             {
               int j = (i << 1) + (i >> 9);
@@ -594,6 +599,7 @@ send_gamma_table (pixma_t * s)
               data[4 + 2 * i + 0] = data[4 + j];
               data[4 + 2 * i + 1] = data[4 + j];
             }
+#endif
         }
     }
   return pixma_exec (s, &mp->cb);

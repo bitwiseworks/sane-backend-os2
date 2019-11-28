@@ -456,6 +456,9 @@ static int send_gamma_table (pixma_t * s)
     pixma_set_be16 (0x0804, data + 2);
     if (lut)
     {
+#if 1
+      memcpy (data + 4, lut, 2048);
+#else
       int i;
       for (i = 0; i < 1024; i++)
       {
@@ -463,17 +466,20 @@ static int send_gamma_table (pixma_t * s)
         data[4 + 2 * i + 0] = lut[j];
         data[4 + 2 * i + 1] = lut[j];
       }
+#endif
     }
     else
     {
-      int i;
       pixma_fill_gamma_table (DEFAULT_GAMMA, data + 4, 2048);
+#if 0
+      int i;
       for (i = 0; i < 1024; i++)
       {
         int j = (i << 1) + (i >> 9);
         data[4 + 2 * i + 0] = data[4 + j];
         data[4 + 2 * i + 1] = data[4 + j];
       }
+#endif
     }
   }
   return pixma_exec (s, &mp->cb);

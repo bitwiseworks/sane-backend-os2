@@ -1149,17 +1149,22 @@ pixma_get_config (pixma_t * s)
   return s->cfg;
 }
 
+/* gamma table holds unsigned int values
+ */
 void
 pixma_fill_gamma_table (double gamma, uint8_t * table, unsigned n)
 {
-  int i;
+  unsigned i;
   double r_gamma = 1.0 / gamma;
-  double out_scale = 255.0;
-  double in_scale = 1.0 / (n - 1);
+  double out_scale = 65535.0;
+  double in_scale = 1.0 / ((n - 1) / 2);
+  uint16_t value;
 
-  for (i = 0; (unsigned) i != n; i++)
+  for (i = 0; i < n/2; i++)
     {
-      table[i] = (int) (out_scale * pow (i * in_scale, r_gamma) + 0.5);
+      value = (uint16_t) (out_scale * pow (i * in_scale, r_gamma) + 0.5);
+      table[2*i] = (uint8_t) (value & 0xff);
+      table[2*i+1] = (uint8_t) (value >> 8);
     }
 }
 
