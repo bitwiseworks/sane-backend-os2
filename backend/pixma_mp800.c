@@ -91,7 +91,7 @@
  4096 = size of gamma table. 24 = header + checksum */
 #define IMAGE_BLOCK_SIZE (512*1024)
 #define CMDBUF_SIZE (4096 + 24)
-#define DEFAULT_GAMMA 2.0	/***** Gamma different from 1.0 is potentially impacting color profile generation *****/
+#define DEFAULT_GAMMA 2.2	/***** Gamma different from 1.0 is potentially impacting color profile generation *****/
 #define UNKNOWN_PID 0xffff
 
 #define CANON_VID 0x04a9
