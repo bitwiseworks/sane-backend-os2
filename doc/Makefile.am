@@ -303,16 +303,16 @@ html-man: $(MANPAGES)
 	  cat $${page} | $(MAN2HTML) > $${page}.html; \
 	done
 
-../tools/sane-desc:
+../tools/sane-desc$(EXEEXT):
 	cd ../tools ; $(MAKE) sane-desc
 
-sane-backends.html: $(DESC_FILES) ../tools/sane-desc
+sane-backends.html: $(DESC_FILES) ../tools/sane-desc$(EXEEXT)
 	@../tools/sane-desc -m html-backends-split -s ${srcdir}/descriptions \
 	  -i "The following table summarizes the backends/drivers distributed \
 	  with $(PACKAGE)-$(VERSION), and the hardware or software they \
 	  support." -d 0 > sane-backends.html
 
-sane-backends-external.html: $(DESC_EXT_FILES) ../tools/sane-desc
+sane-backends-external.html: $(DESC_EXT_FILES) ../tools/sane-desc$(EXEEXT)
 	@../tools/sane-desc -m html-backends-split \
 	  -s ${srcdir}/descriptions-external \
 	  -i "The following table summarizes the backends/drivers that \
@@ -321,24 +321,24 @@ sane-backends-external.html: $(DESC_EXT_FILES) ../tools/sane-desc
 	  -t "SANE: External Backends (Drivers)" -d 0 \
 	  > sane-backends-external.html
 
-sane-mfgs.html: $(DESC_FILES) ../tools/sane-desc
+sane-mfgs.html: $(DESC_FILES) ../tools/sane-desc$(EXEEXT)
 	@../tools/sane-desc -m html-mfgs -s ${srcdir}/descriptions \
 	  -i "The following table summarizes the devices supported \
 	  by $(PACKAGE)-$(VERSION)." \
 	  -d 0 > sane-mfgs.html
 
-sane-mfgs-external.html: $(DESC_EXT_FILES) ../tools/sane-desc
+sane-mfgs-external.html: $(DESC_EXT_FILES) ../tools/sane-desc$(EXEEXT)
 	@../tools/sane-desc -m html-mfgs -s ${srcdir}/descriptions-external \
 	  -i "The following table summarizes the devices that \
 	  are supported by external backends." \
 	  -t "SANE: Devices Supported by External Backends" -d 0 \
 	  > sane-mfgs-external.html
 
-descriptions.db: $(DESC_FILES) ../tools/sane-desc
+descriptions.db: $(DESC_FILES) ../tools/sane-desc$(EXEEXT)
 	@../tools/sane-desc -m ascii -s ${srcdir}/descriptions \
 	  > descriptions.db
 
-descriptions-external.db: $(DESC_EXT_FILES) ../tools/sane-desc
+descriptions-external.db: $(DESC_EXT_FILES) ../tools/sane-desc$(EXEEXT)
 	@../tools/sane-desc -m ascii -s ${srcdir}/descriptions-external \
 	  > descriptions-external.db
 

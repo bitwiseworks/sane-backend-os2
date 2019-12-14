@@ -72,19 +72,19 @@ dirs:
 
 descriptions = ${top_srcdir}/doc/descriptions/*.desc ${top_srcdir}/doc/descriptions-external/*.desc
 
-hotplug/libsane.usermap: sane-desc $(descriptions)
+hotplug/libsane.usermap: sane-desc$(EXEEXT) $(descriptions)
 	@./sane-desc -m usermap -s ${top_srcdir}/doc/descriptions:${top_srcdir}/doc/descriptions-external \
 	   -d 1 > $@
 
-hotplug-ng/libsane.db: sane-desc $(descriptions)
+hotplug-ng/libsane.db: sane-desc$(EXEEXT) $(descriptions)
 	@./sane-desc -m db -s ${top_srcdir}/doc/descriptions:${top_srcdir}/doc/descriptions-external \
 	   -d 0 > $@
 
-udev/libsane.rules: sane-desc $(descriptions)
+udev/libsane.rules: sane-desc$(EXEEXT) $(descriptions)
 	@./sane-desc -m udev -s ${top_srcdir}/doc/descriptions:${top_srcdir}/doc/descriptions-external \
 	   -d 0 > $@
 
-hal/libsane.fdi: sane-desc $(descriptions)
+hal/libsane.fdi: sane-desc$(EXEEXT) $(descriptions)
 	@./sane-desc -m hal -s ${top_srcdir}/doc/descriptions:${top_srcdir}/doc/descriptions-external \
 	   -d 0 > $@
 
