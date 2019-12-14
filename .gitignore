@@ -34,6 +34,7 @@ Makefile.in
 /missing
 /mkinstalldirs
 /test-driver
+/include/sane/config.h.in~
 
 #  Gettext stuff
 /ABOUT-NLS
