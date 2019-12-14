@@ -805,7 +805,11 @@ read_files (void)
 
   while (search_dir && search_dir[0])
     {
+#ifdef __OS2__
+      end = strchr (search_dir, ';');
+#else
       end = strchr (search_dir, ':');
+#endif
       if (end)
 	end[0] = '\0';
       DBG_INFO ("reading directory `%s'\n", search_dir);
