@@ -110,6 +110,6 @@ void DebugMessageHelper::vstatus(const char* format, ...)
 {
     std::va_list args;
     va_start(args, format);
-    std::vsnprintf(msg_, MAX_BUF_SIZE, format, args);
+    vsnprintf(msg_, MAX_BUF_SIZE, format, args);
     va_end(args);
 }
