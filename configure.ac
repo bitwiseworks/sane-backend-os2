@@ -234,6 +234,9 @@ AC_MSG_RESULT($have_long_long)
 AC_MSG_CHECKING([for socklen_t in <sys/socket.h>])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <sys/socket.h>
+#ifdef __OS2__
+#include <libcx/net.h>
+#endif
 ]], [[socklen_t len]])],AC_MSG_RESULT(yes),
 [AC_MSG_RESULT(no); AC_DEFINE(socklen_t,int,
 [Define socklen_t as \'int\' if necessary.])])

@@ -48,6 +48,9 @@
 
 #include "../include/sane/sanei_wire.h"
 #include "../include/sane/config.h"
+#ifdef __OS2__
+#include <libcx/net.h>
+#endif
 
 typedef struct Net_Device
   {

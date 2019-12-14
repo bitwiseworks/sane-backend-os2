@@ -95,6 +95,9 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef __OS2__
+#include <libcx/net.h>
+#endif
 
 #include "pixma_bjnp_private.h"
 #include "pixma_bjnp.h"
@@ -930,6 +933,7 @@ static int create_broadcast_socket( const bjnp_sockaddr_t * local_addr )
     };
 
   /* For an IPv6 socket, bind to v6 only so a V6 socket can co-exist with a v4 socket */
+#ifdef ENABLE_IPV6
   if ( (local_addr -> addr.sa_family == AF_INET6) && ( setsockopt
       (sockfd, IPPROTO_IPV6, IPV6_V6ONLY, (const char *) &ipv6_v6only,
        sizeof (ipv6_v6only)) != 0) )
@@ -941,6 +945,7 @@ static int create_broadcast_socket( const bjnp_sockaddr_t * local_addr )
       close (sockfd);
       return -1;
     };
+#endif
 
   if (bind
       (sockfd, &(local_addr->addr),

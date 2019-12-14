@@ -30,6 +30,9 @@
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
+#ifdef __OS2__
+#include <libcx/net.h>
+#endif
 
 extern SANE_Status sanei_udp_open(const char *host, int port, int *fdp);
 extern SANE_Status sanei_udp_open_broadcast(int *fdp);

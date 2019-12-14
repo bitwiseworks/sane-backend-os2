@@ -75,6 +75,9 @@
 #include <tiffio.h>
 
 /* OS/2... */
+#ifdef __OS2__
+#include <libcx/net.h>
+#endif
 #ifndef SHUT_RDWR
 #define SHUT_RDWR 2
 #endif

@@ -72,6 +72,9 @@
 
 #include <sys/param.h>
 #include <sys/socket.h>
+#ifdef __OS2__
+#include <libcx/net.h>
+#endif
 
 #include <sys/time.h>
 #include <sys/types.h>
