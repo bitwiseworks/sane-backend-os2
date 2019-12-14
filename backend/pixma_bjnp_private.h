@@ -322,10 +322,14 @@ typedef enum
 
 typedef union
 {
+#ifdef ENABLE_IPV6
   struct sockaddr_storage storage;
+#endif
   struct sockaddr addr;
   struct sockaddr_in ipv4;
+#ifdef ENABLE_IPV6
   struct sockaddr_in6 ipv6;
+#endif
 } bjnp_sockaddr_t;
 
 typedef enum
