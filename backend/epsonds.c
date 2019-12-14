@@ -61,7 +61,9 @@
 #include "epsonds-ops.h"
 #include "epsonds-jpeg.h"
 #include "epsonds-net.h"
-
+#ifdef __OS2__
+#include <sys/socket.h>
+#endif
 
 /*
  * Definition of the mode_param struct, that is used to
