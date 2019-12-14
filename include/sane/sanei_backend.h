@@ -32,7 +32,7 @@
 # define HAVE_IOPERM    1
 #endif
 
-#ifndef HAVE_OS2_H
+#if !defined(HAVE_OS2_H) || defined(__KLIBC__)
 #include <fcntl.h>
 #ifndef O_NONBLOCK
 # ifdef O_NDELAY
