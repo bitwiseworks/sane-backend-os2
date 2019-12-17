@@ -896,7 +896,11 @@ int
 main (void)
 {
   /* set up config dir for local conf files */
+#ifdef __OS2__
+  putenv("SANE_CONFIG_DIR=.;/");
+#else
   putenv("SANE_CONFIG_DIR=.:/");
+#endif
 
   /* run suites */
   sanei_config_suite ();
