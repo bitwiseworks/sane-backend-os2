@@ -3,7 +3,8 @@ test -n "$srcdir" || srcdir=`dirname "$0"`
 test -n "$srcdir" || srcdir=.
 
 autoreconf --force --install --verbose --warnings=all "$srcdir"
-patch "$srcdir/ltmain.sh" "$srcdir/ltmain.sh.patch"
+# we don't need this patch
+#patch "$srcdir/ltmain.sh" "$srcdir/ltmain.sh.patch"
 patch "$srcdir/po/Rules-quot" "$srcdir/Rules-quot.patch"
 autoreconf "$srcdir"
 
