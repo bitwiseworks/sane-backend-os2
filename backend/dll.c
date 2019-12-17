@@ -416,7 +416,7 @@ load (struct backend *be)
 # elif defined (HAVE_OS2_H)
 #   undef PREFIX
 #   define PREFIX ""
-#   define POSTFIX ".dll"
+#   define POSTFIX "%u.dll"
 # elif defined (__APPLE__) && defined (__MACH__)
 #   define POSTFIX ".%u.so"
 # else
