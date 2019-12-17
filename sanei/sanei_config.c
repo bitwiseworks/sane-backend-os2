@@ -143,6 +143,20 @@ sanei_config_open (const char *filename)
       return NULL;
     }
 
+#ifdef __OS2__
+  // if the filename is an absolute path, then adding any additional path makes
+  // no sense
+  if (_fnisabs(filename))
+    {
+      fp = fopen (filename, "r");
+      if (fp)
+        {
+          DBG(3, "sanei_config_open: using file `%s'\n", filename);
+          return fp;
+        }
+    }
+#endif
+
   copy = strdup (cfg_dir_list);
 
   for (next = copy; (dir = strsep (&next, DIR_SEP)) != 0; )
