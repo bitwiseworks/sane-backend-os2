@@ -288,6 +288,12 @@ sanei_configure_attach (const char *config_file, SANEI_Config * config,
       if (line[len - 1] == '\n')
 	line[--len] = '\0';
 
+#ifdef __OS2__
+      /* delete cr characters at end */
+      if (line[len - 1] == '\r')
+	line[--len] = '\0';
+#endif
+
       lp2 = lp;
 
       /* to ensure maximum compatibility, we accept line like:
