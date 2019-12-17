@@ -2610,7 +2610,11 @@ List of available devices:", prog_name);
           ofp = stdout;
           if (output_file != NULL)
             {
+#ifdef __OS2__
+              ofp = fopen(output_file, "wb");
+#else
               ofp = fopen(output_file, "w");
+#endif
               if (ofp == NULL)
                 {
                   fprintf(stderr, "%s: could not open input file '%s', "
@@ -2699,7 +2703,11 @@ List of available devices:", prog_name);
 	  /* write to .part file while scanning is in progress */
 	  if (batch)
 	    {
+#ifdef __OS2__
+	      if (NULL == (ofp = fopen (part_path, "wb")))
+#else
 	      if (NULL == (ofp = fopen (part_path, "w")))
+#endif
 		{
 		  fprintf (stderr, "cannot open %s\n", part_path);
 		  sane_cancel (device);

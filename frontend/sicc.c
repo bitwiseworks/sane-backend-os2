@@ -29,7 +29,11 @@ sanei_load_icc_profile (const char *path, size_t *size)
   void *profile = NULL;
   struct stat s;
 
+#ifdef __OS2__
+  fd = fopen(path, "rb");
+#else
   fd = fopen(path, "r");
+#endif
 
   if (!fd)
   {

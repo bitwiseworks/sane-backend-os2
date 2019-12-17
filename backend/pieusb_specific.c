@@ -1308,7 +1308,11 @@ sanei_pieusb_post (Pieusb_Scanner *scanner, uint16_t **in_img, int planes)
         return status;
       if (DBG_LEVEL >= 15)
         {
+#ifdef __OS2__
+          snprintf (filename, 63, "/@unixroot/var/tmp/ir-spectral.pnm");
+#else
           snprintf (filename, 63, "/tmp/ir-spectral.pnm");
+#endif
           pieusb_write_pnm_file (filename, cplane[3],
                                   parameters.depth, 1,
                                   parameters.pixels_per_line, parameters.lines);
@@ -1364,7 +1368,11 @@ sanei_pieusb_post (Pieusb_Scanner *scanner, uint16_t **in_img, int planes)
       sanei_ir_add_threshold (&parameters, cplane[3], thresh_data, static_thresh);
       if (DBG_LEVEL >= 15)
         {
+#ifdef __OS2__
+          snprintf (filename, 63, "/@unixroot/var/tmp/ir-threshold.pnm");
+#else
           snprintf (filename, 63, "/tmp/ir-threshold.pnm");
+#endif
           pieusb_write_pnm_file (filename, thresh_data,
                                   8, 1, parameters.pixels_per_line,
                                   parameters.lines);
@@ -1387,7 +1395,11 @@ sanei_pieusb_post (Pieusb_Scanner *scanner, uint16_t **in_img, int planes)
 
   if (DBG_LEVEL >= 15)
     {
+#ifdef __OS2__
+      pieusb_write_pnm_file ("/@unixroot/var/tmp/RGBi-img.pnm", scanner->buffer.data,
+#else
       pieusb_write_pnm_file ("/tmp/RGBi-img.pnm", scanner->buffer.data,
+#endif
         scanner->scan_parameters.depth, 3, scanner->scan_parameters.pixels_per_line,
         scanner->scan_parameters.lines);
     }
@@ -1409,7 +1421,11 @@ pieusb_write_pnm_file (char *filename, SANE_Uint *data, int depth,
        "pie_usb_write_pnm_file: depth=%d, channels=%d, ppl=%d, lines=%d\n",
        depth, channels, pixels_per_line, lines);
 
+#ifdef __OS2__
+  out = fopen (filename, "wb");
+#else
   out = fopen (filename, "w");
+#endif
   if (!out)
     {
       DBG (DBG_error,
@@ -1755,7 +1771,11 @@ static void pieusb_calculate_shading(struct Pieusb_Scanner *scanner, SANE_Byte* 
             }
             lboff += (bpl + 2);
         }
+#ifdef __OS2__
+        FILE* fs = fopen("pieusb.shading", "wb");
+#else
         FILE* fs = fopen("pieusb.shading", "w");
+#endif
         /* write_tiff_rgbi_header (fs, shading_width, shading_height, 16, 3600, NULL); */
         fwrite(shading.data, 1, shading.image_size_bytes, fs);
         fclose(fs);
@@ -2111,7 +2131,11 @@ sanei_pieusb_get_ccd_mask(Pieusb_Scanner * scanner)
     if (status.pieusb_status == PIEUSB_STATUS_GOOD) {
       /* Save CCD mask */
       if (scanner->val[OPT_SAVE_CCDMASK].b) {
+#ifdef __OS2__
+        FILE* fs = fopen ("pieusb.ccd", "wb");
+#else
         FILE* fs = fopen ("pieusb.ccd", "w");
+#endif
         fwrite (scanner->ccd_mask, 1, scanner->ccd_mask_size, fs);
         fclose (fs);
       }

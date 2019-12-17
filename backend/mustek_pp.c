@@ -271,7 +271,11 @@ reader_process (Mustek_pp_Handle * hndl, int pipe)
 	if (!(buffer = malloc (hndl->params.bytes_per_line)))
 		return SANE_STATUS_NO_MEM;
 
+#ifdef __OS2__
+	if (!(fp = fdopen(pipe, "wb")))
+#else
 	if (!(fp = fdopen(pipe, "w")))
+#endif
 		return SANE_STATUS_IO_ERROR;
 
 	fd_to_release = hndl->fd;

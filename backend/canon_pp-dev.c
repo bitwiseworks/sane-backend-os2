@@ -485,7 +485,11 @@ int sanei_canon_pp_load_weights(const char *filename, scanner_parameters *sp)
 	int temp, ret;
 
 	/* Open file */
+#ifdef __OS2__
+	if ((fd = open(filename, O_RDONLY | O_BINARY)) == -1)
+#else
 	if ((fd = open(filename, O_RDONLY)) == -1)
+#endif
 		return -1;
 
 	/* Read header and check it's right */
@@ -1141,7 +1145,11 @@ int sanei_canon_pp_calibrate(scanner_parameters *sp, char *cal_file)
 	if (cal_file != NULL)
 	{
 		DBG(40, "Writing calibration to %s\n", cal_file);
+#ifdef __OS2__
+		outfile = open(cal_file, O_WRONLY | O_TRUNC | O_CREAT | O_BINARY, 0600);
+#else
 		outfile = open(cal_file, O_WRONLY | O_TRUNC | O_CREAT, 0600);
+#endif
 		if (outfile < 0)
 		{
 			DBG(10, "Error opening cal file for writing\n");

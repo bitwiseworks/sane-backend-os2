@@ -4903,7 +4903,11 @@ reader_process (void *data)
     DBG (3, "reader_process: disable_double_buffering is set, this may be "
 	 "slow\n");
 
+#ifdef __OS2__
+  fp = fdopen (fd, "wb");
+#else
   fp = fdopen (fd, "w");
+#endif
   if (!fp)
     return SANE_STATUS_IO_ERROR;
 

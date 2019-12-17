@@ -115,7 +115,11 @@ SANE_Status sanei_genesys_write_file(const char *filename, uint8_t * data, size_
 {
     FILE *out;
 
+#ifdef __OS2__
+    out = fopen (filename, "wb");
+#else
     out = fopen (filename, "w");
+#endif
     if (!out) {
         DBG(DBG_error, "%s: could nor open %s for writing: %s\n", __func__, filename,
             strerror(errno));
@@ -140,7 +144,11 @@ sanei_genesys_write_pnm_file (const char *filename, uint8_t * data, int depth,
   DBG(DBG_info, "%s: depth=%d, channels=%d, ppl=%d, lines=%d\n", __func__,depth, channels,
       pixels_per_line, lines);
 
+#ifdef __OS2__
+  out = fopen (filename, "wb");
+#else
   out = fopen (filename, "w");
+#endif
   if (!out)
     {
       DBG(DBG_error, "%s: could nor open %s for writing: %s\n", __func__, filename,

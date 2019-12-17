@@ -389,7 +389,11 @@ usb_ReadAndSetCalData( Plustek_Device *dev )
 	DBG( _DBG_INFO, "- Reading coarse calibration data from file\n");
 	DBG( _DBG_INFO, "  %s\n", tmp );
 
+#ifdef __OS2__
+	fp = fopen( tmp, "rb" );
+#else
 	fp = fopen( tmp, "r" );
+#endif
 	if( NULL == fp ) {
 		DBG( _DBG_ERROR, "File %s not found\n", tmp );
 		return SANE_FALSE;
@@ -524,7 +528,11 @@ usb_SaveCalData( Plustek_Device *dev )
 
 	/* read complete old file if compatible... */
 	other_tmp = NULL;
+#ifdef __OS2__
+	fp = fopen( fn, "r+b" );
+#else
 	fp = fopen( fn, "r+" );
+#endif
 	if( NULL != fp ) {
 
 		if( usb_ReadSpecLine( fp, "version=", tmp )) {
@@ -549,7 +557,11 @@ usb_SaveCalData( Plustek_Device *dev )
 		}
 		fclose( fp );
 	}
+#ifdef __OS2__
+	fp = fopen( fn, "w+b" );
+#else
 	fp = fopen( fn, "w+" );
+#endif
 	if( NULL == fp ) {
 		DBG( _DBG_ERROR, "- Cannot create file %s\n", fn );
 		DBG( _DBG_ERROR, "- -> %s\n", strerror(errno));
@@ -601,7 +613,11 @@ usb_SaveFineCalData( Plustek_Device *dev, int dpi,
 
 	/* read complete old file if compatible... */
 	other_tmp = NULL;
+#ifdef __OS2__
+	fp = fopen( fn, "r+b" );
+#else
 	fp = fopen( fn, "r+" );
+#endif
 	if( NULL != fp ) {
 
 		if( usb_ReadSpecLine( fp, "version=", tmp )) {
@@ -626,7 +642,11 @@ usb_SaveFineCalData( Plustek_Device *dev, int dpi,
 		fclose( fp );
 	}
 
+#ifdef __OS2__
+	fp = fopen( fn, "w+b" );
+#else
 	fp = fopen( fn, "w+" );
+#endif
 	if( NULL == fp ) {
 		DBG( _DBG_ERROR, "- Cannot create file %s\n", fn );
 		return;
@@ -682,7 +702,11 @@ usb_ReadFineCalData( Plustek_Device *dev, int dpi,
 
 	*dim_d = *dim_w = 0;
 
+#ifdef __OS2__
+	fp = fopen( tmp, "rb" );
+#else
 	fp = fopen( tmp, "r" );
+#endif
 	if( NULL == fp ) {
 		DBG( _DBG_ERROR, "File %s not found\n", tmp );
 		return SANE_FALSE;

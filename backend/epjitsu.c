@@ -718,7 +718,11 @@ load_fw (struct scanner *s)
         return SANE_STATUS_NO_DOCS;
     }
 
+#ifdef __OS2__
+    file = open((char *)global_firmware_filename,O_RDONLY | O_BINARY);
+#else
     file = open((char *)global_firmware_filename,O_RDONLY);
+#endif
     if(!file){
         DBG (5, "load_fw: failed to open file %s\n",global_firmware_filename);
         return SANE_STATUS_NO_DOCS;

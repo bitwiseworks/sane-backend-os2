@@ -1111,7 +1111,11 @@ sane_start (SANE_Handle handle)
   u_char cbuf[2];			/* modification for FB620S */
   size_t buf_size, i;
 
+#ifdef __OS2__
+  char tmpfilename[] = "/@unixroot/var/tmp/canon.XXXXXX"; /* for FB1200S */
+#else
   char tmpfilename[] = "/tmp/canon.XXXXXX"; /* for FB1200S */
+#endif
   char *thistmpfile; /* for FB1200S */
 
   DBG (1, ">> sane_start\n");
@@ -1137,7 +1141,11 @@ sane_start (SANE_Handle handle)
 	  return (SANE_STATUS_INVAL);
 	}
 
+#ifdef __OS2__
+      s->tmpfile = open(thistmpfile, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
+#else
       s->tmpfile = open(thistmpfile, O_RDWR | O_CREAT | O_EXCL, 0600);
+#endif
 
       if (s->tmpfile == -1)
 	{

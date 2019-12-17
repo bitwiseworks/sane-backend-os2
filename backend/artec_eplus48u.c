@@ -3721,7 +3721,11 @@ save_calibration_data (Artec48U_Scanner * s)
   else
     return SANE_STATUS_INVAL;
   XDBG ((1, "Try to save black shading file: \"%s\"\n", filename));
+#ifdef __OS2__
+  f = fopen (filename, "wb");
+#else
   f = fopen (filename, "w");
+#endif
   if (!f)
     {
       XDBG ((1, "Could not save artec48ushading_black\n"));
@@ -3748,7 +3752,11 @@ save_calibration_data (Artec48U_Scanner * s)
   else
     return SANE_STATUS_INVAL;
   XDBG ((1, "Try to save white shading file: \"%s\"\n", filename));
+#ifdef __OS2__
+  f = fopen (filename, "wb");
+#else
   f = fopen (filename, "w");
+#endif
   if (!f)
     return SANE_STATUS_INVAL;
   if (chmod (filename, mode) != 0)
@@ -3770,7 +3778,11 @@ save_calibration_data (Artec48U_Scanner * s)
   else
     return SANE_STATUS_INVAL;
   XDBG ((1, "Try to write offset file: \"%s\"\n", filename));
+#ifdef __OS2__
+  f = fopen (filename, "wb");
+#else
   f = fopen (filename, "w");
+#endif
   if (!f)
     return SANE_STATUS_INVAL;
   if (chmod (filename, mode) != 0)
@@ -3794,7 +3806,11 @@ save_calibration_data (Artec48U_Scanner * s)
   else
     return SANE_STATUS_INVAL;
   XDBG ((1, "Try to write exposure file: \"%s\"\n", filename));
+#ifdef __OS2__
+  f = fopen (filename, "wb");
+#else
   f = fopen (filename, "w");
+#endif
   if (!f)
     return SANE_STATUS_INVAL;
   if (chmod (filename, mode) != 0)

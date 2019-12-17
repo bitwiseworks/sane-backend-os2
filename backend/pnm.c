@@ -71,7 +71,11 @@ static int rgb_comp = 0;
 static int three_pass = 0;
 static int hand_scanner = 0;
 static int pass = 0;
+#ifdef __OS2__
+static char filename[PATH_MAX] = "/@unixroot/var/tmp/input.ppm";
+#else
 static char filename[PATH_MAX] = "/tmp/input.ppm";
+#endif
 static SANE_Word status_none = SANE_TRUE;
 static SANE_Word status_eof = SANE_FALSE;
 static SANE_Word status_jammed = SANE_FALSE;

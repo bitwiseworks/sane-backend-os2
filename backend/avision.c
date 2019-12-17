@@ -6835,7 +6835,11 @@ reader_process (void *data)
     {
       if (!s->duplex_rear_valid) { /* create new file for writing */
 	DBG (3, "reader_process: opening duplex rear file for writing.\n");
+#ifdef __OS2__
+	rear_fp = fopen (s->duplex_rear_fname, "wb");
+#else
 	rear_fp = fopen (s->duplex_rear_fname, "w");
+#endif
 	if (! rear_fp) {
 	  fclose (fp);
 	  return SANE_STATUS_NO_MEM;
@@ -6843,7 +6847,11 @@ reader_process (void *data)
       }
       else { /* open saved rear data */
 	DBG (3, "reader_process: opening duplex rear file for reading.\n");
+#ifdef __OS2__
+	rear_fp = fopen (s->duplex_rear_fname, "rb");
+#else
 	rear_fp = fopen (s->duplex_rear_fname, "r");
+#endif
 	if (! rear_fp) {
 	  fclose (fp);
 	  return SANE_STATUS_IO_ERROR;
@@ -7919,7 +7927,11 @@ sane_open (SANE_String_Const devicename, SANE_Handle *handle)
       dev->hw->feature_type & AV_ADF_FLIPPING_DUPLEX) {
     /* Might need at least *DOS (Windows flavour and OS/2) portability fix
        However, I was told Cygwin (et al.) takes care of it. */
+#ifdef __OS2__
+    strncpy(s->duplex_rear_fname, "/@unixroot/var/tmp/avision-rear-XXXXXX", PATH_MAX);
+#else
     strncpy(s->duplex_rear_fname, "/tmp/avision-rear-XXXXXX", PATH_MAX);
+#endif
 
     if (! mktemp(s->duplex_rear_fname) ) {
       DBG (1, "sane_open: failed to generate temporary fname for duplex scans\n");

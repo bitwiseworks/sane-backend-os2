@@ -93,7 +93,11 @@ static char *str_cmd(int cmd)
 }
 
 #define MAX_DUMP 70
+#ifdef __OS2__
+const char *encTmpFileName = "/@unixroot/var/tmp/stmp_enc.tmp";
+#else
 const char *encTmpFileName = "/tmp/stmp_enc.tmp";
+#endif
 
 static int decompress(struct device __sane_unused__ *dev,
                       const char __sane_unused__ *infilename)
@@ -192,7 +196,11 @@ static int dump_to_tmp_file(struct device *dev)
     unsigned char *pSrc = dev->data;
     int srcLen = dev->datalen;
     FILE *pInfile;
+#ifdef __OS2__
+    if ((pInfile = fopen(encTmpFileName, "ab")) == NULL) {
+#else
     if ((pInfile = fopen(encTmpFileName, "a")) == NULL) {
+#endif
         fprintf(stderr, "can't open %s\n", encTmpFileName);
         return 0;
     }

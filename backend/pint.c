@@ -113,7 +113,11 @@ attach (const char *devname, PINT_Device **devp)
       }
 
   DBG(3, "attach: opening %s\n", devname);
+#ifdef __OS2__
+  fd = open (devname, O_RDONLY | O_BINARY, 0);
+#else
   fd = open (devname, O_RDONLY, 0);
+#endif
   if (fd < 0)
     {
       DBG(1, "attach: open failed (%s)\n", strerror (errno));
@@ -816,7 +820,11 @@ sane_get_parameters (SANE_Handle handle, SANE_Parameters *params)
       /* Grab the scanio for this device. */
       if (s->fd < 0)
 	{
+#ifdef __OS2__
+	  s->fd = open (s->hw->sane.name, O_RDONLY | O_BINARY, 0);
+#else
 	  s->fd = open (s->hw->sane.name, O_RDONLY, 0);
+#endif
 	  if (s->fd < 0)
 	    {
 	      DBG(1, "open of %s failed: %s\n",

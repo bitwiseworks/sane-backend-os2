@@ -5987,7 +5987,11 @@ static bool sanei_genesys_read_calibration(Genesys_Device::Calibration& calibrat
     DBG_HELPER(dbg);
 
     std::ifstream str;
+#ifdef __OS2__
+    str.open(path, std::ios::binary);
+#else
     str.open(path);
+#endif
     if (!str.is_open()) {
         DBG(DBG_info, "%s: Cannot open %s\n", __func__, path.c_str());
         return false;
@@ -6011,7 +6015,11 @@ static void write_calibration(Genesys_Device::Calibration& calibration, const st
     DBG_HELPER(dbg);
 
     std::ofstream str;
+#ifdef __OS2__
+    str.open(path,std::ios::binary);
+#else
     str.open(path);
+#endif
     if (!str.is_open()) {
         throw SaneException("Cannot open calibration for writing");
     }

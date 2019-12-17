@@ -2832,7 +2832,11 @@ reader_process ( void *data )	/* executed as a child process */
   act.sa_handler = reader_process_sigterm_handler;
   sigaction (SIGTERM, &act, 0);
 
+#ifdef __OS2__
+  fp = fdopen (scanner->reader_fds, "wb");
+#else
   fp = fdopen (scanner->reader_fds, "w");
+#endif
   if (!fp)
     {
       return SANE_STATUS_IO_ERROR;

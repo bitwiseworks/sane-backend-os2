@@ -5658,7 +5658,11 @@ write_shading_buf_pnm(Microtek2_Scanner *ms, uint32_t lines)
   if ( md->model_flags & MD_16BIT_TRANSFER )
       factor = 256;
 
+#ifdef __OS2__
+  outfile = fopen("shading_buf_w.pnm", "wb");
+#else
   outfile = fopen("shading_buf_w.pnm", "w");
+#endif
   fprintf(outfile, "P6\n#imagedata\n%d %d\n255\n",
           mi->geo_width / mi->calib_divisor, lines);
   for ( linenr=0; linenr < lines; linenr++ )
@@ -5748,13 +5752,21 @@ write_shading_pnm(Microtek2_Scanner *ms)
     num_shading_pixels = mi->geo_width / mi->calib_divisor;
   if ( md->shading_table_w != NULL )
     {
+#ifdef __OS2__
+      outfile_w = fopen("microtek2_shading_w.pnm", "wb");
+#else
       outfile_w = fopen("microtek2_shading_w.pnm", "w");
+#endif
       fprintf(outfile_w, "P6\n#imagedata\n%d %d\n255\n",
                       num_shading_pixels, output_height);
     }
   if ( md->shading_table_d != NULL )
     {
+#ifdef __OS2__
+      outfile_d = fopen("microtek2_shading_d.pnm", "wb");
+#else
       outfile_d = fopen("microtek2_shading_d.pnm", "w");
+#endif
       fprintf(outfile_d, "P6\n#imagedata\n%d %d\n255\n",
                       num_shading_pixels, output_height);
     }
@@ -5825,7 +5837,11 @@ write_cshading_pnm(Microtek2_Scanner *ms)
   if ( md->model_flags & MD_16BIT_TRANSFER )
       factor = 256;
 
+#ifdef __OS2__
+  outfile = fopen("microtek2_cshading_w.pnm", "wb");
+#else
   outfile = fopen("microtek2_cshading_w.pnm", "w");
+#endif
   if ( ms->mode == MS_MODE_COLOR )
     fprintf(outfile, "P6\n#imagedata\n%d %d\n255\n", ms->ppl, img_height);
   else
@@ -7156,7 +7172,11 @@ reader_process(void *data)
     act.sa_handler = signal_handler;
     sigaction (SIGTERM, &act, 0);
 
+#ifdef __OS2__
+    ms->fp = fdopen(ms->fd[1], "wb");
+#else
     ms->fp = fdopen(ms->fd[1], "w");
+#endif
     if ( ms->fp == NULL )
       {
         DBG(1, "reader_process: fdopen() failed, errno=%d\n", errno);

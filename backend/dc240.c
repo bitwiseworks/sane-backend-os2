@@ -381,7 +381,11 @@ init_dc240 (DC240 * camera)
   /*
      Open device file.
    */
+#ifdef __OS2
+  if ((camera->fd = open (camera->tty_name, O_RDWR | O_BINARY)) == -1)
+#else
   if ((camera->fd = open (camera->tty_name, O_RDWR)) == -1)
+#endif
     {
       DBG (1, "init_dc240: error: could not open %s for read/write\n",
 	   camera->tty_name);

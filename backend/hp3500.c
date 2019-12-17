@@ -2688,7 +2688,11 @@ dump_sram_to_file(char const *fname,
                   unsigned char const *expected,
                   unsigned end_calibration_offset)
 {
+#ifdef __OS2__
+  FILE *fp = fopen(fname, "wb");
+#else
   FILE *fp = fopen(fname, "w");
+#endif
   rt_set_sram_page(0);
 
   if (fp)

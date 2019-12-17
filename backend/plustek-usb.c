@@ -306,7 +306,11 @@ usb_initDev( Plustek_Device *dev, int idx, int handle, int vendor )
 
 	ptr = getenv ("HOME");
 	if( NULL == ptr ) {
+#ifdef __OS2__
+		sprintf( tmp_str2, "/@unixroot/var/tmp/%s", tmp_str1 );
+#else
 		sprintf( tmp_str2, "/tmp/%s", tmp_str1 );
+#endif
 	} else {
 		sprintf( tmp_str2, "%s/.sane/%s", ptr, tmp_str1 );
 	}

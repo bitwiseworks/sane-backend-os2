@@ -139,7 +139,11 @@ static char tty_name[PATH_MAX];
 
 static speed_t tty_baud = DEFAULT_TTY_BAUD;
 static char *tmpname;
+#ifdef __OS2__
+static char tmpnamebuf[] = "/@unixroot/var/tmp/dc25XXXXXX";
+#else
 static char tmpnamebuf[] = "/tmp/dc25XXXXXX";
+#endif
 
 static Dc20Info *dc20_info;
 static Dc20Info CameraInfo;
@@ -422,7 +426,11 @@ init_dc20 (char *device, speed_t speed)
   /*
      Open device file.
    */
+#ifdef __OS2__
+  if ((tfd = open (device, O_RDWR | O_BINARY)) == -1)
+#else
   if ((tfd = open (device, O_RDWR)) == -1)
+#endif
     {
       DBG (2, "init_dc20: error: could not open %s for read/write\n", device);
       return -1;

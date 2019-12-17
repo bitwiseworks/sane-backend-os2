@@ -336,7 +336,11 @@ init_dc210 (DC210 * camera)
   /*
      Open device file.
    */
+#ifdef __OS2__
+  if ((camera->fd = open (camera->tty_name, O_RDWR | O_BINARY)) == -1)
+#else
   if ((camera->fd = open (camera->tty_name, O_RDWR)) == -1)
+#endif
     {
       DBG (2, "init_dc210: error: could not open %s for read/write\n",
 	   camera->tty_name);

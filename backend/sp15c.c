@@ -1994,7 +1994,11 @@ reader_process (void *data)
   sigemptyset (&sigterm_set);
   sigaddset (&sigterm_set, SIGTERM);
 
+#ifdef __OS2__
+  fp = fdopen (pipe_fd, "wb");
+#else
   fp = fdopen (pipe_fd, "w");
+#endif
   if (!fp)
     {
       DBG (1, "reader_process: couldn't open pipe!\n");

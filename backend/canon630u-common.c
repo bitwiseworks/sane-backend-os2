@@ -469,7 +469,11 @@ CANON_Handle;
 
 
 /* offset/gain calibration file name */
+#ifdef __OS2__
+#define CAL_FILE_OGN "/@unixroot/var/tmp/canon.cal"
+#else
 #define CAL_FILE_OGN "/tmp/canon.cal"
+#endif
 
 /* at 600 dpi */
 #define CANON_MAX_WIDTH    5100	/* 8.5in */
@@ -579,7 +583,11 @@ do_scan (CANON_Handle * s)
     }
   else
     {
+#ifdef __OS2__
+      fp = fopen (s->fname, "wb");
+#else
       fp = fopen (s->fname, "w");
+#endif
       if (!fp)
 	{
 	  free (buf);
@@ -938,7 +946,11 @@ plugin_cal (CANON_Handle * s)
   if (!s->fname)
     {
       DBG (1, "No temp filename!\n");
+#ifdef __OS2__
+      s->fname = strdup ("/@unixroot/var/tmp/cal.XXXXXX");
+#else
       s->fname = strdup ("/tmp/cal.XXXXXX");
+#endif
       mktemp (s->fname);
     }
   s->width = 2551;
@@ -995,7 +1007,11 @@ compute_ogn (char *calfilename)
   float *avg;
   float max_range[3], tmp1, tmp2;
 
+#ifdef __OS2__
+  fp = fopen (calfilename, "rb");
+#else
   fp = fopen (calfilename, "r");
+#endif
   if (!fp)
     {
       DBG (1, "open %s\n", calfilename);
@@ -1109,7 +1125,11 @@ compute_ogn (char *calfilename)
 
   /* Set umask to world r/w so other users can overwrite common cal... */
   oldmask = umask (0);
+#ifdef __OS2__
+  fp = fopen (CAL_FILE_OGN, "wb");
+#else
   fp = fopen (CAL_FILE_OGN, "w");
+#endif
   /* ... and set it back. */
   umask (oldmask);
   if (!fp)
@@ -1198,7 +1218,11 @@ install_ogn (int fd)
      10-bit gain + 6-bit offset = 2 bytes per pixel, so 10208 bytes */
   buf = malloc (10208);
 
+#ifdef __OS2__
+  fp = fopen (CAL_FILE_OGN, "rb");
+#else
   fp = fopen (CAL_FILE_OGN, "r");
+#endif
   if (fp)
     {
       fread (buf, 2, 5100, fp);
@@ -1582,7 +1606,11 @@ CANON_start_scan (CANON_Handle * scanner)
   DBG (3, "CANON_start_scan called\n");
 
   /* choose a temp file name for scan data */
+#ifdef __OS2__
+  scanner->fname = strdup ("/@unixroot/var/tmp/scan.XXXXXX");
+#else
   scanner->fname = strdup ("/tmp/scan.XXXXXX");
+#endif
   if (!mktemp (scanner->fname))
     return SANE_STATUS_IO_ERROR;
 
@@ -1607,7 +1635,11 @@ CANON_start_scan (CANON_Handle * scanner)
     }
 
   /* read the temp file back out */
+#ifdef __OS2__
+  scanner->fp = fopen (scanner->fname, "rb");
+#else
   scanner->fp = fopen (scanner->fname, "r");
+#endif
   DBG (4, "reading %s\n", scanner->fname);
   if (!scanner->fp)
     {

@@ -847,7 +847,11 @@ reader_process (void *scanner)
   sigemptyset (&sigterm_set);
   sigaddset (&sigterm_set, SIGTERM);
 
+#ifdef __OS2__
+  fp = fdopen (fd, "wb");
+#else
   fp = fdopen (fd, "w");
+#endif
   if (!fp)
     return 1;
 

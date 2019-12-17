@@ -1861,11 +1861,19 @@ start_scan (BH_Scanner *s)
 		  int fd;
 		  FILE *fp;
 
+#ifdef __OS2__
+		  strncpy(s->barfname, "/@unixroot/var/tmp/bhXXXXXX", sizeof(s->barfname));
+#else
 		  strncpy(s->barfname, "/tmp/bhXXXXXX", sizeof(s->barfname));
+#endif
 		  s->barfname[sizeof(s->barfname)-1] = '\0';
 		  fd = mkstemp(s->barfname);
 
+#ifdef __OS2__
+		  if (fd !=-1 && (fp = fdopen(fd, "wb")) != NULL)
+#else
 		  if (fd !=-1 && (fp = fdopen(fd, "w")) != NULL)
+#endif
 		    {
 		      fprintf(fp, "<xml-stream>\n");
 
@@ -1886,7 +1894,11 @@ start_scan (BH_Scanner *s)
 
 		      /* close file; re-open for read(setting s->barfd) */
 		      fclose(fp);
+#ifdef __OS2__
+		      if ((s->barf = fopen(s->barfname, "rb")) == NULL)
+#else
 		      if ((s->barf = fopen(s->barfname, "r")) == NULL)
+#endif
 			{
 			  DBG(1, "sane_start: error opening barfile `%s'\n",
 			      s->barfname);

@@ -4997,7 +4997,11 @@ static int reader_process(void *data) /* executed as a child process or as threa
 
   data_length = scanner->params.lines * scanner->params.bytes_per_line;
 
+#ifdef __OS2__
+  fp = fdopen(scanner->pipe_write_fd, "wb");
+#else
   fp = fdopen(scanner->pipe_write_fd, "w");
+#endif
   if (!fp)
   {
     return SANE_STATUS_IO_ERROR;

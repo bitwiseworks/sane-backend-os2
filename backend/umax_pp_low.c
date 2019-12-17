@@ -11415,7 +11415,11 @@ sanei_umax_pp_startScan (int x, int y, int width, int height, int dpi,
   /*motor[13] = 0x10;           blue bit */
   /* with cmd 01, may be use to do 3 pass scanning ? */
   /* bits 0 to 3 seem related to sharpness */
+#ifdef __OS2__
+  f = fopen ("/@unixroot/var/tmp/dangerous.params", "rb");
+#else
   f = fopen ("/tmp/dangerous.params", "rb");
+#endif
   if (f != NULL)
     {
       fgets (line, 1024, f);
