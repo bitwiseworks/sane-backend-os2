@@ -2496,7 +2496,11 @@ static char *gt68xx_calibration_file(GT68xx_Scanner * scanner)
         }
       else
         {
+#ifdef __OS2__
+          sprintf (tmp_str, "/@unixroot/var/tmp/gt68xx-%s.cal", scanner->dev->model->name);
+#else
           sprintf (tmp_str, "/tmp/gt68xx-%s.cal", scanner->dev->model->name);
+#endif
         }
     }
   DBG(5,"gt68xx_calibration_file: using >%s< for calibration file name\n",tmp_str);

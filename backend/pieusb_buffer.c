@@ -153,7 +153,11 @@ sanei_pieusb_buffer_create(struct Pieusb_Read_Buffer* buffer, SANE_Int width, SA
     buffer->image_size_bytes = buffer->colors * buffer->height * buffer->line_size_bytes;
 
     /* Create empty file */
+#ifdef __OS2__
+    snprintf(buffer->buffer_name, L_tmpnam, "/@unixroot/var/tmp/sane.XXXXXX");
+#else
     snprintf(buffer->buffer_name, L_tmpnam, "/tmp/sane.XXXXXX");
+#endif
     if (buffer->data_file != 0) /* might still be open from previous invocation */
       close(buffer->data_file);
     buffer->data_file = mkstemp(buffer->buffer_name);

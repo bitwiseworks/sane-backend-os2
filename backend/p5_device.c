@@ -1277,7 +1277,11 @@ calibration_file (const char *devicename)
 	}
       else
 	{
+#ifdef __OS2__
+	  sprintf (tmp_str, "/@unixroot/var/tmp/p5-%s.cal", devicename);
+#else
 	  sprintf (tmp_str, "/tmp/p5-%s.cal", devicename);
+#endif
 	}
     }
   DBG (DBG_trace, "calibration_file: using >%s< for calibration file name\n",

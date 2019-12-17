@@ -61,7 +61,11 @@
 #define DEFAULT_DEVICE "/dev/scanner" /* Check this if config is missing */
 #define SNAPSCAN_TYPE      "flatbed scanner"
 #define SNAPSCAN_FS_TYPE   "film scanner"
+#ifdef __OS2__
+#define TMP_FILE_PREFIX "/@unixroot/var/tmp/snapscan"
+#else
 #define TMP_FILE_PREFIX "/var/tmp/snapscan"
+#endif
 #define SNAPSCAN_CONFIG_FILE "snapscan.conf"
 #define FIRMWARE_KW "firmware"
 #define OPTIONS_KW "options"

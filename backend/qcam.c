@@ -292,7 +292,11 @@ qc_lock_wait (QC_Device * q, int wait)
     {
       char lockfile[128];
 
+#ifdef __OS2__
+      sprintf (lockfile, "/@unixroot/var/tmp/LOCK.qcam.0x%x", q->port);
+#else
       sprintf (lockfile, "/tmp/LOCK.qcam.0x%x", q->port);
+#endif
       q->lock_fd = open (lockfile, O_WRONLY | O_CREAT | O_EXCL, 0666);
       if (q->lock_fd < 0)
 	{
@@ -357,8 +361,13 @@ qc_unlock (QC_Device * q)
       return SANE_STATUS_INVAL;
     }
 #endif
+#ifdef __OS2__
+  sprintf (lockfile, "/@unixroot/var/tmp/LOCK.qcam.0x%x", q->port);
+  DBG (1, "qc_unlock: /@unixroot/var/tmp/LOCK.qcam.0x%x\n", q->port);
+#else
   sprintf (lockfile, "/tmp/LOCK.qcam.0x%x", q->port);
   DBG (1, "qc_unlock: /tmp/LOCK.qcam.0x%x\n", q->port);
+#endif
   unlink (lockfile);
   close (q->lock_fd);
   q->lock_fd = -1;
@@ -839,7 +848,11 @@ reader_process (QC_Scanner * s, int in_fd, int out_fd)
 
   enable_ports (q);
 
+#ifdef __OS2__
+  ofp = fdopen (out_fd, "wb");
+#else
   ofp = fdopen (out_fd, "w");
+#endif
   if (!ofp)
     return 1;
 
