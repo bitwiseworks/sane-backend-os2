@@ -19,9 +19,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   fOUNDATIOn, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -392,7 +390,7 @@
 #define SW_CMD_L                10
 #define SW_HEADER_L             8
 #define SW_BODY_L               61
-#define SW_CMD_P                0     /* command at postion 0 */
+#define SW_CMD_P                0     /* command at position 0 */
 #define SW_HEADER_P             SW_CMD_L
 #define SW_BODY_P(n)            SW_CMD_L + SW_HEADER_L + (n) * SW_BODY_L
 
@@ -829,7 +827,7 @@ typedef struct Microtek2_Info {
     SANE_Byte nlens;
     SANE_Byte nwindows;
     SANE_Byte shtrnsferequ;
-#define MI_WHITE_SHADING_ONLY(x)       ((x) & 0x20) == 0
+#define MI_WHITE_SHADING_ONLY(x)       (((x) & 0x20) == 0)
 #define MI_HAS_SCNBTTN                 SANE_TRUE
     SANE_Bool scnbuttn;
 #define MI_HAS_PIPOBUF                 SANE_TRUE

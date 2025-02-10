@@ -2,9 +2,45 @@
 test -n "$srcdir" || srcdir=`dirname "$0"`
 test -n "$srcdir" || srcdir=.
 
+# When repos are forked on GitLab tags aren't copied thus making
+# git-version-gen producing incorrect version ("UNKNOWN") which in turn causes
+# CI build failures. To workaround this reconstruct version from ChangeLogs
+# files (handy updated on every release). If git describe is not working and we
+# are not in dist package - take version from the top-most ChangeLog file.
+if [ ! -e .tarball-version ] &&
+   ! git describe >/dev/null 2>&1; then
+	ls ChangeLogs \
+		| sort -Vr \
+		| grep -m1 -P -o '(?<=ChangeLog-).*' > .tarball-version
+	read v < .tarball-version
+	echo >&2 "Package version reconstructed from ChangeLog: $v"
+fi
+
+patchdir="$srcdir/patches"
+
+# Suppress warnings about obsolete macros if still needed (#122)
+ac_dir=$(aclocal --print-ac-dir)
+if test -r "$ac_dir/ax_create_stdint_h.m4"; then
+    serial=$(awk '/#serial/{ print $2 }' "$ac_dir/ax_create_stdint_h.m4")
+    if test "$serial" -lt 21; then
+	m4_dir=$(cd $srcdir; autoconf -t 'AC_CONFIG_MACRO_DIR:$%')
+	target="$srcdir/$m4_dir/ax_create_stdint_h.m4"
+	echo "Copying file to $target"
+	cp "$ac_dir/ax_create_stdint_h.m4" "$srcdir/$m4_dir"
+	if test "$serial" -lt 20; then
+	    echo "patching file $target to #serial 20"
+	    patch --quiet $target \
+		  "$patchdir/ax_create_stdint_h.19-20.m4.patch"
+	fi
+	echo "patching file $target to #serial 21"
+	patch --quiet "$target" \
+	      "$patchdir/ax_create_stdint_h.20-21.m4.patch"
+    fi
+fi
+
 autoreconf --force --install --verbose --warnings=all "$srcdir"
-patch "$srcdir/ltmain.sh" "$srcdir/ltmain.sh.patch"
-patch "$srcdir/po/Rules-quot" "$srcdir/Rules-quot.patch"
+patch "$srcdir/ltmain.sh" "$patchdir/ltmain.sh.patch"
+patch "$srcdir/po/Rules-quot" "$patchdir/Rules-quot.patch"
 autoreconf "$srcdir"
 
 # Taken from https://gitlab.com/utsushi/utsushi/blob/master/bootstrap

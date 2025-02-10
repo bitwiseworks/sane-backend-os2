@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -101,6 +99,11 @@ typedef enum
   opt_int_array,
   opt_int_array_constraint_range,
   opt_int_array_constraint_word_list,
+  opt_int_inexact,
+  opt_gamma_red,
+  opt_gamma_green,
+  opt_gamma_blue,
+  opt_gamma_all,
   opt_fixed_group,
   opt_fixed,
   opt_fixed_constraint_range,
@@ -134,11 +137,12 @@ typedef struct Test_Device
   SANE_Word bytes_per_line;
   SANE_Word pixels_per_line;
   SANE_Word lines;
-  SANE_Int bytes_total;
+  size_t bytes_total;
   SANE_Bool open;
   SANE_Bool scanning;
   SANE_Bool cancelled;
   SANE_Bool eof;
+  SANE_Bool options_initialized;
   SANE_Int number_of_scans;
 }
 Test_Device;

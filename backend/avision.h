@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -68,6 +66,65 @@ typedef enum Avision_ConnectionType {
   AV_USB
 } Avision_ConnectionType;
 
+/*
+ * Translatable custom options text.
+ *
+ */
+#define SANE_TITLE_MISC_GROUP             SANE_I18N("Miscellaneous")
+#define SANE_TITLE_INSTALLED_OPTS_GROUP   SANE_I18N("Installed options")
+
+#define SANE_TITLE_OVERSCAN_TOP           SANE_I18N("Overscan top")
+#define SANE_TITLE_OVERSCAN_BOTTOM        SANE_I18N("Overscan bottom")
+#define SANE_TITLE_BACKGROUND_LINES       SANE_I18N("Background raster lines")
+#define SANE_TITLE_QUALITY_SCAN           SANE_I18N("Quality scan")
+#define SANE_TITLE_MANUAL_EXPOSURE        SANE_I18N("Exposure")
+#define SANE_TITLE_MULTI_SAMPLE           SANE_I18N("Multi-sample")
+#define SANE_TITLE_POWER_SAVE_TIME        SANE_I18N("Power save timer control")
+#define SANE_TITLE_OPTIONS_MSG            SANE_I18N("Message text from the scanner")
+#define SANE_TITLE_NVRAM                  SANE_I18N("Obtain NVRAM values")
+#define SANE_TITLE_PAPER_LENGTH           SANE_I18N("Use paper length")
+#define SANE_TITLE_FLIP_PAGE              SANE_I18N("Flip document after duplex scanning")
+#define SANE_TITLE_ADF_INSTALLED          SANE_I18N("ADF installed")
+#define SANE_TITLE_LIGHTBOX_INSTALLED     SANE_I18N("Lightbox installed")
+
+#define SANE_DESC_OVERSCAN_TOP            \
+SANE_I18N("The top overscan controls the additional area to scan before the "\
+          "paper is detected.")
+#define SANE_DESC_OVERSCAN_BOTTOM         \
+SANE_I18N("The bottom overscan controls the additional area to scan after "\
+          "the paper end is detected.")
+#define SANE_DESC_BACKGROUND_LINES        \
+SANE_I18N("The background raster controls the additional background lines to "\
+          "scan before the paper is feed through the scanner.")
+#define SANE_DESC_QUALITY_SCAN            \
+SANE_I18N("Turn on quality scanning (slower but better).")
+#define SANE_DESC_MANUAL_EXPOSURE         \
+SANE_I18N("Manual exposure adjustment.")
+#define SANE_DESC_MULTI_SAMPLE            \
+SANE_I18N("Enable multi-sample scan mode.")
+#define SANE_DESC_POWER_SAVE_TIME         \
+SANE_I18N("Allows control of the scanner's power save timer, dimming or "\
+          "turning off the light.")
+#define SANE_DESC_OPTIONS_MSG             \
+SANE_I18N("This text contains device specific options controlled by the "\
+          "user on the scanner hardware.")
+#define SANE_DESC_NVRAM                   \
+SANE_I18N("Allows access obtaining the scanner's NVRAM values as pretty "\
+          "printed text.")
+#define SANE_DESC_PAPER_LENGTH            \
+SANE_I18N("Newer scanners can utilize this paper length to detect double feeds. "\
+          "However some others (DM152) can get confused during media flush if it is set.")
+#define SANE_DESC_FLIP_PAGE               \
+SANE_I18N("Tells page-flipping document scanners to flip the paper back to its "\
+          "original orientation before dropping it in the output tray.  "\
+          "Turning this off might make scanning a little faster if you don't "\
+          "care about manually flipping the pages afterwards.")
+#define SANE_DESC_ADF_INSTALLED           \
+SANE_I18N("ADF option is detected as installed.")
+#define SANE_DESC_LIGHTBOX_INSTALLED      \
+SANE_I18N("Lightbox option is detected as installed.")
+
+
 /* information needed for device access */
 typedef struct Avision_Connection {
   Avision_ConnectionType connection_type;
@@ -80,6 +137,12 @@ typedef struct Avision_Connection {
   } usb_status;
 
 } Avision_Connection;
+
+/* structure for ADF offsets in mm */
+typedef struct mm_offset {
+  double top;
+  double bottom;
+} mm_offset;
 
 typedef struct Avision_HWEntry {
   const char* scsi_mfg;
@@ -114,7 +177,7 @@ typedef struct Avision_HWEntry {
     /* if the scan area and resolution needs to be forced for films */
   #define AV_FORCE_FILM ((uint64_t)1<<6)
 
-    /* does not suport, or very broken background (added for AV610C2) */
+    /* does not support, or very broken background (added for AV610C2) */
   #define AV_NO_BACKGROUND ((uint64_t)1<<7)
 
     /* is film scanner - no detection yet */
@@ -165,7 +228,7 @@ typedef struct Avision_HWEntry {
     /* though marked as GRAY only the scanner can do GRAY modes */
   #define AV_GRAY_MODES ((uint64_t)1<<23)
 
-    /* no seperate, single REAR scan (AV122, DM152, ...) */
+    /* no separate, single REAR scan (AV122, DM152, ...) */
   #define AV_NO_REAR ((uint64_t)1<<24)
 
     /* only scan with some known good hardware resolutions, as the
@@ -174,18 +237,15 @@ typedef struct Avision_HWEntry {
        interpolate to all the others */
   #define AV_SOFT_SCALE ((uint64_t)1<<25)
 
-    /* does keep window though it does not advertice it - the AV122/DM152
+    /* does keep window though it does not advertise it - the AV122/DM152
        mess up image data if window is resend between ADF pages */
   #define AV_DOES_KEEP_WINDOW ((uint64_t)1<<26)
 
-    /* does keep gamma though it does not advertice it */
+    /* does keep gamma though it does not advertise it */
   #define AV_DOES_KEEP_GAMMA ((uint64_t)1<<27)
 
     /* does the scanner contain a Cancel button? */
   #define AV_CANCEL_BUTTON ((uint64_t)1<<28)
-
-    /* is the rear image offset? */
-  #define AV_REAR_OFFSET ((uint64_t)1<<29)
 
     /* some devices do not need a START_SCAN, even hang with it */
   #define AV_NO_START_SCAN ((uint64_t)1<<30)
@@ -204,8 +264,45 @@ typedef struct Avision_HWEntry {
     /* For scanners which need to have their firmware read to properly function. */
   #define AV_FIRMWARE ((uint64_t)1<<35)
 
+  /* at least Kodak i1120 claims no calibration needed but windows driver does it anyways */
+  #define AV_FORCE_CALIB ((uint64_t)1<<36)
+
+  /* at least Kodak i1120 does not have an explicit "quality-scan" mode */
+  #define AV_NO_QSCAN_MODE ((uint64_t)1<<37)
+
+  /* at least Kodak i1120 optical DPI is used for overscan calculation */
+  #define AV_OVERSCAN_OPTDPI ((uint64_t)1<<38)
+
+  /* some scanners support fast feed-out of the sheet when cancelling a running scan */
+  #define AV_FASTFEED_ON_CANCEL ((uint64_t)1<<39)
+
+  /* at least Kodak i1120 does not have an explicit "quality-calibration" mode */
+  #define AV_NO_QCALIB_MODE ((uint64_t)1<<40)
+
+  /* Kodak i1120 needs gamma = 1.0 to give decent results */
+  #define AV_GAMMA_10 ((uint64_t)1<<41)
+
+  /* Kodak i1120 has a different gamma table format (like a uint16/double array) */
+  #define AV_GAMMA_UINT16 ((uint64_t)1<<42)
+
+  /* Kodak i1120 has single-sheet and multi-sheet scan modes. This option sets
+     bitset3[7] which enables multi-sheet scan by default so there is no pause
+     of 1s between two sheets in ADF scan mode. This also fixes some offsets
+     when scanning multiple sheets. */
+  #define AV_MULTI_SHEET_SCAN ((uint64_t)1<<43)
+
     /* maybe more ...*/
   uint64_t feature_type;
+
+  /* ADF offsets in mm */
+  struct {
+    float first; /* offset difference first sheet */
+    mm_offset front; /* front-only */
+    struct {
+      mm_offset front;
+      mm_offset rear;
+    } duplex;
+  } offset;
 
 } Avision_HWEntry;
 
@@ -298,8 +395,19 @@ enum Avision_Option
   OPT_PAPERLEN,          /* Use paper_length field to detect double feeds */
   OPT_ADF_FLIP,          /* For flipping duplex, reflip the document */
 
+  OPT_OPTIONS_GROUP,
+  OPT_OPTION_ADF,       // ADF installed/detected?
+  OPT_OPTION_LIGHTBOX,   // LightBox installed/detected?
+
   NUM_OPTIONS            /* must come last */
 };
+
+/* structure for ADF offsets in pixels of HW res */
+typedef struct hwpx_offset {
+  int top;
+  int bottom;
+} hwpx_offset;
+
 
 typedef struct Avision_Dimensions
 {
@@ -315,7 +423,11 @@ typedef struct Avision_Dimensions
 
   /* in pixels */
   int line_difference;
-  int rear_offset; /* in pixels of HW res */
+
+  struct {
+    hwpx_offset front;
+    hwpx_offset rear;
+  } offset;
 
   /* interlaced duplex scan */
   SANE_Bool interlaced_duplex;
@@ -349,8 +461,7 @@ typedef struct Avision_Device
   SANE_Bool inquiry_nvram_read;
   SANE_Bool inquiry_power_save_time;
 
-  SANE_Bool inquiry_light_box;
-  SANE_Bool inquiry_adf;
+  SANE_Bool inquiry_adf_capability;
   SANE_Bool inquiry_duplex;
   SANE_Bool inquiry_duplex_interlaced;
   SANE_Bool inquiry_paper_length;
@@ -369,6 +480,10 @@ typedef struct Avision_Device
   SANE_Bool inquiry_light_detect;
   SANE_Bool inquiry_light_control;
   SANE_Bool inquiry_exposure_control;
+
+  // Determines from accessories query.
+  SANE_Bool inquiry_light_box_present;
+  SANE_Bool inquiry_adf_present;
 
   int       inquiry_max_shading_target;
   SANE_Bool inquiry_button_control;
@@ -407,15 +522,17 @@ typedef struct Avision_Device
   int inquiry_bits_per_channel;
   int inquiry_no_gray_modes;
 
+  SANE_Bool adf_offset_compensation;
+
   int scsi_buffer_size; /* nice to have SCSI buffer size */
   int read_stripe_size; /* stripes to be read at-a-time */
 
-  /* film scanner atributes - maybe these should be in the scanner struct? */
+  /* film scanner attributes - maybe these should be in the scanner struct? */
   SANE_Range frame_range;
   SANE_Word current_frame;
   SANE_Word holder_type;
 
-  /* some versin corrections */
+  /* some version corrections */
   uint16_t data_dq; /* was ox0A0D - but hangs some new scanners */
 
   Avision_HWEntry* hw;
@@ -670,6 +787,8 @@ typedef struct command_set_window_window
 	uint8_t line_width_msb;
 	uint8_t line_count_msb;
 	uint8_t background_lines;
+
+	uint8_t single_sheet_scan; /* from Kodak SVT tool */
       } normal;
 
       struct {
@@ -717,7 +836,7 @@ typedef struct calibration_format
   uint16_t g_dark_shading_target;
   uint16_t b_dark_shading_target;
 
-  /* not returned but usefull in some places */
+  /* not returned but useful in some places */
   uint8_t channels;
 } calibration_format;
 
@@ -741,17 +860,17 @@ typedef struct acceleration_info
 
 /* set/get SCSI highended (big-endian) variables. Declare them as an array
  * of chars endianness-safe, int-size safe ... */
-#define set_double(var,val) var[0] = ((val) >> 8) & 0xff;  \
-                            var[1] = ((val)     ) & 0xff
+#define set_double(var,val) var[0] = (uint8_t) (((val) >> 8) & 0xff);  \
+                            var[1] = (uint8_t) (((val)     ) & 0xff)
 
-#define set_triple(var,val) var[0] = ((val) >> 16) & 0xff; \
-                            var[1] = ((val) >> 8 ) & 0xff; \
-                            var[2] = ((val)      ) & 0xff
+#define set_triple(var,val) var[0] = (uint8_t) (((val) >> 16) & 0xff); \
+                            var[1] = (uint8_t) (((val) >> 8 ) & 0xff); \
+                            var[2] = (uint8_t) (((val)      ) & 0xff)
 
-#define set_quad(var,val)   var[0] = ((val) >> 24) & 0xff; \
-                            var[1] = ((val) >> 16) & 0xff; \
-                            var[2] = ((val) >> 8 ) & 0xff; \
-                            var[3] = ((val)      ) & 0xff
+#define set_quad(var,val)   var[0] = (uint8_t) (((val) >> 24) & 0xff); \
+                            var[1] = (uint8_t) (((val) >> 16) & 0xff); \
+                            var[2] = (uint8_t) (((val) >> 8 ) & 0xff); \
+                            var[3] = (uint8_t) (((val)      ) & 0xff)
 
 #define get_double(var) ((*var << 8) + *(var + 1))
 
@@ -763,10 +882,10 @@ typedef struct acceleration_info
                          (*(var + 2) << 8) + *(var + 3))
 
 /* set/get Avision lowended (little-endian) shading data */
-#define set_double_le(var,val) var[0] = ((val)     ) & 0xff;  \
-                               var[1] = ((val) >> 8) & 0xff
+#define set_double_le(var,val) var[0] = (uint8_t) (((val)     ) & 0xff);  \
+                               var[1] = (uint8_t) (((val) >> 8) & 0xff)
 
-#define get_double_le(var) ((*(var + 1) << 8) + *var)
+#define get_double_le(var) ((uint16_t) ((*(var + 1) << 8) + *(var)))
 
 #define BIT(n, p) ((n & (1 << p)) ? 1 : 0)
 
@@ -796,5 +915,30 @@ SANE_Avision_Status;
 extern SANE_Status ENTRY(media_check) (SANE_Handle handle);
 
 #endif
+
+typedef enum
+{
+  AVISION_DATATYPECODE_READ_IMAGE_DATA = 0x00,
+  AVISION_DATATYPECODE_GET_CALIBRATION_FORMAT = 0x60,
+  AVISION_DATATYPECODE_DETECT_ACCESSORIES = 0x64,
+  AVISION_DATATYPECODE_READ_NVRAM_DATA = 0x69,
+  AVISION_DATATYPECODE_FLASH_RAM_INFO = 0x6a,
+  AVISION_DATATYPECODE_ACCELERATION_TABLE = 0x6c,
+  AVISION_DATATYPECODE_DOWNLOAD_GAMMA_TABLE = 0x81,
+  AVISION_DATATYPECODE_3X3_COLOR_MATRIX = 0x83,
+  AVISION_DATATYPECODE_SEND_NVRAM_DATA = 0x85,
+  AVISION_DATATYPECODE_FLASH_DATA = 0x86,
+  AVISION_DATATYPECODE_FILM_HOLDER_SENSE = 0x87,
+  AVISION_DATATYPECODE_FIRMWARE_STATUS = 0x90,
+  AVISION_DATATYPECODE_ATTACH_TRUNCATE_TAIL = 0x95,
+  AVISION_DATATYPECODE_ATTACH_TRUNCATE_HEAD = 0x96,
+  AVISION_DATATYPECODE_GET_BACKGROUND_RASTER = 0x9b,
+  AVISION_DATATYPECODE_LIGHT_STATUS = 0xa0,
+  AVISION_DATATYPECODE_BUTTON_STATUS = 0xa1,
+  AVISION_DATATYPECODE_POWER_SAVING_TIMER = 0xa2,
+  AVISION_DATATYPECODE_READ_DUPLEX_INFO = 0xb1,
+  AVISION_DATATYPECODE_UNKNOWN = 0xd0,
+  AVISION_DATATYPECODE_READ_GENERAL_ABILITY_PARAM = 0xd2,
+} Avision_Datatypecode;
 
 #endif /* avision_h */

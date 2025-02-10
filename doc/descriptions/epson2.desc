@@ -8,8 +8,6 @@
 ; distributed with "Image Scan!" and released under GPL.
 
 :backend "epson2"
-:version "1.0.124 (unmaintained)"
-:new :no
 :manpage "sane-epson2"
 
 :devicetype :scanner
@@ -22,7 +20,6 @@
 :usbid      "0x04b8" "0x08ac"
 :status     :complete
 :comment    "network interface supported via DFSG non-free iscan-network-nt package<br>all-in-one"
-:url        "http://www.epson.com/"
 
 :model      "AL-MX300DNF Series"
 :interface  "USB"
@@ -164,7 +161,7 @@
 :model      "DS-G20000"
 :interface  "USB"
 :usbid      "0x04b8" "0x015b"
-:status     :good
+:status     :complete
 
 :model      "EP-702A"
 :interface  "USB"
@@ -528,6 +525,21 @@
 :status     :good
 :comment    "network interface supported via DFSG non-free iscan-network-nt package"
 
+:model      "ET-2500 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1105"
+:status     :complete
+
+:model      "ET-2600 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1122"
+:status     :complete
+
+:model      "ET-2610 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1122"
+:status     :complete
+
 :model      "ET-2650"
 :interface  "USB Ethernet"
 :usbid      "0x04b8" "0x1121"
@@ -601,7 +613,7 @@
 :model      "Expression 12000XL"
 :interface  "USB"
 :usbid      "0x04b8" "0x015b"
-:status     :good
+:status     :complete
 :comment    "overseas version of the DS-G20000"
 
 :model      "F-3200"			; product spec (JP)
@@ -693,12 +705,6 @@
 :status     :unsupported
 :comment    "supported by the epkowa backend plus non-free interpreter"
 
-:model      "GT-7400U"			; product spec (JP)
-:interface  "USB"
-:usbid      "0x04b8" "0x0120"
-:status     :unsupported
-:comment    "supported by the snapscan backend"
-
 :model      "GT-7600S"			; product spec (JP)
 :interface  "SCSI"
 :status     :complete
@@ -740,11 +746,6 @@
 :usbid      "0x04b8" "0x011e"
 :status     :complete
 
-:model      "GT-8400UF"			; product spec (JP)
-:interface  "USB"
-:usbid      "0x04b8" "0x011f"
-:status     :unsupported
-
 :model      "GT-8500"
 :status     :untested
 
@@ -756,7 +757,7 @@
 :model      "GT-8700F"			; product spec (JP)
 :interface  "SCSI USB"
 :usbid      "0x04b8" "0x010a"
-:status     :good
+:status     :complete
 :comment    "GT-8700U with TPU option bundled"
 
 :model      "GT-9000"
@@ -1054,10 +1055,40 @@
 :status     :complete
 :comment    "network interface supported via DFSG non-free iscan-network-nt package<br>all-in-one"
 
+:model      "L360 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x08d1"
+:status     :complete
+
+:model      "L365 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x08d2"
+:status     :complete
+
+:model      "L366 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x08d2"
+:status     :complete
+
+:model      "L375 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1105"
+:status     :complete
+
 :model      "L380"
 :interface  "USB"
 :usbid      "0x04b8" "0x1120"
 :status     :good
+
+:model      "L395 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1122"
+:status     :complete
+
+:model      "L396 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1122"
+:status     :complete
 
 :model      "L495"
 :interface  "USB Ethernet"
@@ -1075,6 +1106,36 @@
 :usbid      "0x04b8" "0x08ca"
 :status     :complete
 :comment    "all-in-one"
+
+:model      "L3050 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1122"
+:status     :complete
+
+:model      "L3060 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1122"
+:status     :complete
+
+:model      "L3100 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1141"
+:status     :complete
+
+:model      "L3110 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1142"
+:status     :complete
+
+:model      "L3200 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1189"
+:status     :complete
+
+:model      "L3210 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1188"
+:status     :complete
 
 :model      "LP-7900CS"
 :status     :untested
@@ -1416,6 +1477,16 @@
 :status     :complete
 :comment    "network interface supported via DFSG non-free iscan-network-nt package<br>all-in-one"
 
+:model      "PX-048A Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1102"
+:status     :complete
+
+:model      "PX-049A Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1116"
+:status     :complete
+
 :model      "PX-1600F"
 :interface  "USB"
 :usbid      "0x04b8" "0x0869"
@@ -1602,6 +1673,11 @@
 :status     :good
 :comment    "all-in-one"
 
+:model      "PX-M160T Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x110f"
+:status     :complete
+
 :model      "PX-M350F"
 :interface  "USB"
 :usbid      "0x04b8" "0x08d0"
@@ -1650,15 +1726,10 @@
 :status     :complete
 :comment    "network interface supported via DFSG non-free iscan-network-nt package<br>all-in-one"
 
-:model      "Perfection 600"
-:interface  "SCSI"
-:status     :unsupported
-:comment    "supported by the umax backend<br>rebadged UMAX Astra 1200S"
-
 :model      "Perfection 610"		; command spec
 :interface  "USB"
 :usbid      "0x04b8" "0x0103"
-:status     :basic
+:status     :complete
 :comment    "overseas version of the GT-6600U"
 
 :model      "Perfection 636S"
@@ -1678,12 +1749,6 @@
 :usbid      "0x04b8" "0x010c"
 :status     :complete
 :comment    "overseas version of the GT-6700U"
-
-:model      "Perfection 660"
-:interface  "USB"
-:usbid      "0x04b8" "0x0114"
-:status     :unsupported
-:comment    "supported by the snapscan backend"
 
 :model      "Perfection 1200S"		; command spec
 :interface  "SCSI"
@@ -1733,26 +1798,22 @@
 :status     :unsupported
 :comment    "supported by the epkowa backend plus non-free interpreter"
 
-:model      "Perfection 1270"
-:interface  "USB"
-:usbid      "0x04b8" "0x0120"
-:status     :unsupported
-:comment    "supported by the snapscan backend<br>overseas version of the GT-7400"
-
 :model      "Perfection 1600"
 :interface  "SCSI"
 :status     :unsupported
 
 :model      "Perfection 1640SU"		; command spec
 :interface  "SCSI USB"
+:scsi       "EPSON" "Perfection1640" "processor"
 :usbid      "0x04b8" "0x010a"
 :status     :complete
 :comment    "overseas version of the GT-8700"
 
 :model      "Perfection 1640SU PHOTO"
 :interface  "SCSI USB"
+:scsi       "EPSON" "Perfection1640" "processor"
 :usbid      "0x04b8" "0x010a"
-:status     :good
+:status     :complete
 :comment    "overseas version of the GT-8700F"
 
 :model      "Perfection 1650"		; command spec
@@ -1772,18 +1833,6 @@
 :usbid      "0x04b8" "0x011e"
 :status     :complete
 :comment    "overseas version of the GT-8300UF"
-
-:model      "Perfection 1670"
-:interface  "USB"
-:usbid      "0x04b8" "0x011f"
-:status     :unsupported
-:comment    "supported by the snapscan backend"
-
-:model      "Perfection 1670 PHOTO"
-:interface  "USB"
-:usbid      "0x04b8" "0x011f"
-:status     :unsupported
-:comment    "supported by the snapscan backend<br>overseas version of the GT-8400UF"
 
 :model      "Perfection 2400 PHOTO"	; command spec
 :interface  "USB"
@@ -1978,12 +2027,6 @@
 :usbid      "0x04b8" "0x0151"
 :status     :good
 :comment    "overseas version of the GT-X980"
-
-:model      "Stylus CX1500"		; Australia
-:interface  "USB"
-:usbid      "0x04b8" "0x080c"
-:status     :unsupported
-:comment    "supported by the snapscan backend<br>all-in-one"
 
 :model      "Stylus CX2800"
 :interface  "USB"
@@ -3370,10 +3413,20 @@
 :status     :complete
 :comment    "network interface supported via DFSG non-free iscan-network-nt package<br>all-in-one<br>overseas version of the PX-047A"
 
-:model      "XP-243 245 247 Series"
+:model      "XP-230 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1102"
+:status     :complete
+
+:model      "XP-235 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x1102"
+:status     :complete
+
+:model      "XP-240 243 245 247 Series"
 :interface  "USB"
 :usbid      "0x04b8" "0x1116"
-:status     :good
+:status     :complete
 :comment    "network interface supported via DFSG non-free iscan-network-nt package<br>all-in-one"
 
 :model      "XP-255"
@@ -3422,6 +3475,12 @@
 :usbid      "0x04b8" "0x1116"
 :status     :good
 :comment    "network interface supported via DFSG non-free iscan-network-nt package<br>all-in-one"
+
+:model      "XP-452 455 Series"
+:interface  "USB"
+:usbid      "0x04b8" "0x113e"
+:status     :good
+:comment    "all-in-one"
 
 :model      "XP-600 Series"
 :interface  "USB"

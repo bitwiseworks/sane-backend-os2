@@ -1,5 +1,5 @@
-# This file was automatically created based on description files (*.desc)
-# by sane-desc 3.5 from sane-backends 1.0.24git on Thu Aug  1 18:50:15 2013
+# This file was generated from description files (*.desc)
+# by sane-desc 3.6 from sane-backends 1.0.29-241-g1f9590ab
 #
 # udev rules file for supported USB and SCSI devices
 #
@@ -20,7 +20,7 @@
 # If the scanner is supported by sane-backends, please mail the entry to
 # the sane-devel mailing list (sane-devel@alioth-lists.debian.net).
 #
-ACTION!="add", GOTO="libsane_rules_end"
+ACTION=="remove", GOTO="libsane_rules_end"
 
 # The following rule will disable USB autosuspend for the device
 ENV{DEVTYPE}=="usb_device", ENV{libsane_matched}=="yes", TEST=="power/control", ATTR{power/control}="on"

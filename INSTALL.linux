@@ -14,14 +14,19 @@ $ make install
 ==================================================
 
 2.1. Install with your preferred package manager:
-     (a) the development environment for your Linux distibution
-         - mandatory: gcc, make, kernel header files, autoconf, autoconf-archive
+     (a) the development environment for your Linux distribution
+         - mandatory: gcc, make, kernel header files, autoconf, autoconf-archive,
+                      python(>=2.7)
          - optional:  git
      (b) missing development packages
          - libusb-dev or libusb-devel or libusb-compat-devel
          - libusb-1.0.0-dev or similar
          - libjpeg-dev or libjpeg8-dev or libjpeg-turbo-devel or turbojpeg-devel
          - libpng-dev or similar
+         - libcurl4-gnutls-dev or similar
+         - libxml2-dev or similar
+         - libsnmp-dev or similar
+         - libpoppler-glib-dev or similar
 
 2.2. Get the latest SANE backend from git:
       You can download "daily git snapshot" from here:

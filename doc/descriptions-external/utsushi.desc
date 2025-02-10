@@ -1,5 +1,5 @@
 ;;;  utsushi.desc                               -*- emacs-lisp -*- (sort of)
-;;;  Copyright (C) 2015-2019  Olaf Meeuwissen
+;;;  Copyright (C) 2015-2021  Olaf Meeuwissen
 ;;;
 ;;;  License: GPL-3.0+
 ;;;  Author : Olaf Meeuwissen
@@ -192,6 +192,16 @@
 :usbid     "0x04b8" "0x1106"
 :status    :good
 
+:model     "ET-2600"
+:interface "USB"
+:usbid     "0x04b8" "0x1122"
+:status    :good
+
+:model     "ET-2720"
+:interface "USB"
+:usbid     "0x04b8" "0x1157"
+:status    :good
+
 :model     "ET-3750"
 :interface "USB"
 :usbid     "0x04b8" "0x1130"
@@ -282,6 +292,21 @@
 :usbid     "0x04b8" "0x112e"
 :status    :good
 
+:model     "RR-60"
+:interface "USB"
+:status    :good
+:comment   "USB ID 0x018b or 0x018c"
+
+:model     "RR-70W"
+:interface "USB"
+:status    :good
+:comment   "USB ID 0x018b or 0x018c"
+
+:model     "WF-2850"
+:interface "USB"
+:usbid     "0x04b8" "0x1138"
+:status    :good
+
 :model     "WF-4720"
 :interface "USB"
 :usbid     "0x04b8" "0x1125"
@@ -295,6 +320,11 @@
 :model     "WF-6590"
 :interface "USB"
 :usbid     "0x04b8" "0x08cf"
+:status    :good
+
+:model     "WF-7720"
+:interface "USB"
+:usbid     "0x04b8" "0x112d"
 :status    :good
 
 :model     "WF-8510"
@@ -435,25 +465,25 @@
 :interface "USB"
 :usbid     "0x04b8" "0x0165"
 :status    :good
-:comment   "propably one of DS-410, DS-535, DS-575W, DS-775"
+:comment   "probably one of DS-410, DS-535, DS-575W, DS-775"
 
 :model     "PID 0167"
 :interface "USB"
 :usbid     "0x04b8" "0x0167"
 :status    :good
-:comment   "propably one of DS-410, DS-535, DS-575W, DS-775"
+:comment   "probably one of DS-410, DS-535, DS-575W, DS-775"
 
 :model     "PID 0168"
 :interface "USB"
 :usbid     "0x04b8" "0x0168"
 :status    :good
-:comment   "propably one of DS-410, DS-535, DS-575W, DS-775"
+:comment   "probably one of DS-410, DS-535, DS-575W, DS-775"
 
 :model     "PID 0169"
 :interface "USB"
 :usbid     "0x04b8" "0x0169"
 :status    :good
-:comment   "propably one of DS-410, DS-535, DS-575W, DS-775"
+:comment   "probably one of DS-410, DS-535, DS-575W, DS-775"
 
 :model     "PID 016B"
 :interface "USB"
@@ -465,13 +495,13 @@
 :interface "USB"
 :usbid     "0x04b8" "0x016d"
 :status    :good
-:comment   "propably one of ES-55R, ES-65WR"
+:comment   "probably one of ES-55R, ES-65WR"
 
 :model     "PID 016F"
 :interface "USB"
 :usbid     "0x04b8" "0x016f"
 :status    :good
-:comment   "propably one of ES-55R, ES-65WR"
+:comment   "probably one of ES-55R, ES-65WR"
 
 :model     "PID 0176"
 :interface "USB"
@@ -575,6 +605,7 @@
 :interface "USB"
 :usbid     "0x04b8" "0x1122"
 :status    :good
+:comment   "ET-2600"
 
 :model     "PID 1123"
 :interface "USB"
@@ -860,7 +891,7 @@
 :interface "USB"
 :usbid     "0x04b8" "0x1157"
 :status    :good
-:comment   "L3xxx"
+:comment   "ET-2720, L3xxx"
 
 :model     "PID 1158"
 :interface "USB"
@@ -998,6 +1029,24 @@
 :status    :good
 :comment   "ET-16xxx"
 
+:model     "PID 1171"
+:interface "USB"
+:usbid     "0x04b8" "0x1171"
+:status    :good
+:comment   "WFC2xxxx"
+
+:model     "PID 1172"
+:interface "USB"
+:usbid     "0x04b8" "0x1172"
+:status    :good
+:comment   "WFC2xxxx"
+
+:model     "PID 1173"
+:interface "USB"
+:usbid     "0x04b8" "0x1173"
+:status    :good
+:comment   "WFC2xxxx"
+
 :model     "PID 1174"
 :interface "USB"
 :usbid     "0x04b8" "0x1174"
@@ -1021,3 +1070,21 @@
 :usbid     "0x04b8" "0x1177"
 :status    :good
 :comment   "ET-16xxx"
+
+:model     "PID 117A"
+:interface "USB"
+:usbid     "0x04b8" "0x117a"
+:status    :good
+:comment   "WF-48xx"
+
+:model     "PID 117B"
+:interface "USB"
+:usbid     "0x04b8" "0x117b"
+:status    :good
+:comment   "WF-48xx"
+
+:model     "PID 117C"
+:interface "USB"
+:usbid     "0x04b8" "0x117c"
+:status    :good
+:comment   "WF-48xx"

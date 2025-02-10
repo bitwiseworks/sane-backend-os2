@@ -1,5 +1,5 @@
 /* sane - Scanner Access Now Easy.
-   Copyright (C) 1998 David F. Skoll
+   Copyright (C) 1998 Dianne Skoll
    Heavily based on "hp.c" driver for HP Scanners, by
    David Mosberger-Tang.
 
@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -43,8 +41,6 @@
 
    This file implements a SANE backend for the Polaroid Digital
    Microscope Camera. */
-
-/* $Id$ */
 
 #include "../include/sane/config.h"
 
@@ -113,7 +109,7 @@ static SANE_Word ValidASAs[] = { 3, 25, 50, 100 };
 // fd -- file descriptor
 // typecode -- data type code
 // qualifier -- data type qualifier
-// maxlen -- tranfer length
+// maxlen -- transfer length
 // buf -- buffer to store data in
 // len -- set to actual length of data
 //%RETURNS:
@@ -153,7 +149,7 @@ DMCRead(int fd, unsigned int typecode, unsigned int qualifier,
 // fd -- file descriptor
 // typecode -- data type code
 // qualifier -- data type qualifier
-// maxlen -- tranfer length
+// maxlen -- transfer length
 // buf -- buffer to store data in
 //%RETURNS:
 // A SANE status code
@@ -512,59 +508,65 @@ DMCInitOptions(DMC_Camera *c)
 static SANE_Status
 DMCSetMode(DMC_Camera *c, int mode)
 {
-    switch(mode) {
+  switch (mode)
+    {
     case IMAGE_MFI:
-	c->tl_x_range.min = 0;
-	c->tl_x_range.max = c->tl_x_range.max;
-	c->tl_y_range.min = 0;
-	c->tl_y_range.max = c->tl_y_range.max;
-	c->br_x_range.min = 800;
-	c->br_x_range.max = c->br_x_range.max;
-	c->br_y_range.min = 599;
-	c->br_y_range.max = c->br_y_range.max;
-	break;
+      c->tl_x_range.min = 0;
+      c->tl_x_range.max = 800;
+      c->tl_y_range.min = 0;
+      c->tl_y_range.max = 599;
+      c->br_x_range.min = c->tl_x_range.min;
+      c->br_x_range.max = c->tl_x_range.max;
+      c->br_y_range.min = c->tl_y_range.min;
+      c->br_y_range.max = c->tl_y_range.max;
+      break;
+
     case IMAGE_VIEWFINDER:
-	c->tl_x_range.min = 0;
-	c->tl_x_range.max = c->tl_x_range.max;
-	c->tl_y_range.min = 0;
-	c->tl_y_range.max = c->tl_y_range.max;
-	c->br_x_range.min = 269;
-	c->br_x_range.max = c->br_x_range.max;
-	c->br_y_range.min = 200;
-	c->br_y_range.max = c->br_y_range.max;
-	break;
+      c->tl_x_range.min = 0;
+      c->tl_x_range.max = 269;
+      c->tl_y_range.min = 0;
+      c->tl_y_range.max = 200;
+      c->br_x_range.min = c->tl_x_range.min;
+      c->br_x_range.max = c->tl_x_range.max;
+      c->br_y_range.min = c->tl_y_range.min;
+      c->br_y_range.max = c->tl_y_range.max;
+      break;
+
     case IMAGE_RAW:
-	c->tl_x_range.min = 0;
-	c->tl_x_range.max = c->tl_x_range.max;
-	c->tl_y_range.min = 0;
-	c->tl_y_range.max = c->tl_y_range.max;
-	c->br_x_range.min = 1598;
-	c->br_x_range.max = c->br_x_range.max;
-	c->br_y_range.min = 599;
-	c->br_y_range.max = c->br_y_range.max;
-	break;
+      c->tl_x_range.min = 0;
+      c->tl_x_range.max = 1598;
+      c->tl_y_range.min = 0;
+      c->tl_y_range.max = 599;
+      c->br_x_range.min = c->tl_x_range.min;
+      c->br_x_range.max = c->tl_x_range.max;
+      c->br_y_range.min = c->tl_y_range.min;
+      c->br_y_range.max = c->tl_y_range.max;
+      break;
+
     case IMAGE_THUMB:
-	c->tl_x_range.min = 0;
-	c->tl_x_range.max = c->tl_x_range.max;
-	c->tl_y_range.min = 0;
-	c->tl_y_range.max = c->tl_y_range.max;
-	c->br_x_range.min = 79;
-	c->br_x_range.max = c->br_x_range.max;
-	c->br_y_range.min = 59;
-	c->br_y_range.max = c->br_y_range.max;
-	break;
+      c->tl_x_range.min = 0;
+      c->tl_x_range.max = 79;
+      c->tl_y_range.min = 0;
+      c->tl_y_range.max = 59;
+      c->br_x_range.min = c->tl_x_range.min;
+      c->br_x_range.max = c->tl_x_range.max;
+      c->br_y_range.min = c->tl_y_range.min;
+      c->br_y_range.max = c->tl_y_range.max;
+      break;
+
     case IMAGE_SUPER_RES:
-	c->tl_x_range.min = 0;
-	c->tl_x_range.max = c->tl_x_range.max;
-	c->tl_y_range.min = 0;
-	c->tl_y_range.max = c->tl_y_range.max;
-	c->br_x_range.min = 1598;
-	c->br_x_range.max = c->br_x_range.max;
-	c->br_y_range.min = 1199;
-	c->br_y_range.max = c->br_y_range.max;
-	break;
+      c->tl_x_range.min = 0;
+      c->tl_x_range.max = 1598;
+      c->tl_y_range.min = 0;
+      c->tl_y_range.max = 1199;
+      c->br_x_range.min = c->tl_x_range.min;
+      c->br_x_range.max = c->tl_x_range.max;
+      c->br_y_range.min = c->tl_y_range.min;
+      c->br_y_range.max = c->tl_y_range.max;
+      break;
+
     default:
-	return SANE_STATUS_INVAL;
+      return SANE_STATUS_INVAL;
     }
     c->imageMode = mode;
     c->val[OPT_TL_X].w = c->tl_x_range.min;
@@ -810,11 +812,11 @@ sane_init(SANE_Int *version_code, SANE_Auth_Callback authorize)
     size_t len;
     FILE *fp;
 
-    authorize = authorize;
+    (void) authorize;
 
     DBG_INIT();
     if (version_code) {
-	*version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+	*version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
     }
 
     fp = sanei_config_open(DMC_CONFIG_FILE);
@@ -889,7 +891,7 @@ sane_get_devices(SANE_Device const ***device_list, SANE_Bool local_only)
     DMC_Device *dev;
     int i = 0;
 
-    local_only = local_only;
+    (void) local_only;
 
     if (devlist) free(devlist);
     devlist = malloc((NumDevices+1) * sizeof(devlist[0]));
@@ -1390,8 +1392,8 @@ sane_cancel (SANE_Handle handle)
 SANE_Status
 sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 {
-  handle = handle;
-  non_blocking = non_blocking;
+  (void) handle;
+  (void) non_blocking;
 
   return SANE_STATUS_UNSUPPORTED;
 }
@@ -1399,8 +1401,8 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int *fd)
 {
-  handle = handle;
-  fd = fd;
+  (void) handle;
+  (void) fd;
 
   return SANE_STATUS_UNSUPPORTED;
 }

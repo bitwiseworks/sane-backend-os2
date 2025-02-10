@@ -52,9 +52,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -615,9 +613,9 @@ static void p48xxSetGeneralRegister( pScanData ps )
     if (ps->DataInf.xyPhyDpi.x <= 200)
         ps->AsicReg.RD_ScanControl |= _SCAN_1ST_AVERAGE;
 
-	DBG( DBG_LOW, "RD_ModeControl  = 0x%02x\n", ps->AsicReg.RD_ModeControl  );
-	DBG( DBG_LOW, "RD_MotorControl = 0x%02x\n", ps->Asic96Reg.RD_MotorControl );
-	DBG( DBG_LOW, "RD_ScanControl  = 0x%02x\n", ps->AsicReg.RD_ScanControl  );
+    DBG( DBG_LOW, "RD_ModeControl  = 0x%02x\n", ps->AsicReg.RD_ModeControl  );
+    DBG( DBG_LOW, "RD_MotorControl = 0x%02x\n", ps->Asic96Reg.RD_MotorControl );
+    DBG( DBG_LOW, "RD_ScanControl  = 0x%02x\n", ps->AsicReg.RD_ScanControl  );
 }
 
 /*.............................................................................

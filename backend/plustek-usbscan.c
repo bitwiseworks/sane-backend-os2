@@ -45,9 +45,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -348,7 +346,7 @@ usb_GetPhyPixels( Plustek_Device *dev, ScanParam *sp )
 		sp->Size.dwPhyPixels = (sp->Size.dwValidPixels + 1UL) & 0xfffffffeUL;
 		sp->Size.dwPhyBytes  = sp->Size.dwPhyPixels * sp->bChannels + 2UL;
 
-		/* need to be adjusted fo CIS devices in color mode */
+		/* need to be adjusted for CIS devices in color mode */
 		if(usb_IsCISDevice( dev ) && (sp->bDataType == SCANDATATYPE_Color)) {
 			sp->Size.dwPhyBytes *= 3;
 		}
@@ -358,7 +356,7 @@ usb_GetPhyPixels( Plustek_Device *dev, ScanParam *sp )
 		sp->Size.dwPhyPixels = sp->Size.dwValidPixels;
 		sp->Size.dwPhyBytes  = sp->Size.dwPhyPixels * 2 * sp->bChannels + 2UL;
 
-		/* need to be adjusted fo CIS devices in color mode */
+		/* need to be adjusted for CIS devices in color mode */
 		if(usb_IsCISDevice( dev ) && (sp->bDataType == SCANDATATYPE_Color)) {
 			sp->Size.dwPhyBytes *= 3;
 		}
@@ -1443,7 +1441,7 @@ usb_IsDataAvailableInDRAM( Plustek_Device *dev )
 {
 	/* Compute polling timeout
 	 *	Height (Inches) / MaxScanSpeed (Inches/Second) = Seconds to move the
-     *  module from top to bottom. Then convert the seconds to miliseconds
+     *  module from top to bottom. Then convert the seconds to milliseconds
      *  by multiply 1000. We add extra 2 seconds to get some tolerance.
      */
 	u_char         a_bBand[3];

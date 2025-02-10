@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -175,6 +173,8 @@ gt68xx_device_new (GT68xx_Device ** dev_return)
   dev->read_buffer_size = 32768;
 
   dev->manual_selection = SANE_FALSE;
+
+  dev->scan_started = SANE_FALSE;
 
 #ifdef USE_FORK
   dev->shm_channel = NULL;
@@ -425,7 +425,7 @@ gt68xx_device_memory_write (GT68xx_Device * dev,
   SANE_Status status;
   DBG (8,
        "gt68xx_device_memory_write: dev=%p, addr=0x%x, size=0x%x, data=%p\n",
-       (void *) dev, addr, size, data);
+       (void *) dev, addr, size, (void *) data);
   CHECK_DEV_ACTIVE (dev, "gt68xx_device_memory_write");
   status =
     sanei_usb_control_msg (dev->fd, 0x40,
@@ -448,7 +448,7 @@ gt68xx_device_memory_read (GT68xx_Device * dev,
   SANE_Status status;
   DBG (8,
        "gt68xx_device_memory_read: dev=%p, addr=0x%x, size=0x%x, data=%p\n",
-       (void *) dev, addr, size, data);
+       (void *) dev, addr, size, (void *) data);
   CHECK_DEV_ACTIVE (dev, "gt68xx_device_memory_read");
   status =
     sanei_usb_control_msg (dev->fd, 0xc0,
@@ -626,7 +626,14 @@ gt68xx_device_start_scan (GT68xx_Device * dev)
 {
   CHECK_DEV_ACTIVE (dev, "gt68xx_device_start_scan");
   if (dev->model->command_set->start_scan)
-    return (*dev->model->command_set->start_scan) (dev);
+    {
+      if (!dev->scan_started)
+        {
+          dev->scan_started = SANE_TRUE;
+          return (*dev->model->command_set->start_scan) (dev);
+        }
+      return SANE_STATUS_DEVICE_BUSY;
+    }
   else
     return SANE_STATUS_UNSUPPORTED;
 }
@@ -681,7 +688,14 @@ gt68xx_device_stop_scan (GT68xx_Device * dev)
 {
   CHECK_DEV_ACTIVE (dev, "gt68xx_device_stop_scan");
   if (dev->model->command_set->stop_scan)
-    return (*dev->model->command_set->stop_scan) (dev);
+    {
+      if (dev->scan_started)
+        {
+          dev->scan_started = SANE_FALSE;
+          return (*dev->model->command_set->stop_scan) (dev);
+        }
+      return SANE_STATUS_GOOD;  // Essentially a NOP.
+    }
   else
     return SANE_STATUS_UNSUPPORTED;
 }

@@ -18,30 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef GENESYS_H
@@ -107,21 +84,12 @@ enum Genesys_Option
   OPT_GAMMA_VECTOR_R,
   OPT_GAMMA_VECTOR_G,
   OPT_GAMMA_VECTOR_B,
-  OPT_SWDESKEW,
-  OPT_SWCROP,
-  OPT_SWDESPECK,
-  OPT_DESPECK,
-  OPT_SWSKIP,
-  OPT_SWDEROTATE,
   OPT_BRIGHTNESS,
   OPT_CONTRAST,
 
   OPT_EXTRAS_GROUP,
   OPT_LAMP_OFF_TIME,
   OPT_LAMP_OFF,
-  OPT_THRESHOLD,
-  OPT_THRESHOLD_CURVE,
-  OPT_DISABLE_INTERPOLATION,
   OPT_COLOR_FILTER,
   OPT_CALIBRATION_FILE,
   OPT_EXPIRATION_TIME,
@@ -135,6 +103,11 @@ enum Genesys_Option
   OPT_OCR_SW,
   OPT_POWER_SW,
   OPT_EXTRA_SW,
+  OPT_TRANSP_SW,
+  OPT_PDF1_SW,
+  OPT_PDF2_SW,
+  OPT_PDF3_SW,
+  OPT_PDF4_SW,
   OPT_NEED_CALIBRATION_SW,
   OPT_BUTTON_GROUP,
   OPT_CALIBRATE,
@@ -155,6 +128,11 @@ enum GenesysButtonName : unsigned {
     BUTTON_OCR_SW,
     BUTTON_POWER_SW,
     BUTTON_EXTRA_SW,
+    BUTTON_TRANSP_SW,
+    BUTTON_PDF1_SW,
+    BUTTON_PDF2_SW,
+    BUTTON_PDF3_SW,
+    BUTTON_PDF4_SW,
     NUM_BUTTONS
 };
 
@@ -213,18 +191,9 @@ struct Genesys_Scanner
     // Option values
     SANE_Word bit_depth = 0;
     SANE_Word resolution = 0;
-    bool preview = false;
-    SANE_Word threshold = 0;
-    SANE_Word threshold_curve = 0;
-    bool disable_interpolation = false;
+    bool preview = false; // TODO: currently not used
     bool lamp_off = false;
     SANE_Word lamp_off_time = 0;
-    bool swdeskew = false;
-    bool swcrop = false;
-    bool swdespeck = false;
-    bool swderotate = false;
-    SANE_Word swskip = 0;
-    SANE_Word despeck = 0;
     SANE_Word contrast = 0;
     SANE_Word brightness = 0;
     SANE_Word expiration_time = 0;

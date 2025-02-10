@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 /*   --------------------------------------------------------------------------
 
@@ -159,19 +157,19 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 {
   SANE_Status status;
 
-  authorize = authorize;	/* get rid of compiler warning */
+  (void) authorize;		/* get rid of compiler warning */
 
   init_count++;
 
   /* init backend debug */
   DBG_INIT ();
   DBG (DBG_info, "SANE P5 backend version %d.%d-%d\n",
-       SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
   DBG (DBG_proc, "sane_init: start\n");
   DBG (DBG_trace, "sane_init: init_count=%d\n", init_count);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   /* cold-plugging case : probe for already plugged devices */
   status = probe_p5_devices ();
@@ -203,7 +201,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
  * undesirable to call this function first.
  * @param device_list pointer where to store the device list
  * @param local_only SANE_TRUE if only local devices are required.
- * @return SANE_STATUS_GOOD when successfull
+ * @return SANE_STATUS_GOOD when successful
  */
 SANE_Status
 sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
@@ -358,7 +356,7 @@ sane_open (SANE_String_Const name, SANE_Handle * handle)
 	}
     }
 
-  /* check wether we have found a match or reach the end of the device list */
+  /* check whether we have found a match or reach the end of the device list */
   if (!device)
     {
       DBG (DBG_info, "sane_open: no device found\n");
@@ -408,7 +406,7 @@ sane_open (SANE_String_Const name, SANE_Handle * handle)
       return SANE_STATUS_NO_MEM;
     }
 
-  /* initalize session */
+  /* initialize session */
   session->dev = device;
   session->scanning = SANE_FALSE;
   session->non_blocking = SANE_FALSE;
@@ -430,8 +428,8 @@ sane_open (SANE_String_Const name, SANE_Handle * handle)
 
 
 /**
- * Set non blocking mode. In this mode, read return immediatly when
- * no data is available whithin sane_read(), instead of polling the scanner.
+ * Set non blocking mode. In this mode, read return immediately when
+ * no data is available within sane_read(), instead of polling the scanner.
  */
 SANE_Status
 sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
@@ -461,8 +459,8 @@ SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int * fdp)
 {
   /* make compiler happy ... */
-  handle = handle;
-  fdp = fdp;
+  (void) handle;
+  (void) fdp;
 
   DBG (DBG_proc, "sane_get_select_fd: start\n");
   DBG (DBG_warn, "sane_get_select_fd: unsupported ...\n");
@@ -769,7 +767,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	  return status;
 	}
 
-      /* return immediatly if no change */
+      /* return immediately if no change */
       if (s->options[option].descriptor.type == SANE_TYPE_INT
 	  && *(SANE_Word *) val == s->options[option].value.w)
 	{
@@ -1340,7 +1338,7 @@ sane_read (SANE_Handle handle, SANE_Byte * buf,
  * handle h is a valid handle) but usually affects long-running
  * operations only (such as image is acquisition). It is safe to call
  * this function asynchronously (e.g., from within a signal handler).
- * It is important to note that completion of this operaton does not
+ * It is important to note that completion of this operation does not
  * imply that the currently pending operation has been cancelled. It
  * only guarantees that cancellation has been initiated. Cancellation
  * completes only when the cancelled call returns (typically with a
@@ -1566,7 +1564,8 @@ probe_p5_devices (void)
   config.count = NUM_CFG_OPTIONS;
 
   /* generic configure and attach function */
-  status = sanei_configure_attach (P5_CONFIG_FILE, &config, config_attach);
+  status = sanei_configure_attach (P5_CONFIG_FILE, &config,
+                                   config_attach, NULL);
   /* free allocated options */
   for (i = 0; i < NUM_CFG_OPTIONS; i++)
     {
@@ -1590,16 +1589,17 @@ probe_p5_devices (void)
  * 	   SANE_STATUS_INVAL in case of error
  */
 static SANE_Status
-config_attach (SANEI_Config * config, const char *devname)
+config_attach (SANEI_Config __sane_unused__ * config, const char *devname,
+               void __sane_unused__ *data)
 {
   /* currently, the config is a global variable so config is useless here */
   /* the correct thing would be to have a generic sanei_attach_matching_devices
    * using an attach function with a config parameter */
-  config = config;
+  (void) config;
 
   /* the devname has been processed and is ready to be used
    * directly. The config struct contains all the configuration data for
-   * the corresponding device. Since there is no ressources common to each
+   * the corresponding device. Since there is no resources common to each
    * backends regarding parallel port, we can directly call the attach
    * function. */
   attach_p5 (devname, config);
@@ -1684,7 +1684,7 @@ attach_p5 (const char *devicename, SANEI_Config * config)
   device->next = devices;
   devices = device;
 
-  /* intialization is done at sane_open */
+  /* initialization is done at sane_open */
   device->initialized = SANE_FALSE;
   device->calibrated = SANE_FALSE;
 
@@ -1694,7 +1694,7 @@ attach_p5 (const char *devicename, SANEI_Config * config)
 
 
 /** @brief set initial value for the scanning options
- * for each sessions, control options are initalized based on the capability
+ * for each sessions, control options are initialized based on the capability
  * of the model of the physical device.
  * @param session scanner session to initialize options
  * @return SANE_STATUS_GOOD on success
@@ -1763,7 +1763,7 @@ init_options (struct P5_Session *session)
   /** @brief build resolution list
    * We merge xdpi and ydpi list to provide only one resolution option control.
    * This is the most common case for backends and fronteds and give 'square'
-   * pixels. The SANE API allow to control x and y dpi independantly, but this is
+   * pixels. The SANE API allow to control x and y dpi independently, but this is
    * rarely done and may confuse both frontends and users. In case a dpi value exists
    * for one but not for the other, the backend will have to crop data so that the
    * frontend is unaffected. A common case is that motor resolution (ydpi) is higher
@@ -2023,7 +2023,7 @@ probe (const char *devicename)
   /* check for document presence 0xC6: present, 0xC3 no document */
   test_document (fd);
 
-  /* release device nd parport for next uses */
+  /* release device and parport for next uses */
   disconnect (fd);
   close_pp (fd);
 

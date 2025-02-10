@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -44,10 +42,12 @@
    If you do not wish that, delete this exception notice.
 
    This file is a component of the implementation of a backend for many
-   of the AGFA SnapScan and Acer Vuego/Prisa flatbed scanners. */
+   of the AGFA SnapScan and Acer Vuego/Prisa flatbed scanners.
+*/
 
-/* $Id$
-   SANE SnapScan backend */
+/*
+   SANE SnapScan backend
+*/
 
 /* default option values */
 
@@ -136,6 +136,16 @@ static const SANE_Range x_range_tpo_default =
 static const SANE_Range y_range_tpo_default =
 {
     SANE_FIX (0.0), SANE_FIX (180.0), 0
+};        /* mm */
+
+/* TPO range for the Agfa Arcus 1200 */
+static const SANE_Range x_range_tpo_arcus =
+{
+    SANE_FIX (0.0), SANE_FIX (203.0), 0
+};        /* mm */
+static const SANE_Range y_range_tpo_arcus =
+{
+    SANE_FIX (0.0), SANE_FIX (254.0), 0
 };        /* mm */
 
 /* TPO range for the Agfa 1236 */
@@ -329,6 +339,10 @@ static void init_options (SnapScan_Scanner * ps)
     case PERFECTION3490:
         x_range_tpo = x_range_tpo_3490;
         y_range_tpo = y_range_tpo_3490;
+        break;
+    case ARCUS1200:
+        x_range_tpo = x_range_tpo_arcus;
+        y_range_tpo = y_range_tpo_arcus;
         break;
     default:
         x_range_tpo = x_range_tpo_default;
@@ -1107,7 +1121,7 @@ SANE_Status sane_control_option (SANE_Handle h,
                  "%s: writing \"%s\" to location %p\n",
                  me,
                  pss->mode_s,
-                 (SANE_String) v);
+                 (void *) v);
             strcpy ((SANE_String) v, pss->mode_s);
             break;
         case OPT_PREVIEW_MODE:
@@ -1115,7 +1129,7 @@ SANE_Status sane_control_option (SANE_Handle h,
                  "%s: writing \"%s\" to location %p\n",
                  me,
                  pss->preview_mode_s,
-                 (SANE_String) v);
+                 (void *) v);
             strcpy ((SANE_String) v, pss->preview_mode_s);
             break;
         case OPT_SOURCE:
@@ -1144,7 +1158,7 @@ SANE_Status sane_control_option (SANE_Handle h,
                 "%s: writing \"%s\" to location %p\n",
                 me,
                 pss->predef_window,
-                (SANE_String) v);
+                (void *) v);
             strcpy ((SANE_String) v, pss->predef_window);
             break;
         case OPT_GAMMA_GS:
@@ -1179,7 +1193,7 @@ SANE_Status sane_control_option (SANE_Handle h,
                 "%s: writing \"%s\" to location %p\n",
                 me,
                 pss->dither_matrix,
-                (SANE_String) v);
+                (void *) v);
             strcpy ((SANE_String) v, pss->dither_matrix);
             break;
         case OPT_NEGATIVE:
@@ -1805,7 +1819,6 @@ SANE_Status sane_control_option (SANE_Handle h,
 }
 
 /*
- * $Log$
  * Revision 1.35  2006/01/06 20:59:17  oliver-guest
  * Some fixes for the Epson Stylus CX 1500
  *
@@ -1837,7 +1850,7 @@ SANE_Status sane_control_option (SANE_Handle h,
  * Fixes for Epson 3490 and 16 bit scan mode
  *
  * Revision 1.25  2005/09/28 22:09:26  oliver-guest
- * Reenabled enhanced inquiry command for Epson scanners (duh\!)
+ * Re-enabled enhanced inquiry command for Epson scanners (duh\!)
  *
  * Revision 1.24  2005/09/28 21:33:10  oliver-guest
  * Added 16 bit option for Epson scanners (untested)
@@ -1849,7 +1862,7 @@ SANE_Status sane_control_option (SANE_Handle h,
  * Added support for Epson 3490/3590 (thanks to Matt Judge)
  *
  * Revision 1.21  2005/07/20 21:37:29  oliver-guest
- * Changed TPO scanning area for 2480/2580, reenabled 2400 DPI for 2480/2580
+ * Changed TPO scanning area for 2480/2580, re-enabled 2400 DPI for 2480/2580
  *
  * Revision 1.20  2005/05/22 11:50:24  oliver-guest
  * Disabled 2400 DPI for Epson 2480
@@ -1867,7 +1880,7 @@ SANE_Status sane_control_option (SANE_Handle h,
  * Use sanei_thread in snapscan backend
  *
  * Revision 1.15  2004/04/02 20:19:23  oliver-guest
- * Various bugfixes for gamma corretion (thanks to Robert Tsien)
+ * Various bugfixes for gamma correction (thanks to Robert Tsien)
  *
  * Revision 1.14  2004/02/01 13:32:26  oliver-guest
  * Fixed resolutions for Epson 1670
@@ -1903,7 +1916,7 @@ SANE_Status sane_control_option (SANE_Handle h,
  * Disable quality calibration for 5300
  *
  * Revision 1.5  2002/06/06 20:40:00  oliverschwartz
- * Changed default scan area for transparancy unit of SnapScan e50
+ * Changed default scan area for transparency unit of SnapScan e50
  *
  * Revision 1.4  2002/05/02 18:28:44  oliverschwartz
  * Added ADF support

@@ -28,9 +28,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -887,7 +885,7 @@ static SANE_Bool decodeVal( char *src, char *opt,
 
 	if( tmp ) {
 
-		/* on success, compare wiht the given one */
+		/* on success, compare with the given one */
 		if( 0 == strcmp( tmp, opt )) {
 
 			DBG( _DBG_SANE_INIT, "Decoding option >%s<\n", opt );
@@ -935,7 +933,7 @@ static SANE_Bool decodeVal( char *src, char *opt,
    	return SANE_FALSE;
 }
 
-/** function to retrive the device name of a given string
+/** function to retrieve the device name of a given string
  * @param src  -  string that keeps the option name to check src for
  * @param dest -  pointer to the string, that should receive the detected
  *                devicename
@@ -997,7 +995,7 @@ static SANE_Status attach( const char *dev_name, pCnfDef cnf,
 	if( NULL == dev )
     	return SANE_STATUS_NO_MEM;
 
-	/* assign all the stuff we need fo this device... */
+	/* assign all the stuff we need for this device... */
 
 	memset(dev, 0, sizeof (*dev));
 
@@ -1128,7 +1126,7 @@ static void init_config_struct( pCnfDef cnf, SANE_Bool direct_io )
 	cnf->adj.bgamma    = 1.0;
 }
 
-/** intialize the backend
+/** initialize the backend
  */
 SANE_Status sane_init( SANE_Int *version_code, SANE_Auth_Callback authorize )
 {
@@ -1168,7 +1166,7 @@ SANE_Status sane_init( SANE_Int *version_code, SANE_Auth_Callback authorize )
 #endif
 
 	if( version_code != NULL )
-		*version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, V_MINOR, 0);
+		*version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
 	fp = sanei_config_open( PLUSTEK_CONFIG_FILE );
 

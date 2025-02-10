@@ -15,30 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef BACKEND_GENESYS_UTILITIES_H
@@ -46,11 +23,80 @@
 
 #include "error.h"
 #include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <vector>
 
+
 namespace genesys {
+
+// just like SANE_FIX and SANE_UNFIX except that the conversion is done by a function and argument
+// precision is handled correctly
+inline SANE_Word double_to_fixed(double v)
+{
+    return static_cast<SANE_Word>(v * (1 << SANE_FIXED_SCALE_SHIFT));
+}
+
+inline SANE_Word float_to_fixed(float v)
+{
+    return static_cast<SANE_Word>(v * (1 << SANE_FIXED_SCALE_SHIFT));
+}
+
+inline float fixed_to_float(SANE_Word v)
+{
+    return static_cast<float>(v) / (1 << SANE_FIXED_SCALE_SHIFT);
+}
+
+inline double fixed_to_double(SANE_Word v)
+{
+    return static_cast<double>(v) / (1 << SANE_FIXED_SCALE_SHIFT);
+}
+
+template<class T>
+inline T abs_diff(T a, T b)
+{
+    if (a < b) {
+        return b - a;
+    } else {
+        return a - b;
+    }
+}
+
+inline std::uint64_t align_multiple_floor(std::uint64_t x, std::uint64_t multiple)
+{
+    if (multiple == 0) {
+        return x;
+    }
+    return (x / multiple) * multiple;
+}
+
+inline std::uint64_t align_multiple_ceil(std::uint64_t x, std::uint64_t multiple)
+{
+    if (multiple == 0) {
+        return x;
+    }
+    return ((x + multiple - 1) / multiple) * multiple;
+}
+
+inline std::uint64_t multiply_by_depth_ceil(std::uint64_t pixels, std::uint64_t depth)
+{
+    if (depth == 1) {
+        return (pixels / 8) + ((pixels % 8) ? 1 : 0);
+    } else {
+        return pixels * (depth / 8);
+    }
+}
+
+template<class T>
+inline T clamp(const T& value, const T& lo, const T& hi)
+{
+    if (value < lo)
+        return lo;
+    if (value > hi)
+        return hi;
+    return value;
+}
 
 template<class T>
 void compute_array_percentile_approx(T* result, const T* data,
@@ -85,12 +131,81 @@ void compute_array_percentile_approx(T* result, const T* data,
     }
 }
 
+class Ratio
+{
+public:
+    Ratio() : multiplier_{1}, divisor_{1}
+    {
+    }
+
+    Ratio(unsigned multiplier, unsigned divisor) : multiplier_{multiplier}, divisor_{divisor}
+    {
+    }
+
+    unsigned multiplier() const { return multiplier_; }
+    unsigned divisor() const { return divisor_; }
+
+    unsigned apply(unsigned arg) const
+    {
+        return static_cast<std::uint64_t>(arg) * multiplier_ / divisor_;
+    }
+
+    int apply(int arg) const
+    {
+        return static_cast<std::int64_t>(arg) * multiplier_ / divisor_;
+    }
+
+    float apply(float arg) const
+    {
+        return arg * multiplier_ / divisor_;
+    }
+
+    unsigned apply_inverse(unsigned arg) const
+    {
+        return static_cast<std::uint64_t>(arg) * divisor_ / multiplier_;
+    }
+
+    int apply_inverse(int arg) const
+    {
+        return static_cast<std::int64_t>(arg) * divisor_ / multiplier_;
+    }
+
+    float apply_inverse(float arg) const
+    {
+        return arg * divisor_ / multiplier_;
+    }
+
+    bool operator==(const Ratio& other) const
+    {
+        return multiplier_ == other.multiplier_ && divisor_ == other.divisor_;
+    }
+private:
+    unsigned multiplier_;
+    unsigned divisor_;
+
+    template<class Stream>
+    friend void serialize(Stream& str, Ratio& x);
+};
+
+template<class Stream>
+void serialize(Stream& str, Ratio& x)
+{
+    serialize(str, x.multiplier_);
+    serialize(str, x.divisor_);
+}
+
+inline std::ostream& operator<<(std::ostream& out, const Ratio& ratio)
+{
+    out << ratio.multiplier() << "/" << ratio.divisor();
+    return out;
+}
+
 template<class Char, class Traits>
 class BasicStreamStateSaver
 {
 public:
     explicit BasicStreamStateSaver(std::basic_ios<Char, Traits>& stream) :
-        stream_{stream}
+        stream_(stream)
     {
         flags_ = stream_.flags();
         width_ = stream_.width();

@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -295,7 +293,7 @@ rts88xx_write_regs (SANE_Int devnum, SANE_Int start, SANE_Byte * source,
 
 /*
  * reads 'needed' bytes of scanned data into 'data'. Actual number of bytes get
- * is retruned in 'size'
+ * is returned in 'size'
  */
 static SANE_Status
 rts88xx_read_data (SANE_Int devnum, size_t needed, SANE_Byte * data,
@@ -1010,7 +1008,7 @@ low_poll_data (SANE_Int devnum)
       if (status != SANE_STATUS_GOOD)
 	return status;
       size = 4;
-      /* read availbale data size again */
+      /* read available data size again */
       status = low_usb_bulk_write (devnum, command4_block, &size);
       if (status != SANE_STATUS_GOOD)
 	return status;
@@ -1223,7 +1221,7 @@ sanei_lexmark_low_open_device (Lexmark_Device * dev)
     }
 
   /* if find a case where default model given is inappropriate, reassign it
-   * since we have now the informations to get the real one.
+   * since we have now the information to get the real one.
    * We could avoid this if attach() did open and read registers, not init */
   if (variant != 0)
     {
@@ -1327,7 +1325,7 @@ low_is_home_line (Lexmark_Device * dev, unsigned char *buffer)
      transitions when we reach the end we return SANE_FALSE.
 
      The final check compares the transition indices to the nominal values
-     plus or minus the tolerence. For the first transition (white to black
+     plus or minus the tolerance. For the first transition (white to black
      index) the value must lie in the range 1235-30 (1205) to 1235+30 (1265).
      For the second transition (black to white) the value must lie in the range
      1258-30 (1228) to 1258+30 (1288). If the indices are out of range we
@@ -1952,9 +1950,9 @@ sanei_lexmark_low_search_home_bwd (Lexmark_Device * dev)
 
    This function tells the scanner to do a grayscale scan backwards with a
    300dpi resolution. It reads 2500 bytes of data between horizontal
-   co-ordinates 0x6a and 0x13f2.
+   coordinates 0x6a and 0x13f2.
 
-   The scan is set to read between vertical co-ordinates from 0x0a to 0x0f46,
+   The scan is set to read between vertical coordinates from 0x0a to 0x0f46,
    or 3900 lines. This equates to 13" at 300dpi, so we must stop the scan
    before it bangs against the end. A line limit is set so that a maximum of
    0x0F3C (13"*300dpi) lines can be read.
@@ -2227,7 +2225,7 @@ sanei_lexmark_low_search_home_bwd (Lexmark_Device * dev)
       no_of_buffers = size_returned * 3;
       no_of_buffers = no_of_buffers / 2500;
       no_of_buffers = no_of_buffers >> 1;
-      /* force 1 buffer at a time to improve accuray, which slow downs search */
+      /* force 1 buffer at a time to improve accuracy, which slow downs search */
       no_of_buffers = 1;
 
       if (no_of_buffers < 1)
@@ -4996,14 +4994,14 @@ sanei_lexmark_low_read_scan_data (SANE_Byte * data, SANE_Int size,
 	  DBG (2, "   Filled a buffer from the scanner\n");
 	  DBG (2, "   bytes_remaining: %lu\n", (u_long) dev->bytes_remaining);
 	  DBG (2, "   bytes_in_buffer: %lu\n", (u_long) dev->bytes_in_buffer);
-	  DBG (2, "   read_pointer: %p\n", dev->read_pointer);
+	  DBG (2, "   read_pointer: %p\n", (void *) dev->read_pointer);
 	}
     }
 
   DBG (5, "READ BUFFER INFO: \n");
-  DBG (5, "   write ptr:     %p\n", dev->read_buffer->writeptr);
-  DBG (5, "   read ptr:      %p\n", dev->read_buffer->readptr);
-  DBG (5, "   max write ptr: %p\n", dev->read_buffer->max_writeptr);
+  DBG (5, "   write ptr:     %p\n", (void *) dev->read_buffer->writeptr);
+  DBG (5, "   read ptr:      %p\n", (void *) dev->read_buffer->readptr);
+  DBG (5, "   max write ptr: %p\n", (void *) dev->read_buffer->max_writeptr);
   DBG (5, "   buffer size:   %lu\n", (u_long) dev->read_buffer->size);
   DBG (5, "   line size:     %lu\n", (u_long) dev->read_buffer->linesize);
   DBG (5, "   empty:         %d\n", dev->read_buffer->empty);
@@ -5061,9 +5059,9 @@ sanei_lexmark_low_read_scan_data (SANE_Byte * data, SANE_Int size,
     }
 
   DBG (5, "READ BUFFER INFO: \n");
-  DBG (5, "   write ptr:     %p\n", dev->read_buffer->writeptr);
-  DBG (5, "   read ptr:      %p\n", dev->read_buffer->readptr);
-  DBG (5, "   max write ptr: %p\n", dev->read_buffer->max_writeptr);
+  DBG (5, "   write ptr:     %p\n", (void *) dev->read_buffer->writeptr);
+  DBG (5, "   read ptr:      %p\n", (void *) dev->read_buffer->readptr);
+  DBG (5, "   max write ptr: %p\n", (void *) dev->read_buffer->max_writeptr);
   DBG (5, "   buffer size:   %lu\n", (u_long) dev->read_buffer->size);
   DBG (5, "   line size:     %lu\n", (u_long) dev->read_buffer->linesize);
   DBG (5, "   empty:         %d\n", dev->read_buffer->empty);
@@ -5076,7 +5074,7 @@ sanei_lexmark_low_read_scan_data (SANE_Byte * data, SANE_Int size,
   DBG (2, "    Copying lines from buffer to data\n");
   DBG (2, "    bytes_remaining: %lu\n", (u_long) dev->bytes_remaining);
   DBG (2, "    bytes_in_buffer: %lu\n", (u_long) dev->bytes_in_buffer);
-  DBG (2, "    read_pointer: %p\n", dev->read_buffer->readptr);
+  DBG (2, "    read_pointer: %p\n", (void *) dev->read_buffer->readptr);
   DBG (2, "    bytes_read %lu\n", (u_long) bytes_read);
 
   /* if no more bytes to xfer and read buffer empty we're at the end */
@@ -5254,12 +5252,12 @@ read_buffer_bytes_available (Read_Buffer * rb)
 
   if (rb->empty)
     return rb->size;
-  else if ((size_t) abs (rb->writeptr - rb->readptr) < rb->linesize)
-    return 0;			/* ptrs are less than one line apart */
   else if (rb->writeptr < rb->readptr)
-    return (rb->readptr - rb->writeptr - rb->linesize);
+    return (size_t)(rb->readptr - rb->writeptr) < rb->linesize ? 0 :
+           (size_t)(rb->readptr - rb->writeptr) - rb->linesize;
   else
-    return (rb->size + rb->readptr - rb->writeptr - rb->linesize);
+    return (size_t)(rb->writeptr - rb->readptr) < rb->linesize ? 0 :
+           rb->size - (size_t)(rb->writeptr - rb->readptr) - rb->linesize;
 }
 
 SANE_Status
@@ -5558,7 +5556,7 @@ sanei_lexmark_low_offset_calibration (Lexmark_Device * dev)
      we start with the highest one and decrease until
      overall offset is ok
      First loop may have such an high offset that scanned data overflow
-     and gives a low average. So we allways skip its results
+     and gives a low average. So we always skip its results
    */
 
   /* minimal gains */
@@ -5691,7 +5689,7 @@ sanei_lexmark_low_gain_calibration (Lexmark_Device * dev)
   pixels = (ex - sx) / regs[0x7a];
 
 
-  /* set up inital gains */
+  /* set up initial gains */
   red = 6;
   green = 6;
   blue = 6;
@@ -5707,7 +5705,7 @@ sanei_lexmark_low_gain_calibration (Lexmark_Device * dev)
   if (status != SANE_STATUS_GOOD)
     return status;
 
-  /* we do a simple scan all 3 averages give the choosen level */
+  /* we do a simple scan all 3 averages give the chosen level */
   while (((rts88xx_is_color (regs)
 	   && ((ra < dev->sensor->red_gain_target)
 	       || (ga < dev->sensor->green_gain_target)
@@ -5756,7 +5754,7 @@ sanei_lexmark_low_gain_calibration (Lexmark_Device * dev)
  * We do it by scanning a pure white area which is before scanning area. Then
  * we compute per pixel coefficient to move the scanned value to the target
  * value. These coefficients are used later to correct scanned data.
- * The scan is done with all the final scan settings but the heigth and vertical
+ * The scan is done with all the final scan settings but the height and vertical
  * start position.
  */
 SANE_Status
@@ -5934,7 +5932,7 @@ sanei_lexmark_low_shading_calibration (Lexmark_Device * dev)
   /* do the scan backward to go back to start position */
   regs[0xc6] &= 0xF7;
   lines = (8 * 8) / regs[0x7a];
-  /* it shoud use linetotal to account for the lineoffset */
+  /* it should use linetotal to account for the lineoffset */
   if (dev->model.sensor_type == X74_SENSOR)
     lines = linetotal;
 

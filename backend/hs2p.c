@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -51,10 +49,10 @@
    . . . init_options : initialize SANE_OPTIONS array
    . . - sane_set_io_mode : set blocking-mode
    . . - sane_get_select_fd : get scanner-fd
-   . . - sane_get_option_descriptor() : get option informations
+   . . - sane_get_option_descriptor() : get option information
    . . - sane_control_option() : change option values
    . .
-   . . - sane_start() : start image aquisition
+   . . - sane_start() : start image acquisition
    . .   - sane_get_parameters() : returns actual scan-parameters
    . .   - sane_read() : read image-data (from pipe)
    . .
@@ -1535,7 +1533,7 @@ do_cancel (HS2P_Scanner * s)
 	   object_position (s->fd,
 			    OBJECT_POSITION_UNLOAD)) != SANE_STATUS_GOOD)
 	{
-	  DBG (DBG_error, "cancel: OBJECT POSTITION failed\n");
+	  DBG (DBG_error, "cancel: OBJECT POSITION failed\n");
 	}
       sanei_scsi_req_flush_all ();
       release_unit (s->fd);
@@ -1567,14 +1565,14 @@ sane_init (SANE_Int * version_code,
   /*DBG (DBG_sane_init, "> sane_init (authorize = %p)\n", (void *) authorize); */
 #if defined PACKAGE && defined VERSION
   DBG (DBG_sane_init, "> sane_init: hs2p backend version %d.%d-%d ("
-       PACKAGE " " VERSION ")\n", SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+       PACKAGE " " VERSION ")\n", SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 #endif
   /*
      sanei_thread_init ();
    */
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
 
   if ((fp = sanei_config_open (HS2P_CONFIG_FILE)) != NULL)
@@ -1588,7 +1586,7 @@ sane_init (SANE_Int * version_code,
     }
 
 #if 0
-  /* avision.c: search for all supported scanners on all scsi busses & channels */
+  /* avision.c: search for all supported scanners on all scsi buses & channels */
   for (hw = &HS2P_Device_List[0]; hw->mfg != NULL; hw++)
     {
       sanei_scsi_find_devices (hw->mfg,	/*vendor */
@@ -3127,7 +3125,7 @@ sane_start (SANE_Handle handle)	/* begin scanning */
 	       sane_strstatus (status));
 	  return (status);
 	}
-      if ((s->data.adf_status & 0x00) == 0x01)
+      if ((s->data.adf_status & 0x01) == 0x01)
 	{
 	  DBG (DBG_warning, "sane_start: No document on ADF\n");
 	  return (SANE_STATUS_NO_DOCS);
@@ -3252,7 +3250,7 @@ pad:
 	  /*
 	   * If status != SANE_STATUS_GOOD, then sense_handler() has already
 	   * been called and the sanei_* functions have already gotten the
-	   * sense data buffer (which apparently clears the error conditionn)
+	   * sense data buffer (which apparently clears the error condition)
 	   * so the following doesn't work:
 	   get_sense_data (s->fd, &(s->hw->sense_data));
 	   print_sense_data (&(s->hw->sense_data));
@@ -3324,8 +3322,8 @@ sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
   *fd = s->fd;
   return SANE_STATUS_GOOD;
 #else
-  handle = handle;
-  fd = fd;			/* get rid of compiler warning */
+  (void) handle;
+  (void) fd;			/* get rid of compiler warning */
   DBG (DBG_proc, "<< sane_get_select_fd\n");
   return SANE_STATUS_UNSUPPORTED;
 #endif

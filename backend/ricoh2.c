@@ -1,6 +1,6 @@
 /* sane - Scanner Access Now Easy.
 
-   Copyright (C) 2018 Stanislav Yuzvinsky
+   Copyright (C) 2018, 2019 Stanislav Yuzvinsky
    Based on the work done by viruxx
 
    This file is part of the SANE package.
@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -113,10 +111,10 @@ typedef struct Ricoh2_device_info {
 Ricoh2_device_info;
 
 static Ricoh2_device_info supported_devices[] = {
-  { 0x042c, "Aficio SP100SU"   },
-  { 0x0438, "Aficio SG3100SNw" },
-  { 0x0439, "Aficio SG3110SFNw" },
-  { 0x0448, "Aficio SP111SU"   }
+  { 0x042c, "Aficio SP-100SU"   },
+  { 0x0438, "Aficio SG-3100SNw" },
+  { 0x0439, "Aficio SG-3110SFNw" },
+  { 0x0448, "Aficio SP-111SU/SP-112SU" }
 };
 
 static SANE_String_Const mode_list[] = {
@@ -295,7 +293,7 @@ sane_init (SANE_Int *vc, SANE_Auth_Callback __sane_unused__ cb)
     }
 
   if (vc)
-    *vc = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *vc = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
   DBG(8, "<sane_init\n");
 
   initialized = SANE_TRUE;

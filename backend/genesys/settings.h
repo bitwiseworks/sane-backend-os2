@@ -15,30 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef BACKEND_GENESYS_SETTINGS_H
@@ -46,6 +23,8 @@
 
 #include "enums.h"
 #include "serialize.h"
+#include "utilities.h"
+#include "sensor.h"
 
 namespace genesys {
 
@@ -60,9 +39,9 @@ struct Genesys_Settings
     unsigned yres = 0;
 
     //x start on scan table in mm
-    double tl_x = 0;
+    float tl_x = 0;
     // y start on scan table in mm
-    double tl_y = 0;
+    float tl_y = 0;
 
     // number of lines at scan resolution
     unsigned int lines = 0;
@@ -75,18 +54,6 @@ struct Genesys_Settings
     unsigned int depth = 0;
 
     ColorFilter color_filter = ColorFilter::NONE;
-
-    // true if scan is true gray, false if monochrome scan
-    int true_gray = 0;
-
-    // lineart threshold
-    int threshold = 0;
-
-    // lineart threshold curve for dynamic rasterization
-    int threshold_curve = 0;
-
-    // Disable interpolation for xres<yres
-    int disable_interpolation = 0;
 
     // value for contrast enhancement in the [-100..100] range
     int contrast = 0;
@@ -111,17 +78,19 @@ std::ostream& operator<<(std::ostream& out, const Genesys_Settings& settings);
 struct SetupParams {
 
     static constexpr unsigned NOT_SET = std::numeric_limits<unsigned>::max();
+    static constexpr unsigned NOT_SET_I = std::numeric_limits<int>::max();
 
     // resolution in x direction
     unsigned xres = NOT_SET;
     // resolution in y direction
     unsigned yres = NOT_SET;
-    // start pixel in X direction, from dummy_pixel + 1
+    // start pixel in X direction, from dummy_pixel + 1. Counted in terms of xres.
     unsigned startx = NOT_SET;
     // start pixel in Y direction, counted according to base_ydpi
     unsigned starty = NOT_SET;
-    // the number of pixels in X direction. Note that each logical pixel may correspond to more
-    // than one CCD pixel, see CKSEL and GenesysSensor::ccd_pixels_per_system_pixel()
+    // the number of pixels in X direction. Counted in terms of xres.
+    // Note that each logical pixel may correspond to more than one CCD pixel, see CKSEL and
+    // GenesysSensor::ccd_pixels_per_system_pixel()
     unsigned pixels = NOT_SET;
 
     // the number of pixels in the X direction as requested by the frontend. This will be different
@@ -144,7 +113,11 @@ struct SetupParams {
 
     ColorFilter color_filter = static_cast<ColorFilter>(NOT_SET);
 
-    ScanFlag flags;
+    // the values for contrast and brightness adjustment in the range of [-100..100]
+    int contrast_adjustment = NOT_SET_I;
+    int brightness_adjustment = NOT_SET_I;
+
+    ScanFlag flags = ScanFlag::NONE;
 
     unsigned get_requested_pixels() const
     {
@@ -160,7 +133,8 @@ struct SetupParams {
             pixels == NOT_SET || lines == NOT_SET ||depth == NOT_SET || channels == NOT_SET ||
             scan_method == static_cast<ScanMethod>(NOT_SET) ||
             scan_mode == static_cast<ScanColorMode>(NOT_SET) ||
-            color_filter == static_cast<ColorFilter>(NOT_SET))
+            color_filter == static_cast<ColorFilter>(NOT_SET) ||
+            contrast_adjustment == NOT_SET_I || brightness_adjustment == NOT_SET_I)
         {
             throw std::runtime_error("SetupParams are not valid");
         }
@@ -180,6 +154,8 @@ struct SetupParams {
             scan_method == other.scan_method &&
             scan_mode == other.scan_mode &&
             color_filter == other.color_filter &&
+            contrast_adjustment == other.contrast_adjustment &&
+            brightness_adjustment == other.brightness_adjustment &&
             flags == other.flags;
     }
 };
@@ -201,6 +177,8 @@ void serialize(Stream& str, SetupParams& x)
     serialize(str, x.scan_method);
     serialize(str, x.scan_mode);
     serialize(str, x.color_filter);
+    serialize(str, x.contrast_adjustment);
+    serialize(str, x.brightness_adjustment);
     serialize(str, x.flags);
 }
 
@@ -210,15 +188,10 @@ struct ScanSession {
     // whether the session setup has been computed via compute_session()
     bool computed = false;
 
-    // specifies the reduction (if any) of hardware dpi on the Genesys chip side.
-    // except gl646
-    unsigned hwdpi_divisor = 1;
+    // specifies the full resolution of the sensor that is being used.
+    unsigned full_resolution = 0;
 
-    // specifies the reduction (if any) of CCD effective dpi which is performed by latching the
-    // data coming from CCD in such a way that 1/2 or 3/4 of pixel data is ignored.
-    unsigned ccd_size_divisor = 1;
-
-    // the optical resolution of the scanner.
+    // the optical resolution of the sensor that is being used.
     unsigned optical_resolution = 0;
 
     // the number of pixels at the optical resolution, not including segmentation overhead.
@@ -228,9 +201,14 @@ struct ScanSession {
     // only on gl846, g847
     unsigned optical_pixels_raw = 0;
 
+    // the number of optical scan lines. Equal to output_line_count on CCD scanners.
+    unsigned optical_line_count = 0;
+
     // the resolution of the output data.
-    // gl843-only
     unsigned output_resolution = 0;
+
+    // the offset in pixels from the beginning of output data
+    unsigned output_startx = 0;
 
     // the number of pixels in output data (after desegmentation)
     unsigned output_pixels = 0;
@@ -259,7 +237,7 @@ struct ScanSession {
     unsigned output_total_bytes = 0;
 
     // the number of staggered lines (i.e. lines that overlap during scanning due to line being
-    // thinner than the CCD element)
+    // thinner than the CCD element). Computed according to stagger_y.
     unsigned num_staggered_lines = 0;
 
     // the number of lines that color channels shift due to different physical positions of
@@ -273,6 +251,11 @@ struct ScanSession {
     // actual line shift of the blue color
     unsigned color_shift_lines_b = 0;
 
+    // The shifts that need to be applied to the output pixels in x direction.
+    StaggerConfig stagger_x;
+    // The shifts that need to be applied to the output pixels in y direction.
+    StaggerConfig stagger_y;
+
     // the number of scanner segments used in the current scan
     unsigned segment_count = 1;
 
@@ -280,8 +263,18 @@ struct ScanSession {
     unsigned pixel_startx = 0;
     unsigned pixel_endx = 0;
 
-    // certain scanners require the logical pixel count to be multiplied on certain resolutions
-    unsigned pixel_count_multiplier = 1;
+    /*  The following defines the ratio between logical pixel count and pixel count setting sent to
+        the scanner. The ratio is affected by the following:
+
+        - Certain scanners just like to multiply the pixel number by a multiplier that depends on
+          the resolution.
+
+        - The sensor may be configured to output one value per multiple physical pixels
+
+        - The scanner will automatically average the pixels that come from the sensor using a
+          certain ratio.
+    */
+    Ratio pixel_count_ratio = Ratio{1, 1};
 
     // Distance in pixels between consecutive pixels, e.g. between odd and even pixels. Note that
     // the number of segments can be large.
@@ -297,19 +290,21 @@ struct ScanSession {
     // Currently it's always zero.
     unsigned output_segment_start_offset = 0;
 
-    // the sizes of the corresponding buffers
+    // How many pixels the shading data is offset to the right from the acquired data. Calculated
+    // in shading resolution.
+    int shading_pixel_offset = 0;
+
+    // the size of the read buffer.
     size_t buffer_size_read = 0;
-    size_t buffer_size_lines = 0;
-    size_t buffer_size_shrink = 0;
-    size_t buffer_size_out = 0;
 
     // whether to enable ledadd functionality
     bool enable_ledadd = false;
 
-    // what pipeline modifications are needed
-    bool pipeline_needs_reorder = false;
-    bool pipeline_needs_ccd = false;
-    bool pipeline_needs_shrink = false;
+    // whether calibration should be performed host-side
+    bool use_host_side_calib = false;
+
+    // whether gray scanning should be performed host-side (scan as color and merge to gray)
+    bool use_host_side_gray = false;
 
     void assert_computed() const
     {
@@ -317,9 +312,53 @@ struct ScanSession {
             throw std::runtime_error("ScanSession is not computed");
         }
     }
+
+    bool operator==(const ScanSession& other) const;
 };
 
 std::ostream& operator<<(std::ostream& out, const ScanSession& session);
+
+template<class Stream>
+void serialize(Stream& str, ScanSession& x)
+{
+    serialize(str, x.params);
+    serialize_newline(str);
+    serialize(str, x.computed);
+    serialize(str, x.full_resolution);
+    serialize(str, x.optical_resolution);
+    serialize(str, x.optical_pixels);
+    serialize(str, x.optical_pixels_raw);
+    serialize(str, x.optical_line_count);
+    serialize(str, x.output_resolution);
+    serialize(str, x.output_startx);
+    serialize(str, x.output_pixels);
+    serialize(str, x.output_channel_bytes);
+    serialize(str, x.output_line_bytes);
+    serialize(str, x.output_line_bytes_raw);
+    serialize(str, x.output_line_bytes_requested);
+    serialize(str, x.output_line_count);
+    serialize(str, x.output_total_bytes_raw);
+    serialize(str, x.output_total_bytes);
+    serialize(str, x.num_staggered_lines);
+    serialize(str, x.max_color_shift_lines);
+    serialize(str, x.color_shift_lines_r);
+    serialize(str, x.color_shift_lines_g);
+    serialize(str, x.color_shift_lines_b);
+    serialize(str, x.stagger_x);
+    serialize(str, x.stagger_y);
+    serialize(str, x.segment_count);
+    serialize(str, x.pixel_startx);
+    serialize(str, x.pixel_endx);
+    serialize(str, x.pixel_count_ratio);
+    serialize(str, x.conseq_pixel_dist);
+    serialize(str, x.output_segment_pixel_group_count);
+    serialize(str, x.output_segment_start_offset);
+    serialize(str, x.shading_pixel_offset);
+    serialize(str, x.buffer_size_read);
+    serialize(str, x.enable_ledadd);
+    serialize(str, x.use_host_side_calib);
+    serialize(str, x.use_host_side_gray);
+}
 
 std::ostream& operator<<(std::ostream& out, const SANE_Parameters& params);
 

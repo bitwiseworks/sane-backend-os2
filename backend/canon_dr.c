@@ -3,7 +3,7 @@
    This file is part of the SANE package, and implements a SANE backend
    for various Canon DR-series scanners.
 
-   Copyright (C) 2008-2019 m. allan noah
+   Copyright (C) 2008-2022 m. allan noah
 
    Yabarana Corp. www.yabarana.com provided significant funding
    EvriChart, Inc. www.evrichart.com provided funding and loaned equipment
@@ -25,9 +25,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -126,9 +124,9 @@
          - send_panel() can disable too
          - add cancel() to send d8 command
          - call cancel() only after final read from scanner
-         - stop button reqests cancel
+         - stop button requests cancel
       v12 2009-01-21, MAN
-         - dont export private symbols
+         - don't export private symbols
       v13 2009-03-06, MAN
          - new vendor ID for recent machines
          - add usb ids for several new machines
@@ -149,7 +147,7 @@
       v18 2009-03-21, MAN
          - rewrite config file parsing to reset options after each scanner
          - add config options for vendor, model, version
-         - dont call inquiry if those 3 options are set
+         - don't call inquiry if those 3 options are set
          - remove default config file from code
          - add initial gray deinterlacing code for DR-2510C
          - rename do_usb_reset to do_usb_clear
@@ -175,8 +173,8 @@
       v24 2009-04-02, MAN
          - fix DR-2510C duplex deinterlacing code
          - rewrite sane_read helpers to read until EOF
-         - update sane_start for scanners that dont use object_position
-         - dont call sanei_usb_clear_halt() if device is not open
+         - update sane_start for scanners that don't use object_position
+         - don't call sanei_usb_clear_halt() if device is not open
          - increase default buffer size to 4 megs
          - set buffermode on by default
          - hide modes and resolutions that DR-2510C lies about
@@ -206,8 +204,8 @@
          - merge x and y resolution options into single option
          - move scan params into two new structs, s->u and s->s
          - sane_get_parameters() just returns values from s->u
-         - dont call wait_scanner() in object_position()
-         - dont call ssm_*() from option handler
+         - don't call wait_scanner() in object_position()
+         - don't call ssm_*() from option handler
          - refactor sane_start()
          - read_from_buffer() can workaround missing res, modes and cropping
          - set most DR-2xxx machines to use the read_from_buffer workarounds
@@ -318,7 +316,7 @@
       v51 2015-08-25, MAN (SANE 1.0.25)
          - DR-C125 does not invert_tly, does need sw_lut
       v52 2015-11-03, MAN
-         - set can_color=1 by default (recent models dont have 'C' in name)
+         - set can_color=1 by default (recent models don't have 'C' in name)
          - enable jpeg for DR-6080
          - add must_downsample and must_fully_buffer
          - improve dropout option handling
@@ -340,6 +338,30 @@
          - complete support for X-10, including hardware cropping
       v58 2019-11-10, MAN
          - adjust wait_scanner to set runRS only as a last resort, bug #154
+      v59 2020-09-23, MAN
+         - restructure fine calibration code
+         - initial support for uploading fine calibration payloads
+         - improve DR-C225 support
+      v60 2020-11-28, MAN
+         - add new gray and color interlacing options for DR-C120
+         - initial support for DR-C120 and C130
+         - enable fine calibration for P-208 (per @sashacmc in !546)
+      v61 2021-02-13, MAN
+         - treat DR-P208 like P-208 (#356)
+         - treat DR-P215 like P-215 (#356)
+         - adjust wait_scanner to try one TUR with a long timeout (#142)
+      v62 2021-02-13, MAN
+         - allow config file to set inq and vpd lengths for DR-M1060 (#263)
+         - rewrite do_cmd() timeout handling
+         - remove long timeout TUR from v61 (did not help)
+         - allow config file to set initial tur timeout for DR-X10C (#142)
+      v63 2022-11-18, CQ, MAN
+         - add support for reading the total and roller counters
+      v64 2022-11-18, CQ, MAN
+         - add complete support for imprinters on X10C (#585)
+      v65 2023-06-06, MAN
+         - fix imprinter support (#672)
+         - update attach_one and other init functions
 
    SANE FLOW DIAGRAM
 
@@ -378,6 +400,8 @@
 #include <math.h> /*tan*/
 #include <unistd.h> /*usleep*/
 #include <sys/time.h> /*gettimeofday*/
+#include <time.h> /*localtime*/
+#include <stdlib.h> /*strtol*/
 
 #include "../include/sane/sanei_backend.h"
 #include "../include/sane/sanei_scsi.h"
@@ -390,7 +414,7 @@
 #include "canon_dr.h"
 
 #define DEBUG 1
-#define BUILD 58
+#define BUILD 65
 
 /* values for SANE_DEBUG_CANON_DR env var:
  - errors           5
@@ -433,6 +457,13 @@
 #define STRING_NONE SANE_I18N("None")
 #define STRING_JPEG SANE_I18N("JPEG")
 
+#define STRING_IMPRINTER_8x12_FONT SANE_I18N("8x12")
+#define STRING_IMPRINTER_12x12_FONT SANE_I18N("12x12")
+
+#define STRING_IMPRINTER_ADDON_BoW SANE_I18N("Black-on-White")
+#define STRING_IMPRINTER_ADDON_BoI SANE_I18N("Black-on-Image")
+#define STRING_IMPRINTER_ADDON_WoB SANE_I18N("White-on-Black")
+
 /* Also set via config file. */
 static int global_buffer_size;
 static int global_buffer_size_default = 2 * 1024 * 1024;
@@ -442,6 +473,10 @@ static int global_extra_status;
 static int global_extra_status_default = 0;
 static int global_duplex_offset;
 static int global_duplex_offset_default = 0;
+static int global_inquiry_length;
+static int global_vpd_length;
+static int global_tur_timeout;
+static int global_tur_timeout_default = USB_PACKET_TIMEOUT/60; /* half second */
 static char global_vendor_name[9];
 static char global_model_name[17];
 static char global_version_name[5];
@@ -474,16 +509,16 @@ static struct scanner *scanner_devList = NULL;
 SANE_Status
 sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 {
-  authorize = authorize;        /* get rid of compiler warning */
+  (void) authorize;             /* get rid of compiler warning */
 
   DBG_INIT ();
   DBG (10, "sane_init: start\n");
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   DBG (5, "sane_init: canon_dr backend %d.%d.%d, from %s\n",
-    SANE_CURRENT_MAJOR, V_MINOR, BUILD, PACKAGE_STRING);
+    SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   DBG (10, "sane_init: finish\n");
 
@@ -527,7 +562,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   int num_devices=0;
   int i=0;
 
-  local_only = local_only;        /* get rid of compiler warning */
+  (void) local_only;            /* get rid of compiler warning */
 
   DBG (10, "sane_get_devices: start\n");
 
@@ -667,6 +702,84 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
                     buf);
 
                   global_duplex_offset = buf;
+              }
+
+              /* INQUIRY_LENGTH: <= 0x30 */
+              else if (!strncmp (lp, "inquiry-length", 14) && isspace (lp[14])) {
+
+                  int buf;
+                  lp += 14;
+                  lp = sanei_config_skip_whitespace (lp);
+                  buf = (int) strtol (lp,NULL,16);
+
+                  if (buf > INQUIRY_std_max_len) {
+                    DBG (5, "sane_get_devices: config option \"inquiry-length\" "
+                      "(%#04x) is > %#04x, ignoring!\n", buf, INQUIRY_std_max_len);
+                    continue;
+                  }
+
+                  if (buf < 0) {
+                    DBG (5, "sane_get_devices: config option \"inquiry-length\" "
+                      "(%#04x) is < 0, ignoring!\n", buf);
+                    continue;
+                  }
+
+                  DBG (15, "sane_get_devices: setting \"inquiry-length\" to %#04x\n",
+                    buf);
+
+                  global_inquiry_length = buf;
+              }
+
+              /* VPD_LENGTH: <= 0x30 */
+              else if (!strncmp (lp, "vpd-length", 10) && isspace (lp[10])) {
+
+                  int buf;
+                  lp += 10;
+                  lp = sanei_config_skip_whitespace (lp);
+                  buf = (int) strtol (lp,NULL,16);
+
+                  if (buf > INQUIRY_vpd_max_len) {
+                    DBG (5, "sane_get_devices: config option \"vpd-length\" "
+                      "(%#04x) is > %#04x, ignoring!\n", buf, INQUIRY_vpd_max_len);
+                    continue;
+                  }
+
+                  if (buf < 0) {
+                    DBG (5, "sane_get_devices: config option \"vpd-length\" "
+                      "(%#04x) is < 0, ignoring!\n", buf);
+                    continue;
+                  }
+
+                  DBG (15, "sane_get_devices: setting \"vpd-length\" to %#04x\n",
+                    buf);
+
+                  global_vpd_length = buf;
+              }
+
+              /* TUR_TIMEOUT <= 60000 */
+              else if (!strncmp (lp, "tur-timeout", 11) && isspace (lp[11])) {
+
+                  int buf;
+                  lp += 11;
+                  lp = sanei_config_skip_whitespace (lp);
+                  buf = atoi (lp);
+
+                  if (buf > 60000) {
+                    DBG (5, "sane_get_devices: config option \"tur-timeout\" "
+                      "(%d) is > 60000, ignoring!\n", buf);
+                    continue;
+                  }
+
+                  if (buf < 0) {
+                    DBG (5, "sane_get_devices: config option \"tur-timeout\" "
+                      "(%d) is < 0, ignoring!\n", buf);
+                    continue;
+                  }
+
+                  DBG (15, "sane_get_devices: setting \"tur-timeout\" to %d\n",
+                    buf);
+
+                  global_tur_timeout = buf;
               }
 
               /* VENDOR: we ingest up to 8 bytes */
@@ -835,6 +948,9 @@ attach_one (const char *device_name, int connType)
   s->padded_read = global_padded_read;
   s->extra_status = global_extra_status;
   s->duplex_offset = global_duplex_offset;
+  s->inquiry_length = global_inquiry_length;
+  s->vpd_length = global_vpd_length;
+  s->tur_timeout = global_tur_timeout;
 
   /* copy the device name */
   strcpy (s->device_name, device_name);
@@ -891,13 +1007,22 @@ attach_one (const char *device_name, int connType)
     return ret;
   }
 
+  /* this detects imprinters if they are available */
+  ret = init_imprinters (s);
+  if (ret != SANE_STATUS_GOOD) {
+    DBG (5, "attach_one: unable to init_imprinters, continuing\n");
+  }
+
   /* enable/read the buttons */
   ret = init_panel (s);
   if (ret != SANE_STATUS_GOOD) {
-    disconnect_fd(s);
-    free (s);
-    DBG (5, "attach_one: model failed\n");
-    return ret;
+    DBG (5, "attach_one: unable init_panel, continuing\n");
+  }
+
+  /* enable/read the lifecycle counters */
+  ret = init_counters (s);
+  if (ret != SANE_STATUS_GOOD) {
+    DBG (5, "attach_one: unable to init_counters, continuing\n");
   }
 
   /* sets SANE option 'values' to good defaults */
@@ -909,6 +1034,7 @@ attach_one (const char *device_name, int connType)
     return ret;
   }
 
+  /* sets the s->opt array to blank */
   ret = init_options (s);
   if (ret != SANE_STATUS_GOOD) {
     disconnect_fd(s);
@@ -1011,8 +1137,8 @@ init_inquire (struct scanner *s)
   unsigned char cmd[INQUIRY_len];
   size_t cmdLen = INQUIRY_len;
 
-  unsigned char in[INQUIRY_std_len];
-  size_t inLen = INQUIRY_std_len;
+  unsigned char in[INQUIRY_std_max_len];
+  size_t inLen = s->inquiry_length;
 
   DBG (10, "init_inquire: start\n");
 
@@ -1067,6 +1193,7 @@ init_inquire (struct scanner *s)
   if (strncmp ("DR", s->model_name, 2)
    && strncmp ("CR", s->model_name, 2)
    && strncmp ("P-", s->model_name, 2)
+   && strncmp ("R", s->model_name, 1)
   ) {
     DBG (5, "The device at '%s' is reported to be a '%s'\n",
       s->device_name, s->model_name);
@@ -1093,8 +1220,8 @@ init_vpd (struct scanner *s)
   unsigned char cmd[INQUIRY_len];
   size_t cmdLen = INQUIRY_len;
 
-  unsigned char in[INQUIRY_vpd_len];
-  size_t inLen = INQUIRY_vpd_len;
+  unsigned char in[INQUIRY_vpd_max_len];
+  size_t inLen = s->vpd_length;
 
   DBG (10, "init_vpd: start\n");
 
@@ -1287,8 +1414,9 @@ init_model (struct scanner *s)
   s->max_x_fb = s->max_x;
   s->max_y_fb = s->max_y;
 
-  /* missing from vpd- we will unset this for b&w machines below */
+  /* missing from vpd- we will unset these for some machines below */
   s->can_color = 1;
+  s->can_read_lifecycle_counters = 1;
 
   /* specific settings missing from vpd */
   if (strstr (s->model_name,"DR-9080")){
@@ -1348,7 +1476,8 @@ init_model (struct scanner *s)
     s->gray_interlace[SIDE_BACK] = GRAY_INTERLACE_gG;
     s->duplex_interlace = DUPLEX_INTERLACE_FBfb;
     s->need_ccal = 1;
-    s->need_fcal = 1;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_SW;
     /*s->duplex_offset = 432; now set in config file*/
     s->duplex_offset_side = SIDE_BACK;
 
@@ -1372,7 +1501,8 @@ init_model (struct scanner *s)
     s->duplex_interlace = DUPLEX_INTERLACE_2510;
     /*s->duplex_offset = 400; now set in config file*/
     s->need_ccal = 1;
-    s->need_fcal = 1;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_SW;
     s->sw_lut = 1;
     /*s->invert_tly = 1;*/
 
@@ -1386,6 +1516,34 @@ init_model (struct scanner *s)
     /*lies*/
     s->can_halftone=0;
     s->can_monochrome=0;
+  }
+
+  else if (strstr (s->model_name,"R40")
+  ){
+	/* confirmed */
+    s->gray_interlace[SIDE_FRONT] = GRAY_INTERLACE_C120;
+    s->gray_interlace[SIDE_BACK] = GRAY_INTERLACE_C120;
+    s->color_interlace[SIDE_FRONT] = COLOR_INTERLACE_C120;
+    s->color_interlace[SIDE_BACK] = COLOR_INTERLACE_C120;
+    s->duplex_interlace = DUPLEX_INTERLACE_2510;
+    /*s->duplex_offset = 320; now set in config file*/
+    s->fixed_width = 1;
+    s->need_ccal = 1;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_SW;
+    s->rgb_format = 1;
+    s->sw_lut = 1;
+
+    /*only in Y direction, so we trash them in X*/
+    s->std_res_x[DPI_100]=0;
+    s->std_res_x[DPI_150]=0;
+    s->std_res_x[DPI_200]=0;
+    s->std_res_x[DPI_240]=0;
+    s->std_res_x[DPI_400]=0;
+
+    /* suspected settings */
+    s->ccal_version = 3;
+    s->has_df_ultra = 1;
   }
 
   /* copied from 2510, possibly incorrect */
@@ -1402,7 +1560,8 @@ init_model (struct scanner *s)
     s->duplex_interlace = DUPLEX_INTERLACE_2510;
     /*s->duplex_offset = 400; now set in config file*/
     s->need_ccal = 1;
-    s->need_fcal = 1;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_SW;
     s->sw_lut = 1;
     s->invert_tly = 1;
 
@@ -1427,7 +1586,8 @@ init_model (struct scanner *s)
     s->color_interlace[SIDE_FRONT] = COLOR_INTERLACE_RRGGBB;
     s->color_interlace[SIDE_BACK] = COLOR_INTERLACE_RRGGBB;
     s->duplex_interlace = DUPLEX_INTERLACE_FBfb;
-    s->need_fcal_buffer = 1;
+    s->fcal_src = FCAL_SRC_HW;
+    s->fcal_dest = FCAL_DEST_SW;
     s->bg_color = 0x08;
     /*s->duplex_offset = 840; now set in config file*/
     s->sw_lut = 1;
@@ -1481,12 +1641,15 @@ init_model (struct scanner *s)
     s->has_card = 1;
   }
 
-  else if (strstr (s->model_name, "P-208")) {
+  else if (strstr (s->model_name, "P-208")
+   || strstr (s->model_name,"DR-P208")){
     s->color_interlace[SIDE_FRONT] = COLOR_INTERLACE_RRGGBB;
     s->color_interlace[SIDE_BACK] = COLOR_INTERLACE_rRgGbB;
     s->gray_interlace[SIDE_BACK] = GRAY_INTERLACE_gG;
     s->duplex_interlace = DUPLEX_INTERLACE_FBfb;
     s->need_ccal = 1;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_SW;
     s->invert_tly = 1;
     s->unknown_byte2 = 0x88;
     s->rgb_format = 1;
@@ -1496,7 +1659,8 @@ init_model (struct scanner *s)
     s->can_read_sensors = 1;
   }
 
-  else if (strstr (s->model_name, "P-215")) {
+  else if (strstr (s->model_name, "P-215")
+   || strstr (s->model_name,"DR-P215")){
     s->color_interlace[SIDE_FRONT] = COLOR_INTERLACE_rRgGbB;
     s->color_interlace[SIDE_BACK] = COLOR_INTERLACE_RRGGBB;
     s->gray_interlace[SIDE_FRONT] = GRAY_INTERLACE_gG;
@@ -1592,6 +1756,39 @@ init_model (struct scanner *s)
     s->can_monochrome=0;
   }
 
+  else if (strstr (s->model_name,"DR-C120")
+    || strstr (s->model_name,"DR-C130")
+  ){
+
+    /*confirmed settings*/
+    s->need_ccal = 1;
+    s->ccal_version = 3;
+
+    s->gray_interlace[SIDE_FRONT] = GRAY_INTERLACE_C120;
+    s->gray_interlace[SIDE_BACK] = GRAY_INTERLACE_C120;
+    s->color_interlace[SIDE_FRONT] = COLOR_INTERLACE_C120;
+    s->color_interlace[SIDE_BACK] = COLOR_INTERLACE_C120;
+    s->duplex_interlace = DUPLEX_INTERLACE_2510;
+    s->duplex_offset_side = SIDE_BACK;
+    s->unknown_byte2 = 0x88;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_SW;
+    s->sw_lut = 1;
+    s->rgb_format = 1;
+    /*s->duplex_offset = 400; now set in config file*/
+
+    /*only in Y direction, so we trash them in X*/
+    s->std_res_x[DPI_100]=0;
+    s->std_res_x[DPI_150]=0;
+    s->std_res_x[DPI_200]=0;
+    s->std_res_x[DPI_240]=0;
+    s->std_res_x[DPI_400]=0;
+
+    /*suspected settings*/
+    s->always_op = 0;
+    s->fixed_width = 1;
+    s->valid_x = 8.5 * 1200;
+  }
   else if (strstr (s->model_name,"DR-C125")){
 
     /*confirmed settings*/
@@ -1604,7 +1801,8 @@ init_model (struct scanner *s)
     s->unknown_byte2 = 0x88;
     s->need_ccal = 1;
     s->ccal_version = 3;
-    s->need_fcal = 1;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_SW;
     s->sw_lut = 1;
     s->rgb_format = 1;
     /*s->duplex_offset = 400; now set in config file*/
@@ -1625,14 +1823,15 @@ init_model (struct scanner *s)
   else if (strstr (s->model_name,"DR-C225")){
 
     s->color_interlace[SIDE_FRONT] = COLOR_INTERLACE_RRGGBB;
-    s->color_interlace[SIDE_BACK] = COLOR_INTERLACE_rRgGbB;
+    s->color_interlace[SIDE_BACK] = COLOR_INTERLACE_RRGGBB;
     s->gray_interlace[SIDE_BACK] = GRAY_INTERLACE_gG;
-    s->duplex_interlace = DUPLEX_INTERLACE_FBfb;
+    s->duplex_interlace = DUPLEX_INTERLACE_PER_CHANNEL;
 
     s->unknown_byte2 = 0x88;
     s->need_ccal = 1;
     s->ccal_version = 3;
-    s->need_fcal = 1;
+    s->fcal_src = FCAL_SRC_SCAN;
+    s->fcal_dest = FCAL_DEST_HW;
     s->invert_tly = 1;
     s->rgb_format = 1;
     /*s->duplex_offset = 400; now set in config file*/
@@ -1696,6 +1895,7 @@ init_model (struct scanner *s)
   }
 
   else if (strstr (s->model_name,"DR-X10C")){
+    int i = 0;
 
     /* Required for USB coms */
     s->has_ssm = 0;
@@ -1718,11 +1918,97 @@ init_model (struct scanner *s)
     s->std_res_y[DPI_600]=1;
 
     s->has_hwcrop = 1;
+
+    /*valid horizontal offsets for post-imprinter*/
+    s->post_imprinter_h_offset_list[++i] = 21;
+    s->post_imprinter_h_offset_list[++i] = 35;
+    s->post_imprinter_h_offset_list[++i] = 47;
+    s->post_imprinter_h_offset_list[++i] = 59;
+    s->post_imprinter_h_offset_list[++i] = 72;
+    s->post_imprinter_h_offset_list[++i] = 99;
+    s->post_imprinter_h_offset_list[++i] = 114;
+    s->post_imprinter_h_offset_list[++i] = 143;
+    s->post_imprinter_h_offset_list[++i] = 155;
+    s->post_imprinter_h_offset_list[++i] = 167;
+    s->post_imprinter_h_offset_list[++i] = 196;
+    s->post_imprinter_h_offset_list[++i] = 211;
+    s->post_imprinter_h_offset_list[++i] = 239;
+    s->post_imprinter_h_offset_list[++i] = 251;
+    s->post_imprinter_h_offset_list[++i] = 263;
+    s->post_imprinter_h_offset_list[++i] = 275;
+    s->post_imprinter_h_offset_list[++i] = 289;
+    s->post_imprinter_h_offset_list[0] = i;
+
+    i = 0;
+    /*valid horizontal offsets for pre-imprinter*/
+    s->pre_imprinter_h_offset_list[++i] = 14;
+    s->pre_imprinter_h_offset_list[++i] = 28;
+    s->pre_imprinter_h_offset_list[++i] = 41;
+    s->pre_imprinter_h_offset_list[++i] = 53;
+    s->pre_imprinter_h_offset_list[++i] = 65;
+    s->pre_imprinter_h_offset_list[++i] = 106;
+    s->pre_imprinter_h_offset_list[0] = i;
+
+    /*valid vertical offsets for imprinters*/
+    s->imprinter_v_offset_range.min = 0;
+    s->imprinter_v_offset_range.max = 500;
+    s->imprinter_v_offset_range.quant = 1;
+
+    i = 0;
+    /*valid font angles for imprinters*/
+    s->imprinter_font_angle_list[++i] = 0;
+    s->imprinter_font_angle_list[++i] = 90;
+    s->imprinter_font_angle_list[++i] = 180;
+    s->imprinter_font_angle_list[++i] = 270;
+    s->imprinter_font_angle_list[0] = i;
+
+    i = 0;
+    s->imprint_font_size_list[i++] = STRING_IMPRINTER_8x12_FONT;
+    s->imprint_font_size_list[i++] = STRING_IMPRINTER_12x12_FONT;
+    s->imprint_font_size_list[i] = NULL;
+
+    i = 0;
+    s->imprint_addon_mode_list[i++] = STRING_IMPRINTER_ADDON_BoI;
+    s->imprint_addon_mode_list[i++] = STRING_IMPRINTER_ADDON_BoW;
+    s->imprint_addon_mode_list[i++] = STRING_IMPRINTER_ADDON_WoB;
+    s->imprint_addon_mode_list[i++] = STRING_NONE;
+    s->imprint_addon_mode_list[i] = NULL;
   }
 
   DBG (10, "init_model: finish\n");
 
   return SANE_STATUS_GOOD;
+}
+
+/*
+ * try to detect imprinters.
+ */
+static SANE_Status
+init_imprinters (struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  DBG (10, "init_imprinters: start\n");
+
+  /* check the pre imprinter first */
+  ret = detect_imprinter(s,R_PRE_IMPRINTER);
+  if(ret == SANE_STATUS_GOOD){
+    DBG (15, "init_imprinters: preimprinter found\n");
+    s->has_pre_imprinter = 1;
+  }
+
+  /* these scanners only support one imprinter */
+  /* so only ask for postimp if preimp not found */
+  else if(ret == SANE_STATUS_UNSUPPORTED){
+    ret = detect_imprinter(s,R_POST_IMPRINTER);
+    if(ret == SANE_STATUS_GOOD){
+      DBG (15, "init_imprinters: postimprinter found\n");
+      s->has_post_imprinter = 1;
+    }
+  }
+
+  DBG (10, "init_imprinters: finish\n");
+  return ret;
 }
 
 /*
@@ -1739,7 +2025,6 @@ init_panel (struct scanner *s)
   if(ret){
     DBG (5, "init_panel: disabling read_panel\n");
     s->can_read_panel = 0;
-    ret = SANE_STATUS_GOOD;
   }
 
   s->panel_enable_led = 1;
@@ -1748,10 +2033,30 @@ init_panel (struct scanner *s)
   if(ret){
     DBG (5, "init_panel: disabling send_panel\n");
     s->can_write_panel = 0;
-    ret = SANE_STATUS_GOOD;
   }
 
   DBG (10, "init_panel: finish\n");
+
+  return ret;
+}
+
+/*
+ * This function disables the lifecycle counters if not available
+ */
+static SANE_Status
+init_counters (struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  DBG (10, "init_counters: start\n");
+
+  ret = read_counters(s);
+  if(ret){
+    DBG (5, "init_counters: disabling lifecycle counters\n");
+    s->can_read_lifecycle_counters = 0;
+  }
+
+  DBG (10, "init_counters: finish\n");
 
   return ret;
 }
@@ -1808,6 +2113,10 @@ init_user (struct scanner *s)
 
   s->threshold = 90;
   s->compress_arg = 50;
+
+  s->pre_imprint.h_offset = 65;
+  s->post_imprint.h_offset = 155;
+  s->post_imprint_addon_mode = ADDON_BoI;
 
   DBG (10, "init_user: finish\n");
 
@@ -2593,6 +2902,197 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
      opt->cap = SANE_CAP_INACTIVE;
   }
 
+  /* "Imprinter" group --------------------------------------------------- */
+  if(option==OPT_IMPRINT_GROUP){
+    opt->name = "imprinter-options";
+    opt->title = SANE_I18N ("Imprinter Options");
+    opt->desc = SANE_I18N ("Controls for imprinter units");
+    opt->type = SANE_TYPE_GROUP;
+    opt->constraint_type = SANE_CONSTRAINT_NONE;
+
+    /*flaming hack to get scanimage to hide group*/
+    if ( !(s->has_pre_imprinter || s->has_post_imprinter) )
+      opt->type = SANE_TYPE_BOOL;
+  }
+
+  if(option==OPT_PRE_IMPRINT_SPECSTRING){
+    opt->name = "pre-imprint-string";
+    opt->title = "Pre-Imprinter string";
+    opt->desc = "String specifier for the pre-imprinter text";
+    opt->type = SANE_TYPE_STRING;
+    opt->size = IMPRINT_SPECSTRING_LEN;
+    if (s->has_pre_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_PRE_IMPRINT_H_OFFSET){
+    opt->name = "pre-imprint-h-offset";
+    opt->title = "Pre-Imprinter horizontal offset";
+    opt->desc = "Integer specifying the horizontal positioning of the pre-imprinter";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_MM;
+    opt->size = sizeof(SANE_Word);
+    opt->constraint_type = SANE_CONSTRAINT_WORD_LIST;
+    opt->constraint.word_list = s->pre_imprinter_h_offset_list;
+    if (s->has_pre_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_PRE_IMPRINT_V_OFFSET){
+    opt->name = "pre-imprint-v-offset";
+    opt->title = "Pre-Imprinter vertical offset";
+    opt->desc = "Integer specifying the vertical positioning of the pre-imprinter";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_MM;
+    opt->size = sizeof(SANE_Word);
+    opt->constraint_type = SANE_CONSTRAINT_RANGE;
+    opt->constraint.range = &s->imprinter_v_offset_range;
+    if (s->has_pre_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_PRE_IMPRINT_FONT_SIZE){
+    opt->name = "pre-imprint-font-size";
+    opt->title = "Pre-Imprinter font size";
+    opt->desc = "Integer specifying the pre-imprint font size";
+    opt->type = SANE_TYPE_STRING;
+    opt->constraint_type = SANE_CONSTRAINT_STRING_LIST;
+    opt->constraint.string_list = s->imprint_font_size_list;
+    opt->size = maxStringSize (opt->constraint.string_list);
+    if (s->has_pre_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_PRE_IMPRINT_FONT_ROT){
+    opt->name = "pre-imprint-font-rot";
+    opt->title = "Pre-Imprinter font rotation";
+    opt->desc = "Integer specifying the pre-imprint font rotation";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_NONE;
+    opt->size = sizeof(SANE_Word);
+    opt->constraint_type = SANE_CONSTRAINT_WORD_LIST;
+    opt->constraint.word_list = s->imprinter_font_angle_list;
+    if (s->has_pre_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_PRE_IMPRINT_SPACING){
+    opt->name = "pre-imprint-spacing";
+    opt->title = "Pre-Imprinter spacing";
+    opt->desc = "Enables the pre-imprint extra spacing";
+    opt->type = SANE_TYPE_BOOL;
+    if (s->has_pre_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_POST_IMPRINT_SPECSTRING){
+    opt->name = "post-imprint-string";
+    opt->title = "Post-Imprinter string";
+    opt->desc = "String specifier for the post-imprinter text";
+    opt->type = SANE_TYPE_STRING;
+    opt->size = IMPRINT_SPECSTRING_LEN;
+    if (s->has_post_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_POST_IMPRINT_H_OFFSET){
+    opt->name = "post-imprint-h-offset";
+    opt->title = "Post-Imprinter horizontal offset";
+    opt->desc = "Integer specifying the horizontal positioning of the post-imprinter";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_MM;
+    opt->size = sizeof(SANE_Word);
+    opt->constraint_type = SANE_CONSTRAINT_WORD_LIST;
+    opt->constraint.word_list = s->post_imprinter_h_offset_list;
+    if (s->has_post_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_POST_IMPRINT_V_OFFSET){
+    opt->name = "post-imprint-v-offset";
+    opt->title = "Post-Imprinter vertical offset";
+    opt->desc = "Integer specifying the vertical positioning of the post-imprinter";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_MM;
+    opt->size = sizeof(SANE_Word);
+    opt->constraint_type = SANE_CONSTRAINT_RANGE;
+    opt->constraint.range = &s->imprinter_v_offset_range;
+    if (s->has_post_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_POST_IMPRINT_FONT_SIZE){
+    opt->name = "post-imprint-font-size";
+    opt->title = "Post-Imprinter font size";
+    opt->desc = "Integer specifying the post-imprint font size";
+    opt->type = SANE_TYPE_STRING;
+    opt->constraint_type = SANE_CONSTRAINT_STRING_LIST;
+    opt->constraint.string_list = s->imprint_font_size_list;
+    opt->size = maxStringSize (opt->constraint.string_list);
+    if (s->has_post_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_POST_IMPRINT_FONT_ROT){
+    opt->name = "post-imprint-font-rot";
+    opt->title = "Post-Imprinter font rotation";
+    opt->desc = "Integer specifying the post-imprint font rotation";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_NONE;
+    opt->size = sizeof(SANE_Word);
+    opt->constraint_type = SANE_CONSTRAINT_WORD_LIST;
+    opt->constraint.word_list = s->imprinter_font_angle_list;
+    if (s->has_post_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_POST_IMPRINT_SPACING){
+    opt->name = "post-imprint-spacing";
+    opt->title = "Post-Imprinter spacing";
+    opt->desc = "Enables the post-imprint extra spacing";
+    opt->type = SANE_TYPE_BOOL;
+    if (s->has_post_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_POST_IMPRINT_ADDON_MODE){
+    opt->name = "post-imprint-addon-mode";
+    opt->title = "Post-Imprinter addon mode";
+    opt->desc = "Integer specifying the type of post-imprint addon rendered in the scanned image";
+    opt->type = SANE_TYPE_STRING;
+    opt->constraint_type = SANE_CONSTRAINT_STRING_LIST;
+    opt->constraint.string_list = s->imprint_addon_mode_list;
+    opt->size = maxStringSize (opt->constraint.string_list);
+    if (s->has_post_imprinter)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
   /* "Sensor" group ------------------------------------------------------ */
   if(option==OPT_SENSOR_GROUP){
     opt->name = SANE_NAME_SENSORS;
@@ -2682,6 +3182,34 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
 
     if (s->can_read_panel && s->has_counter)
      opt->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_HARD_SELECT | SANE_CAP_ADVANCED;
+    else
+      opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_ROLLERCOUNTER){
+    opt->name = "roller-counter";
+    opt->title = "Roller Counter";
+    opt->desc = "Scans since last roller replacement";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_NONE;
+    opt->constraint_type = SANE_CONSTRAINT_NONE;
+
+    if (s->can_read_lifecycle_counters)
+      opt->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_HARD_SELECT | SANE_CAP_ADVANCED;
+    else
+      opt->cap = SANE_CAP_INACTIVE;
+  }
+
+  if(option==OPT_TOTALCOUNTER){
+    opt->name = "total-counter";
+    opt->title = "Total Counter";
+    opt->desc = "Total scan count of the device";
+    opt->type = SANE_TYPE_INT;
+    opt->unit = SANE_UNIT_NONE;
+    opt->constraint_type = SANE_CONSTRAINT_NONE;
+
+    if (s->can_read_lifecycle_counters)
+      opt->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_HARD_SELECT | SANE_CAP_ADVANCED;
     else
       opt->cap = SANE_CAP_INACTIVE;
   }
@@ -2964,6 +3492,122 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           *val_p = s->hwcrop;
           return SANE_STATUS_GOOD;
 
+        case OPT_PRE_IMPRINT_SPECSTRING:
+          strcpy(val, s->pre_imprint.specstring);
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_H_OFFSET:
+          *val_p = s->pre_imprint.h_offset;
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_V_OFFSET:
+          *val_p = s->pre_imprint.v_offset;
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_FONT_SIZE:
+          switch (s->pre_imprint.font_size){
+            case IMPRINTER_12x12_FONT:
+              strcpy(val, STRING_IMPRINTER_12x12_FONT);
+              break;
+
+            case IMPRINTER_8x12_FONT:
+              strcpy(val, STRING_IMPRINTER_8x12_FONT);
+              break;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_FONT_ROT:
+          switch (s->pre_imprint.font_rot){
+            case IMPRINTER_0_FONT_ROT:
+              *val_p = 0;
+              break;
+
+            case IMPRINTER_90_FONT_ROT:
+              *val_p = 90;
+              break;
+
+            case IMPRINTER_180_FONT_ROT:
+              *val_p = 180;
+              break;
+
+            case IMPRINTER_270_FONT_ROT:
+              *val_p = 270;
+              break;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_SPACING:
+          *val_p = s->pre_imprint.spacing;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_SPECSTRING:
+          strcpy(val, s->post_imprint.specstring);
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_H_OFFSET:
+          *val_p = s->post_imprint.h_offset;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_V_OFFSET:
+          *val_p = s->post_imprint.v_offset;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_FONT_SIZE:
+          switch (s->post_imprint.font_size){
+            case IMPRINTER_12x12_FONT:
+              strcpy(val, STRING_IMPRINTER_12x12_FONT);
+              break;
+
+            case IMPRINTER_8x12_FONT:
+              strcpy(val, STRING_IMPRINTER_8x12_FONT);
+              break;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_FONT_ROT:
+          switch (s->post_imprint.font_rot){
+            case IMPRINTER_0_FONT_ROT:
+              *val_p = 0;
+              break;
+
+            case IMPRINTER_90_FONT_ROT:
+              *val_p = 90;
+              break;
+
+            case IMPRINTER_180_FONT_ROT:
+              *val_p = 180;
+              break;
+
+            case IMPRINTER_270_FONT_ROT:
+              *val_p = 270;
+              break;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_SPACING:
+          *val_p = s->post_imprint.spacing;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_ADDON_MODE:
+          switch (s->post_imprint_addon_mode){
+            case ADDON_BoW:
+              strcpy(val, STRING_IMPRINTER_ADDON_BoW);
+              break;
+
+            case ADDON_BoI:
+              strcpy(val, STRING_IMPRINTER_ADDON_BoI);
+              break;
+
+            case ADDON_WoB:
+              strcpy(val, STRING_IMPRINTER_ADDON_WoB);
+              break;
+
+            case ADDON_DISABLED:
+              strcpy(val, STRING_NONE);
+              break;
+          }
+          return SANE_STATUS_GOOD;
+
         /* Sensor Group */
         case OPT_START:
           ret = read_panel(s,OPT_START);
@@ -3000,6 +3644,16 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           *val_p = s->panel_counter;
           return ret;
 
+        case OPT_ROLLERCOUNTER:
+          ret = read_counters(s);
+          *val_p = s->roller_counter;
+          return ret;
+
+        case OPT_TOTALCOUNTER:
+          ret = read_counters(s);
+          *val_p = s->total_counter;
+          return ret;
+
         case OPT_ADF_LOADED:
           ret = read_sensors(s,OPT_ADF_LOADED);
           *val_p = s->sensor_adf_loaded;
@@ -3019,7 +3673,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
       DBG (20, "sane_control_option: set value for '%s' (%d)\n", s->opt[option].name,option);
 
       if ( s->started ) {
-        DBG (5, "sane_control_option: cant set, device busy\n");
+        DBG (5, "sane_control_option: can't set, device busy\n");
         return SANE_STATUS_DEVICE_BUSY;
       }
 
@@ -3034,7 +3688,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
         return status;
       }
 
-      /* may have been changed by constrain, so dont copy until now */
+      /* may have been changed by constrain, so don't copy until now */
       val_c = *(SANE_Word *)val;
 
       /*
@@ -3287,6 +3941,119 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           s->hwcrop = val_c;
           return SANE_STATUS_GOOD;
 
+        case OPT_PRE_IMPRINT_SPECSTRING:
+          if (strlen(val) < IMPRINT_SPECSTRING_LEN){
+            strncpy(s->pre_imprint.specstring, val, IMPRINT_SPECSTRING_LEN);
+            return SANE_STATUS_GOOD;
+          }
+          DBG (5, "sane_control_option: pre-imprint spec string '%s' exceed the limit of %d characters\n", (SANE_String)val, IMPRINT_SPECSTRING_LEN);
+          return SANE_STATUS_INVAL;
+
+        case OPT_PRE_IMPRINT_H_OFFSET:
+          s->pre_imprint.h_offset = val_c;
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_V_OFFSET:
+          s->pre_imprint.v_offset = val_c;
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_FONT_SIZE:
+          if (!strcmp (val, STRING_IMPRINTER_12x12_FONT)) {
+            s->pre_imprint.font_size = IMPRINTER_12x12_FONT;
+          }
+          if (!strcmp (val, STRING_IMPRINTER_8x12_FONT)) {
+            s->pre_imprint.font_size = IMPRINTER_8x12_FONT;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_FONT_ROT:
+          switch (val_c){
+            case 0:
+              s->pre_imprint.font_rot = IMPRINTER_0_FONT_ROT;
+              break;
+
+            case 90:
+              s->pre_imprint.font_rot = IMPRINTER_90_FONT_ROT;
+              break;
+
+            case 180:
+              s->pre_imprint.font_rot = IMPRINTER_180_FONT_ROT;
+              break;
+
+            case 270:
+              s->pre_imprint.font_rot = IMPRINTER_270_FONT_ROT;
+              break;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_PRE_IMPRINT_SPACING:
+          s->pre_imprint.spacing = val_c;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_SPECSTRING:
+          if (strlen(val) < IMPRINT_SPECSTRING_LEN){
+            strncpy(s->post_imprint.specstring, val, IMPRINT_SPECSTRING_LEN);
+            return SANE_STATUS_GOOD;
+          }
+          DBG (5, "sane_control_option: post-imprint spec string '%s' exceed the limit of %d characters\n", (SANE_String)val, IMPRINT_SPECSTRING_LEN);
+          return SANE_STATUS_INVAL;
+
+        case OPT_POST_IMPRINT_H_OFFSET:
+          s->post_imprint.h_offset = val_c;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_V_OFFSET:
+          s->post_imprint.v_offset = val_c;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_FONT_SIZE:
+          if (!strcmp (val, STRING_IMPRINTER_12x12_FONT)) {
+            s->post_imprint.font_size = IMPRINTER_12x12_FONT;
+          }
+          if (!strcmp (val, STRING_IMPRINTER_8x12_FONT)) {
+            s->post_imprint.font_size = IMPRINTER_8x12_FONT;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_FONT_ROT:
+          switch (val_c){
+            case 0:
+              s->post_imprint.font_rot = IMPRINTER_0_FONT_ROT;
+              break;
+
+            case 90:
+              s->post_imprint.font_rot = IMPRINTER_90_FONT_ROT;
+              break;
+
+            case 180:
+              s->post_imprint.font_rot = IMPRINTER_180_FONT_ROT;
+              break;
+
+            case 270:
+              s->post_imprint.font_rot = IMPRINTER_270_FONT_ROT;
+              break;
+          }
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_SPACING:
+          s->post_imprint.spacing = val_c;
+          return SANE_STATUS_GOOD;
+
+        case OPT_POST_IMPRINT_ADDON_MODE:
+          if (!strcmp (val, STRING_IMPRINTER_ADDON_BoW)) {
+            s->post_imprint_addon_mode = ADDON_BoW;
+          }
+          if (!strcmp (val, STRING_IMPRINTER_ADDON_BoI)) {
+            s->post_imprint_addon_mode = ADDON_BoI;
+          }
+          if (!strcmp (val, STRING_IMPRINTER_ADDON_WoB)) {
+            s->post_imprint_addon_mode = ADDON_WoB;
+          }
+          if (!strcmp (val, STRING_NONE)) {
+            s->post_imprint_addon_mode = ADDON_DISABLED;
+          }
+          return SANE_STATUS_GOOD;
+
       }
   }                           /* else */
 
@@ -3490,6 +4257,14 @@ ssm_df (struct scanner *s)
     /* staple detection */
     if(s->stapledetect){
       set_SSM2_DF_staple(out, 1);
+    }
+
+    int requires_postimprint = s->has_post_imprinter && (strlen(s->post_imprint.specstring) > 0);
+    int requires_preimprint = s->has_pre_imprinter && (strlen(s->pre_imprint.specstring) > 0);
+    if (s->has_post_imprinter)
+      set_SSM2_DF_post_addon(out, requires_postimprint);
+    if (requires_postimprint || requires_preimprint){
+      set_SSM2_DF_imprint(out, 1);
     }
 
     ret = do_cmd (
@@ -3753,6 +4528,50 @@ ssm_do (struct scanner *s)
 }
 
 static SANE_Status
+read_counters(struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  unsigned char cmd[READ_len];
+  size_t cmdLen = READ_len;
+
+  unsigned char in[R_COUNTERS_len];
+  size_t inLen = R_COUNTERS_len;
+
+  if (!s->can_read_lifecycle_counters){
+    DBG(10, "read_counters: unsupported\n");
+    return ret;
+  }
+
+  DBG(10, "read_counters: start\n");
+
+  memset(cmd,0,cmdLen);
+  set_SCSI_opcode(cmd, READ_code);
+  set_R_datatype_code(cmd, SR_datatype_counters);
+  set_R_xfer_length(cmd, inLen);
+
+  ret = do_cmd(
+    s, 1, 0,
+    cmd, cmdLen,
+    NULL, 0,
+    in, &inLen
+  );
+
+  if (ret == SANE_STATUS_GOOD || ret == SANE_STATUS_EOF){
+
+    s->total_counter = get_R_COUNTERS_total(in);
+    s->roller_counter = s->total_counter - get_R_COUNTERS_last_srv(in);
+
+    DBG(10, "read_counters: total counter: %d roller_counter %d \n",s->total_counter,s->roller_counter);
+    ret = SANE_STATUS_GOOD;
+  }else{
+    DBG(10, "read_counters: ERROR: %d\n",ret);
+  }
+
+  return ret;
+}
+
+static SANE_Status
 read_sensors(struct scanner *s,SANE_Int option)
 {
   SANE_Status ret=SANE_STATUS_GOOD;
@@ -3951,10 +4770,12 @@ get_pixelsize(struct scanner *s)
         in, &inLen
     );
 
-    if(ret == SANE_STATUS_GOOD &&
-       get_R_PSIZE_width(in) > 0 &&
-       get_R_PSIZE_length(in) > 0){
+    if(ret != SANE_STATUS_GOOD){
+      DBG (10, "get_pixelsize: error reading, status = %d\n", ret);
+      break;
+    }
 
+    if(get_R_PSIZE_width(in) > 0 && get_R_PSIZE_length(in) > 0){
       DBG (15, "get_pixelsize: w:%d h:%d\n",
            get_R_PSIZE_width(in) * s->u.dpi_x / 1200,
            get_R_PSIZE_length(in) * s->u.dpi_y / 1200);
@@ -4236,6 +5057,254 @@ update_params(struct scanner *s, int calib)
     return ret;
 }
 
+/* simplify handling cmd SANE_STATUS_EOF as SANE_STATUS_GOOD */
+SANE_Status
+send_cmd(struct scanner *s, unsigned char* cmd, size_t cmdLen,
+                            unsigned char* out, size_t outLen,
+                            unsigned char * inBuff, size_t * inLen)
+{
+  SANE_Status ret=SANE_STATUS_GOOD;
+
+    ret = do_cmd (
+      s, 1, 0,
+      cmd, cmdLen,
+      out, outLen,
+      inBuff, inLen
+    );
+
+    if (ret == SANE_STATUS_EOF) {
+        ret = SANE_STATUS_GOOD;
+    }
+
+    return ret;
+}
+
+SANE_Status
+send_imprint_positioning(struct scanner* s, int is_postimprint, int enabled)
+{
+  unsigned char cmd[SET_SCAN_MODE2_len];
+  size_t cmdLen=SET_SCAN_MODE2_len;
+
+  unsigned char out[SSM2_PAY_len];
+  size_t outLen=SSM2_PAY_len;
+
+  unsigned char out_prefix[5]={ 0x01, 0x00, 0x60, 0x00, 0x60 };
+  size_t outPrefixLen=5;
+
+  memset(cmd,0,cmdLen);
+  set_SCSI_opcode(cmd,SET_SCAN_MODE2_code);
+  set_SSM2_page_code(cmd,SM2_pc_imprinter_settings);
+  if (is_postimprint)
+    set_SSM2_postimprint_cmd(cmd);
+  set_SSM2_pay_len(cmd,outLen);
+
+  memset(out,0,outLen);
+  memcpy(out,out_prefix,outPrefixLen);
+
+  int h_offset;
+  int v_offset;
+  if (is_postimprint){
+    if (s->post_imprint_addon_mode != ADDON_DISABLED)
+      set_SSM2_postimprint_addon(out);
+    h_offset = s->post_imprint.h_offset;
+    v_offset = s->post_imprint.v_offset;
+
+    if (enabled)
+      DBG (10, "send_imprint_positioning: post-imprinter: h_offset: %d v_offset: %d\n",h_offset,v_offset);
+  }else{
+    h_offset = s->pre_imprint.h_offset;
+    v_offset = s->pre_imprint.v_offset;
+    if (enabled)
+      DBG (10, "send_imprint_positioning: pre-imprinter: h_offset: %d v_offset: %d\n",h_offset,v_offset);
+  }
+  if(!enabled)
+    h_offset = v_offset = 0;
+  set_SSM2_imprint_hoffset(out,h_offset);
+  set_SSM2_imprint_voffset(out,v_offset);
+
+  return send_cmd(s, cmd, cmdLen, out, outLen, NULL, NULL);
+}
+
+SANE_Status
+send_imprint_specstring(struct scanner* s, int is_postimprint)
+{
+  unsigned char cmd[SET_SCAN_MODE2_len];
+  size_t cmdLen = SET_SCAN_MODE2_len;
+
+  unsigned char out[SSM2_IMPRINTER_STRING_PAY_len];
+  size_t outLen = SSM2_IMPRINTER_STRING_PAY_len;
+
+  memset(cmd,0,cmdLen);
+  set_SCSI_opcode(cmd, SET_SCAN_MODE2_code);
+  set_SSM2_page_code(cmd, SM2_pc_imprinter_specstring);
+  if (is_postimprint)
+    set_SSM2_postimprint_cmd(cmd);
+  set_SSM2_pay_len(cmd, outLen);
+
+  memset(out,0,outLen);
+  /* most of these bytes have yet to be identified to specific functionalities,
+     as they never seem to change under different imprinting mode */
+  unsigned char out_prefix[32] = {
+      0x01, 0x00,
+      0x60, 0x00,
+      0x60, 0x00,
+      0x00, 0x00,
+      0x00, 0x00,
+      0x00, 0x00,
+      0x03, 0x00,
+      0x00, 0x00,
+      0x01, 0x00,
+      0x00, 0x00,
+      0x00, 0x00,
+      0x00, 0x00,
+      0x00, 0x00,
+      0x00, 0x01,
+      0x04, 0x00,
+      0x00, 0x00
+    };
+  memcpy(out, out_prefix, 32);
+  if (is_postimprint){
+    set_SSM2_imprint_fontsize(out, s->post_imprint.font_size);
+    set_SSM2_imprint_fontrot(out, s->post_imprint.font_rot);
+    set_SSM2_imprint_spacing(out, s->post_imprint.spacing);
+    if (s->post_imprint_addon_mode != ADDON_DISABLED)
+      set_SSM2_imprint_addonmode(out, s->post_imprint_addon_mode);
+    strcpy((SANE_Char*)(out + 45), (SANE_String_Const) s->post_imprint.specstring);
+    DBG (10, "send_imprint_specstring: post-imprinter: font size: %d rotation: %d spacing: %d text: '%s' imprint-addon-mode: %d\n",s->post_imprint.font_size,s->post_imprint.font_rot,s->post_imprint.spacing,s->post_imprint.specstring,s->post_imprint_addon_mode);
+  }else{
+    set_SSM2_imprint_fontsize(out, s->pre_imprint.font_size);
+    set_SSM2_imprint_fontrot(out, s->pre_imprint.font_rot);
+    set_SSM2_imprint_spacing(out, s->pre_imprint.spacing);
+    strcpy((SANE_Char*)(out + 45), (SANE_String_Const) s->pre_imprint.specstring);
+    DBG (10, "send_imprint_specstring: pre-imprinter: font size: %d rotation: %d spacing: %d text: '%s'\n",s->pre_imprint.font_size,s->pre_imprint.font_rot,s->pre_imprint.spacing,s->pre_imprint.specstring);
+  }
+
+  return send_cmd(s, cmd, cmdLen, out, outLen, NULL, NULL);
+}
+
+SANE_Status
+send_imprint_date_and_time(struct scanner* s)
+{
+  unsigned char cmd[SET_SCAN_MODE2_len];
+  size_t cmdLen = SET_SCAN_MODE2_len;
+
+  unsigned char out[SSM2_PAY_len];
+  size_t outLen = SSM2_PAY_len;
+
+  memset(cmd,0,cmdLen);
+  set_SCSI_opcode(cmd, SET_SCAN_MODE2_code);
+  set_SSM2_page_code(cmd, SM2_pc_date_time);
+  set_SSM2_pay_len(cmd, outLen);
+
+  memset(out,0,outLen);
+
+  time_t t = time(NULL);
+  struct tm tM = *localtime(&t);
+
+  set_SSM2_imprint_year(out, tM.tm_year + 1900);
+  set_SSM2_imprint_month(out, tM.tm_mon + 1);
+  set_SSM2_imprint_day(out, tM.tm_mday);
+  set_SSM2_imprint_hour(out, tM.tm_hour);
+  set_SSM2_imprint_min(out, tM.tm_min);
+  set_SSM2_imprint_sec(out, tM.tm_sec);
+
+  return send_cmd(s, cmd, cmdLen, out, outLen, NULL, NULL);
+}
+
+SANE_Status
+load_imprinting_settings(struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  int requires_preimprint = (strlen(s->pre_imprint.specstring) > 0);
+  int requires_postimprint = (strlen(s->post_imprint.specstring) > 0);
+  int send_date_time = (s->has_pre_imprinter && requires_preimprint) || (s->has_post_imprinter && requires_postimprint);
+
+  if (s->has_pre_imprinter){
+    ret = send_imprint_positioning(s, 0, requires_preimprint);
+    DBG(10, "load_imprinting_settings: send_pre_imprint_positioning = %d \n", ret);
+    if (ret != SANE_STATUS_GOOD)
+      return ret;
+    if (requires_preimprint){
+      ret = send_imprint_specstring(s, 0);
+      DBG(10, "load_imprinting_settings: send_pre_imprint_specstring = %d \n", ret);
+      if (ret != SANE_STATUS_GOOD)
+        return ret;
+    }
+  }
+
+  if (s->has_post_imprinter){
+    ret = send_imprint_positioning(s, 1, requires_postimprint);
+    DBG(10, "load_imprinting_settings: send_post_imprint_positioning = %d \n", ret);
+    if (ret != SANE_STATUS_GOOD)
+      return ret;
+    if (requires_postimprint){
+      ret = send_imprint_specstring(s, 1);
+      DBG(10, "load_imprinting_settings: send_post_imprint_specstring = %d \n", ret);
+      if (ret != SANE_STATUS_GOOD)
+        return ret;
+    }
+  }
+
+  if (send_date_time){
+    ret = send_imprint_date_and_time(s);
+    DBG(10, "load_imprinting_settings: send_imprint_date_and_time = %d \n", ret);
+  }
+  return ret;
+}
+
+/* look for a particular imprinter
+ * SANE_STATUS_GOOD = found
+ * SANE_STATUS_UNSUPPORTED = not found
+ * SANE_STATUS_INVAL = all other errors
+ */
+static SANE_Status
+detect_imprinter(struct scanner *s, SANE_Int imp_side)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  unsigned char cmd[READ_len];
+  size_t cmdLen = READ_len;
+
+  unsigned char in[R_IMPRINTER_len];
+  size_t inLen = R_IMPRINTER_len;
+
+  DBG (10, "detect_imprinter: start %d\n", imp_side);
+
+  memset(cmd,0,cmdLen);
+  set_SCSI_opcode(cmd, READ_code);
+  set_R_datatype_code(cmd, SR_datatype_imprinters);
+  set_R_xfer_uid(cmd, imp_side);
+  set_R_xfer_length(cmd, inLen);
+
+  ret = do_cmd(
+    s, 1, 0,
+    cmd, cmdLen,
+    NULL, 0,
+    in, &inLen
+  );
+
+  /* some scanners return eof for success, so we change it */
+  if (ret == SANE_STATUS_EOF) {
+    ret = SANE_STATUS_GOOD;
+  }
+
+  /* failed commands are 'inval' */
+  if(ret){
+    DBG (15, "detect_imprinter: error, converting %d to invalid\n", ret);
+    ret = SANE_STATUS_INVAL;
+  }
+
+  /* negative responses are 'unsupported' */
+  else if(!get_R_IMPRINTER_found(in)){
+    DBG (15, "detect_imprinter: not found, converting to unsupported\n");
+    ret = SANE_STATUS_UNSUPPORTED;
+  }
+
+  DBG (10, "detect_imprinter: finish %d\n", ret);
+  return ret;
+}
+
 /* reset image size parameters after buffer_xxx functions changed them */
 SANE_Status
 update_i_params(struct scanner *s)
@@ -4257,7 +5326,7 @@ update_i_params(struct scanner *s)
  *
  * this will be called between sides of a duplex scan,
  * and at the start of each page of an adf batch.
- * hence, we spend alot of time playing with s->started, etc.
+ * hence, we spend a lot of time playing with s->started, etc.
  */
 SANE_Status
 sane_start (SANE_Handle handle)
@@ -4312,20 +5381,25 @@ sane_start (SANE_Handle handle)
     }
 
     /* AFE cal */
-    if((ret = calibrate_AFE(s))){
+    ret = calibrate_AFE(s);
+    if (ret != SANE_STATUS_GOOD) {
       DBG (5, "sane_start: ERROR: cannot cal afe\n");
       goto errors;
     }
 
     /* fine cal */
-    if((ret = calibrate_fine(s))){
+    ret = calibrate_fine(s);
+    if (ret != SANE_STATUS_GOOD) {
       DBG (5, "sane_start: ERROR: cannot cal fine\n");
       goto errors;
     }
 
-    if((ret = calibrate_fine_buffer(s))){
-      DBG (5, "sane_start: ERROR: cannot cal fine from buffer\n");
-      goto errors;
+    if (s->has_pre_imprinter || s->has_post_imprinter){
+      ret = load_imprinting_settings(s);
+      if (ret != SANE_STATUS_GOOD) {
+        DBG (5, "sane_start: ERROR: invalid imprinting settings\n");
+        goto errors;
+      }
     }
 
     /* reset the page counter after calibration */
@@ -4456,10 +5530,10 @@ sane_start (SANE_Handle handle)
     }
 
     /* set clean defaults with new sheet of paper */
-    /* dont reset the transfer vars on backside of duplex page */
+    /* don't reset the transfer vars on backside of duplex page */
     /* otherwise buffered back page will be lost */
     /* ingest paper with adf (no-op for fb) */
-    /* dont call object pos or scan on back side of duplex scan */
+    /* don't call object pos or scan on back side of duplex scan */
     if(s->side == SIDE_FRONT || s->s.source == SOURCE_ADF_BACK || s->s.source == SOURCE_CARD_BACK){
 
       /* clean scan params for new scan */
@@ -5365,6 +6439,23 @@ copy_simplex(struct scanner *s, unsigned char * buf, int len, int side)
             line[line_next++] = 0;
           }
           break;
+
+        case GRAY_INTERLACE_C120:
+          DBG (17, "copy_simplex: gray, C120\n");
+
+          /* first read head (third byte of every three) */
+          for(j=bwidth-1;j>=0;j-=3){
+            line[line_next++] = buf[i+j];
+          }
+          /* second read head (first byte of every three) */
+          for(j=bwidth-3;j>=0;j-=3){
+            line[line_next++] = buf[i+j];
+          }
+          /* third read head (second byte of every three) */
+          for(j=bwidth-2;j>=0;j-=3){
+            line[line_next++] = buf[i+j];
+          }
+          break;
       }
     }
 
@@ -5449,6 +6540,29 @@ copy_simplex(struct scanner *s, unsigned char * buf, int len, int side)
             line[line_next++] = 0;
           }
           break;
+
+        case COLOR_INTERLACE_C120:
+          DBG (17, "copy_simplex: color, C120\n");
+
+          /* first read head (third byte of every three) */
+          for(j=t-1;j>=0;j-=3){
+            line[line_next++] = buf[i+j];
+            line[line_next++] = buf[i+t+j];
+            line[line_next++] = buf[i+2*t+j];
+          }
+          /* second read head (first byte of every three) */
+          for(j=t-3;j>=0;j-=3){
+            line[line_next++] = buf[i+j];
+            line[line_next++] = buf[i+t+j];
+            line[line_next++] = buf[i+2*t+j];
+          }
+          /* third read head (second byte of every three) */
+          for(j=t-2;j>=0;j-=3){
+            line[line_next++] = buf[i+j];
+            line[line_next++] = buf[i+t+j];
+            line[line_next++] = buf[i+2*t+j];
+          }
+          break;
       }
     }
 
@@ -5515,6 +6629,7 @@ copy_duplex(struct scanner *s, unsigned char * buf, int len)
 {
   SANE_Status ret=SANE_STATUS_GOOD;
   int i,j;
+  int pwidth = s->s.width;
   int bwidth = s->s.Bpl;
   int dbwidth = 2*bwidth;
   unsigned char * front;
@@ -5562,6 +6677,21 @@ copy_duplex(struct scanner *s, unsigned char * buf, int len)
         back[blen++] = buf[i+j+3];
         back[blen++] = buf[i+j];
         back[blen++] = buf[i+j+1];
+      }
+    }
+  }
+
+  /* line is in 6 sections, front red, back red, front green, etc. */
+  else if(s->duplex_interlace == DUPLEX_INTERLACE_PER_CHANNEL){
+
+    DBG (10, "copy_duplex: per channel\n");
+
+    for(i=0; i<len; i+=dbwidth){
+      for(j=0;j<3;j++){
+        memcpy(front+flen,buf+i+j*pwidth*2,pwidth);
+        flen+=pwidth;
+        memcpy(back+blen,buf+i+j*pwidth*2+pwidth,pwidth);
+        blen+=pwidth;
       }
     }
   }
@@ -5942,7 +7072,7 @@ calibrate_AFE (struct scanner *s)
     goto cleanup;
   }
 
-  /*blast the existing fine cal data so reading code wont apply it*/
+  /*blast the existing fine cal data so reading code won't apply it*/
   ret = offset_buffers(s,0);
   ret = gain_buffers(s,0);
 
@@ -6117,10 +7247,68 @@ calibrate_AFE (struct scanner *s)
   return ret;
 }
 
-
-/* alternative version- extracts data from scanner memory */
+/*
+ * fine calibration produces a per-cell offset and gain value,
+ * which is then used to adjust the output from the scanner.
+ * There is quite a bit of variation here, with different models
+ * needing different types/amounts of help from the software.
+ *
+ * This function is a common entry point for all variations.
+ */
 static SANE_Status
-calibrate_fine_buffer (struct scanner *s)
+calibrate_fine (struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  DBG (10, "calibrate_fine: start\n");
+
+  if(s->fcal_src == FCAL_SRC_NONE || s->fcal_dest == FCAL_DEST_NONE){
+    DBG (10, "calibrate_fine: not required\n");
+    goto cleanup;
+  }
+
+  /* don't recalibrate if we've already done it with these params */
+  if(s->f_res == s->s.dpi_x && s->f_mode == s->s.mode){
+    DBG (10, "calibrate_fine: already done\n");
+    goto cleanup;
+  }
+
+  /* get calibration data from scanner memory */
+  if(s->fcal_src == FCAL_SRC_HW){
+    ret = calibrate_fine_src_hw(s);
+    if (ret != SANE_STATUS_GOOD)
+      goto cleanup;
+  }
+
+  /* get calibration data by making scans */
+  if(s->fcal_src == FCAL_SRC_SCAN){
+    ret = calibrate_fine_src_scan(s);
+    if (ret != SANE_STATUS_GOOD)
+      goto cleanup;
+  }
+
+  /* send calibration data to scanner */
+  if(s->fcal_dest == FCAL_DEST_HW){
+    ret = calibrate_fine_dest_hw(s);
+    if (ret != SANE_STATUS_GOOD)
+      goto cleanup;
+  }
+
+  /* log current cal settings so we won't recalibrate on next scan with same params */
+  s->f_res = s->s.dpi_x;
+  s->f_mode = s->s.mode;
+
+  cleanup:
+
+  DBG (10, "calibrate_fine: finish %d\n",ret);
+
+  return ret;
+}
+
+
+/* extracts fine calibration data from scanner memory */
+static SANE_Status
+calibrate_fine_src_hw (struct scanner *s)
 {
   SANE_Status ret = SANE_STATUS_GOOD;
   int i, j, k;
@@ -6136,12 +7324,7 @@ calibrate_fine_buffer (struct scanner *s)
   int old_br_y = s->u.br_y;
   int old_source = s->u.source;
 
-  DBG (10, "calibrate_fine_buffer: start\n");
-
-  if(!s->need_fcal_buffer){
-    DBG (10, "calibrate_fine_buffer: not required\n");
-    return ret;
-  }
+  DBG (10, "calibrate_fine_src_hw: start\n");
 
   /* pretend we are doing a 1 line scan in duplex */
   s->u.tl_y = 0;
@@ -6151,19 +7334,14 @@ calibrate_fine_buffer (struct scanner *s)
   /* load our own private copy of scan params */
   ret = update_params(s,1);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine_buffer: ERROR: cannot update_params\n");
-    goto cleanup;
-  }
-
-  if(s->f_res == s->s.dpi_x && s->f_mode == s->s.mode){
-    DBG (10, "calibrate_fine_buffer: already done\n");
+    DBG (5, "calibrate_fine_src_hw: ERROR: cannot update_params\n");
     goto cleanup;
   }
 
   /* clean scan params for new scan */
   ret = clean_params(s);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine_buffer: ERROR: cannot clean_params\n");
+    DBG (5, "calibrate_fine_src_hw: ERROR: cannot clean_params\n");
     goto cleanup;
   }
 
@@ -6172,7 +7350,7 @@ calibrate_fine_buffer (struct scanner *s)
 
   in = malloc(reqLen);
   if (!in) {
-    DBG (5, "calibrate_fine_buffer: ERROR: cannot malloc in\n");
+    DBG (5, "calibrate_fine_src_hw: ERROR: cannot malloc in\n");
     ret = SANE_STATUS_NO_MEM;
     goto cleanup;
   }
@@ -6180,11 +7358,11 @@ calibrate_fine_buffer (struct scanner *s)
   /*fine offset*/
   ret = offset_buffers(s,1);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine_buffer: ERROR: cannot load offset buffers\n");
+    DBG (5, "calibrate_fine_src_hw: ERROR: cannot load offset buffers\n");
     goto cleanup;
   }
 
-  DBG (5, "calibrate_fine_buffer: %d %x\n", s->s.dpi_x/10, s->s.dpi_x/10);
+  DBG (10, "calibrate_fine_src_hw: %d %x\n", s->s.dpi_x/10, s->s.dpi_x/10);
 
   memset(cmd,0,cmdLen);
   set_SCSI_opcode(cmd, READ_code);
@@ -6193,8 +7371,6 @@ calibrate_fine_buffer (struct scanner *s)
   set_R_xfer_length (cmd, reqLen);
 
   inLen = reqLen;
-
-  hexdump(15, "cmd:", cmd, cmdLen);
 
   ret = do_cmd (
     s, 1, 0,
@@ -6230,14 +7406,12 @@ calibrate_fine_buffer (struct scanner *s)
           s->f_offset[i][j] = 1;
       }
     }
-
-    hexdump(15, "off:", s->f_offset[i], s->s.valid_Bpl);
   }
 
   /*fine gain*/
   ret = gain_buffers(s,1);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine_buffer: ERROR: cannot load gain buffers\n");
+    DBG (5, "calibrate_fine_src_hw: ERROR: cannot load gain buffers\n");
     goto cleanup;
   }
 
@@ -6256,8 +7430,6 @@ calibrate_fine_buffer (struct scanner *s)
 
       set_R_xfer_uid (cmd, codes[k]);
       inLen = reqLen;
-
-      hexdump(15, "cmd:", cmd, cmdLen);
 
       ret = do_cmd (
         s, 1, 0,
@@ -6286,8 +7458,6 @@ calibrate_fine_buffer (struct scanner *s)
     set_R_xfer_uid (cmd, R_FINE_uid_gray);
     inLen = reqLen;
 
-    hexdump(15, "cmd:", cmd, cmdLen);
-
     ret = do_cmd (
       s, 1, 0,
       cmd, cmdLen,
@@ -6308,14 +7478,6 @@ calibrate_fine_buffer (struct scanner *s)
     }
   }
 
-  for(i=0;i<2;i++){
-    hexdump(15, "gain:", s->f_gain[i], s->s.valid_Bpl);
-  }
-
-  /* log current cal type */
-  s->f_res = s->s.dpi_x;
-  s->f_mode = s->s.mode;
-
   cleanup:
 
   if(in){
@@ -6327,16 +7489,16 @@ calibrate_fine_buffer (struct scanner *s)
   s->u.br_y = old_br_y;
   s->u.source = old_source;
 
-  DBG (10, "calibrate_fine_buffer: finish %d\n",ret);
+  DBG (10, "calibrate_fine_src_hw: finish %d\n",ret);
 
   return ret;
 }
 
 /*
- * makes several scans, adjusts fine calibration
+ * makes several scans, generates fine calibration data
  */
 static SANE_Status
-calibrate_fine (struct scanner *s)
+calibrate_fine_src_scan (struct scanner *s)
 {
   SANE_Status ret = SANE_STATUS_GOOD;
   int i, j, k;
@@ -6348,12 +7510,7 @@ calibrate_fine (struct scanner *s)
   int old_br_y = s->u.br_y;
   int old_source = s->u.source;
 
-  DBG (10, "calibrate_fine: start\n");
-
-  if(!s->need_fcal){
-    DBG (10, "calibrate_fine: not required\n");
-    return ret;
-  }
+  DBG (10, "calibrate_fine_src_scan: start\n");
 
   /* always cal with a short scan in duplex */
   s->u.tl_y = 0;
@@ -6363,12 +7520,7 @@ calibrate_fine (struct scanner *s)
   /* load our own private copy of scan params */
   ret = update_params(s,1);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot update_params\n");
-    goto cleanup;
-  }
-
-  if(s->f_res == s->s.dpi_x && s->f_mode == s->s.mode){
-    DBG (10, "calibrate_fine: already done\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot update_params\n");
     goto cleanup;
   }
 
@@ -6382,39 +7534,39 @@ calibrate_fine (struct scanner *s)
   /* make buffers to hold the images */
   ret = image_buffers(s,1);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot load buffers\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot load buffers\n");
     goto cleanup;
   }
 
-  /*blast the existing fine cal data so reading code wont apply it*/
+  /*blast the existing fine cal data so reading code won't apply it*/
   ret = offset_buffers(s,0);
   ret = gain_buffers(s,0);
 
   /* need to tell it we want duplex */
   ret = ssm_buffer(s);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot ssm buffer\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot ssm buffer\n");
     goto cleanup;
   }
 
   /* set window command */
   ret = set_window(s);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot set window\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot set window\n");
     goto cleanup;
   }
 
-  /*handle fifth pass (fine offset), lamp off*/
-  DBG (15, "calibrate_fine: offset\n");
+  /* first pass (fine offset), lamp off */
+  DBG (15, "calibrate_fine_src_scan: offset\n");
   ret = calibration_scan(s,0xff);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot make offset cal scan\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot make offset cal scan\n");
     goto cleanup;
   }
 
   ret = offset_buffers(s,1);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot load offset buffers\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot load offset buffers\n");
     goto cleanup;
   }
 
@@ -6429,17 +7581,17 @@ calibrate_fine (struct scanner *s)
     hexdump(15, "off:", s->f_offset[i], s->s.valid_Bpl);
   }
 
-  /*handle sixth pass (fine gain), lamp on*/
-  DBG (15, "calibrate_fine: gain\n");
+  /* second pass (fine gain), lamp on */
+  DBG (15, "calibrate_fine_src_scan: gain\n");
   ret = calibration_scan(s,0xfe);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot make gain cal scan\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot make gain cal scan\n");
     goto cleanup;
   }
 
   ret = gain_buffers(s,1);
   if (ret != SANE_STATUS_GOOD) {
-    DBG (5, "calibrate_fine: ERROR: cannot load gain buffers\n");
+    DBG (5, "calibrate_fine_src_scan: ERROR: cannot load gain buffers\n");
     goto cleanup;
   }
 
@@ -6457,10 +7609,6 @@ calibrate_fine (struct scanner *s)
     hexdump(15, "gain:", s->f_gain[i], s->s.valid_Bpl);
   }
 
-  /* log current cal type */
-  s->f_res = s->s.dpi_x;
-  s->f_mode = s->s.mode;
-
   cleanup:
 
   /* recover user settings */
@@ -6468,13 +7616,109 @@ calibrate_fine (struct scanner *s)
   s->u.br_y = old_br_y;
   s->u.source = old_source;
 
-  DBG (10, "calibrate_fine: finish %d\n",ret);
+  DBG (10, "calibrate_fine_src_scan: finish %d\n",ret);
+
+  return ret;
+}
+
+/* write calibration data to scanner memory and delete from struct */
+static SANE_Status
+calibrate_fine_dest_hw (struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+  int i, j, k;
+
+  unsigned char cmd[SEND_len];
+  size_t cmdLen = SEND_len;
+
+  unsigned char * out = NULL;
+  size_t outLen = 0;
+
+  DBG (10, "calibrate_fine_dest_hw: start\n");
+
+  /* calibration buffers in scanner are single color channel, but 16 bit, plus 4 byte header */
+  outLen = s->s.width*2 + 4;
+
+  out = calloc(outLen,1);
+  if (!out) {
+    DBG (5, "calibrate_fine_dest_hw: ERROR: cannot calloc out\n");
+    ret = SANE_STATUS_NO_MEM;
+    goto cleanup;
+  }
+
+  // sides
+  for(i=0;i<2;i++){
+
+    // colors
+    for(j=0;j<3;j++){
+
+      int codes[] = {
+        S_FCAL_id_f_red, S_FCAL_id_f_green, S_FCAL_id_f_blue,
+        S_FCAL_id_b_red, S_FCAL_id_b_green, S_FCAL_id_b_blue};
+
+      // offset
+      memset(cmd,0,cmdLen);
+      set_SCSI_opcode(cmd, SEND_code);
+      set_S_xfer_datatype (cmd, SR_datatype_fineoffset);
+      set_S_xfer_length (cmd, outLen);
+
+      set_S_FCAL_datatype (out, codes[i*3+j]);
+
+      for(k=0; k<s->s.valid_width; k++){
+        out[4+k*2] = 0;
+
+        // TODO: calculate this instead of hardcode
+        out[4+k*2+1] = 140;
+      }
+
+      ret = do_cmd (
+        s, 1, 0,
+        cmd, cmdLen,
+        out, outLen,
+        NULL, 0
+      );
+      if (ret != SANE_STATUS_GOOD)
+        goto cleanup;
+
+      // gain
+      set_S_FCAL_datatype (out, codes[i*3+j] | 0x40);
+
+      for(k=0; k<s->s.valid_width; k++){
+        out[4+k*2] = 0;
+
+        // TODO: calculate this instead of hardcode
+        out[4+k*2+1] = 40;
+      }
+
+      ret = do_cmd (
+        s, 1, 0,
+        cmd, cmdLen,
+        out, outLen,
+        NULL, 0
+      );
+      if (ret != SANE_STATUS_GOOD)
+        goto cleanup;
+
+    }
+  }
+
+  cleanup:
+
+  /*blast the fine cal data we generated above, so reading code wont apply it*/
+  offset_buffers(s,0);
+  gain_buffers(s,0);
+
+  if(out){
+    free(out);
+  }
+
+  DBG (10, "calibrate_fine_dest_hw: finish %d\n",ret);
 
   return ret;
 }
 
 /*
- * sends AFE params, and ingests entire duplex image into buffers
+ * does a simple scan, ingests entire duplex image into buffers
  */
 static SANE_Status
 calibration_scan (struct scanner *s, int scan)
@@ -6699,7 +7943,7 @@ gain_buffers (struct scanner *s, int setup)
  * handle h is a valid handle) but usually affects long-running
  * operations only (such as image acquisition). It is safe to call
  * this function asynchronously (e.g., from within a signal handler).
- * It is important to note that completion of this operaton does not
+ * It is important to note that completion of this operation does not
  * imply that the currently pending operation has been cancelled. It
  * only guarantees that cancellation has been initiated. Cancellation
  * completes only when the cancelled call returns (typically with a
@@ -6725,7 +7969,7 @@ sane_cancel (SANE_Handle handle)
 
 /* checks started and cancelled flags in scanner struct,
  * sends cancel command to scanner if required. don't call
- * this function asyncronously, wait for pending operation */
+ * this function asynchronously, wait for pending operation */
 static SANE_Status
 check_for_cancel(struct scanner *s)
 {
@@ -6863,6 +8107,9 @@ default_globals(void)
   global_padded_read = global_padded_read_default;
   global_extra_status = global_extra_status_default;
   global_duplex_offset = global_duplex_offset_default;
+  global_inquiry_length = INQUIRY_std_typ_len;
+  global_vpd_length = INQUIRY_vpd_typ_len;
+  global_tur_timeout = global_tur_timeout_default;
   global_vendor_name[0] = 0;
   global_model_name[0] = 0;
   global_version_name[0] = 0;
@@ -6888,7 +8135,7 @@ sense_handler (int fd, unsigned char * sensed_data, void *arg)
   DBG (5, "sense_handler: start\n");
 
   /* kill compiler warning */
-  fd = fd;
+  (void) fd;
 
   /* copy the rs return data into the scanner struct
      so that the caller can use it if he wants
@@ -7116,21 +8363,21 @@ sense_handler (int fd, unsigned char * sensed_data, void *arg)
  * take a bunch of pointers, send commands to scanner
  */
 static SANE_Status
-do_cmd(struct scanner *s, int runRS, int shortTime,
+do_cmd(struct scanner *s, int runRS, int timeout,
  unsigned char * cmdBuff, size_t cmdLen,
  unsigned char * outBuff, size_t outLen,
  unsigned char * inBuff, size_t * inLen
 )
 {
     if (s->connection == CONNECTION_SCSI) {
-        return do_scsi_cmd(s, runRS, shortTime,
+        return do_scsi_cmd(s, runRS, timeout,
                  cmdBuff, cmdLen,
                  outBuff, outLen,
                  inBuff, inLen
         );
     }
     if (s->connection == CONNECTION_USB) {
-        return do_usb_cmd(s, runRS, shortTime,
+        return do_usb_cmd(s, runRS, timeout,
                  cmdBuff, cmdLen,
                  outBuff, outLen,
                  inBuff, inLen
@@ -7140,7 +8387,7 @@ do_cmd(struct scanner *s, int runRS, int shortTime,
 }
 
 static SANE_Status
-do_scsi_cmd(struct scanner *s, int runRS, int shortTime,
+do_scsi_cmd(struct scanner *s, int runRS, int timeout,
  unsigned char * cmdBuff, size_t cmdLen,
  unsigned char * outBuff, size_t outLen,
  unsigned char * inBuff, size_t * inLen
@@ -7149,8 +8396,8 @@ do_scsi_cmd(struct scanner *s, int runRS, int shortTime,
   int ret;
 
   /*shut up compiler*/
-  runRS=runRS;
-  shortTime=shortTime;
+  (void) runRS;
+  (void) timeout;
 
   DBG(10, "do_scsi_cmd: start\n");
 
@@ -7188,7 +8435,7 @@ do_scsi_cmd(struct scanner *s, int runRS, int shortTime,
 }
 
 static SANE_Status
-do_usb_cmd(struct scanner *s, int runRS, int shortTime,
+do_usb_cmd(struct scanner *s, int runRS, int timeout,
  unsigned char * cmdBuff, size_t cmdLen,
  unsigned char * outBuff, size_t outLen,
  unsigned char * inBuff, size_t * inLen
@@ -7198,21 +8445,19 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
     size_t cmdLength = 0;
     size_t cmdActual = 0;
     unsigned char * cmdBuffer = NULL;
-    int cmdTimeout = 0;
 
     size_t outOffset = 0;
     size_t outLength = 0;
     size_t outActual = 0;
     unsigned char * outBuffer = NULL;
-    int outTimeout = 0;
 
     size_t inOffset = 0;
     size_t inLength = 0;
     size_t inActual = 0;
     unsigned char * inBuffer = NULL;
-    int inTimeout = 0;
 
     size_t extraLength = 0;
+    int actTimeout = timeout ? timeout : USB_PACKET_TIMEOUT;
 
     int ret = 0;
     int ret2 = 0;
@@ -7222,18 +8467,15 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
 
     DBG (10, "do_usb_cmd: start %lu %lu\n", (long unsigned int)timer.tv_sec, (long unsigned int)timer.tv_usec);
 
+    /* change timeout */
+    sanei_usb_set_timeout(actTimeout);
+
     /****************************************************************/
     /* the command stage */
     {
       cmdOffset = USB_HEADER_LEN;
       cmdLength = cmdOffset+USB_COMMAND_LEN;
       cmdActual = cmdLength;
-      cmdTimeout = USB_COMMAND_TIME;
-
-      /* change timeout */
-      if(shortTime)
-        cmdTimeout/=60;
-      sanei_usb_set_timeout(cmdTimeout);
 
       /* build buffer */
       cmdBuffer = calloc(cmdLength,1);
@@ -7243,13 +8485,13 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
       }
 
       /* build a USB packet around the SCSI command */
-      cmdBuffer[3] = cmdLength-4;
+      set_USB_CMD_xfer_length(cmdBuffer,cmdLength-4);
       cmdBuffer[5] = 1;
       cmdBuffer[6] = 0x90;
       memcpy(cmdBuffer+cmdOffset,cmdBuff,cmdLen);
 
       /* write the command out */
-      DBG(25, "cmd: writing %d bytes, timeout %d\n", (int)cmdLength, cmdTimeout);
+      DBG(25, "cmd: writing %d bytes, timeout %d\n", (int)cmdLength, actTimeout);
       hexdump(30, "cmd: >>", cmdBuffer, cmdLength);
       ret = sanei_usb_write_bulk(s->fd, cmdBuffer, &cmdActual);
       DBG(25, "cmd: wrote %d bytes, retVal %d\n", (int)cmdActual, ret);
@@ -7272,7 +8514,7 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
     /* this is like the regular status block, with an additional    */
     /* length component at the end */
     if(s->extra_status){
-      ret2 = do_usb_status(s,runRS,shortTime,&extraLength);
+      ret2 = do_usb_status(s,runRS,timeout,&extraLength);
 
       /* bail out on bad RS status */
       if(ret2){
@@ -7288,12 +8530,6 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
       outOffset = USB_HEADER_LEN;
       outLength = outOffset+outLen;
       outActual = outLength;
-      outTimeout = USB_DATA_TIME;
-
-      /* change timeout */
-      if(shortTime)
-        outTimeout/=60;
-      sanei_usb_set_timeout(outTimeout);
 
       /* build outBuffer */
       outBuffer = calloc(outLength,1);
@@ -7303,13 +8539,13 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
       }
 
       /* build a USB packet around the SCSI command */
-      outBuffer[3] = outLength-4;
+      set_USB_OUT_xfer_length(outBuffer,outLength-4);
       outBuffer[5] = 2;
       outBuffer[6] = 0xb0;
       memcpy(outBuffer+outOffset,outBuff,outLen);
 
       /* write the command out */
-      DBG(25, "out: writing %d bytes, timeout %d\n", (int)outLength, outTimeout);
+      DBG(25, "out: writing %d bytes, timeout %d\n", (int)outLength, actTimeout);
       hexdump(30, "out: >>", outBuffer, outLength);
       ret = sanei_usb_write_bulk(s->fd, outBuffer, &outActual);
       DBG(25, "out: wrote %d bytes, retVal %d\n", (int)outActual, ret);
@@ -7347,13 +8583,6 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
       /*blast caller's copy in case we error out*/
       *inLen = 0;
 
-      inTimeout = USB_DATA_TIME;
-
-      /* change timeout */
-      if(shortTime)
-        inTimeout/=60;
-      sanei_usb_set_timeout(inTimeout);
-
       /* build inBuffer */
       inBuffer = calloc(inActual,1);
       if(!inBuffer){
@@ -7361,7 +8590,7 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
         return SANE_STATUS_NO_MEM;
       }
 
-      DBG(25, "in: reading %d bytes, timeout %d\n", (int)inActual, inTimeout);
+      DBG(25, "in: reading %d bytes, timeout %d\n", (int)inActual, actTimeout);
       ret = sanei_usb_read_bulk(s->fd, inBuffer, &inActual);
       DBG(25, "in: read %d bytes, retval %d\n", (int)inActual, ret);
       hexdump(31, "in: <<", inBuffer, inActual);
@@ -7387,7 +8616,7 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
 
     /****************************************************************/
     /* the normal status stage */
-    ret2 = do_usb_status(s,runRS,shortTime,&extraLength);
+    ret2 = do_usb_status(s,runRS,timeout,&extraLength);
 
     /* if status said EOF, adjust input with remainder count */
     if(ret2 == SANE_STATUS_EOF && inBuffer){
@@ -7435,7 +8664,7 @@ do_usb_cmd(struct scanner *s, int runRS, int shortTime,
 }
 
 static SANE_Status
-do_usb_status(struct scanner *s, int runRS, int shortTime, size_t * extraLength)
+do_usb_status(struct scanner *s, int runRS, int timeout, size_t * extraLength)
 {
 
 #define EXTRA_READ_len 4
@@ -7445,7 +8674,8 @@ do_usb_status(struct scanner *s, int runRS, int shortTime, size_t * extraLength)
     size_t statLength = 0;
     size_t statActual = 0;
     unsigned char * statBuffer = NULL;
-    int statTimeout = 0;
+
+    int actTimeout = timeout ? timeout : USB_PACKET_TIMEOUT;
 
     int ret = 0;
 
@@ -7459,12 +8689,9 @@ do_usb_status(struct scanner *s, int runRS, int shortTime, size_t * extraLength)
       statLength += EXTRA_READ_len;
 
     statActual = statLength;
-    statTimeout = USB_STATUS_TIME;
 
     /* change timeout */
-    if(shortTime)
-      statTimeout/=60;
-    sanei_usb_set_timeout(statTimeout);
+    sanei_usb_set_timeout(timeout ? timeout : USB_PACKET_TIMEOUT);
 
     /* build statBuffer */
     statBuffer = calloc(statLength,1);
@@ -7473,7 +8700,7 @@ do_usb_status(struct scanner *s, int runRS, int shortTime, size_t * extraLength)
       return SANE_STATUS_NO_MEM;
     }
 
-    DBG(25, "stat: reading %d bytes, timeout %d\n", (int)statLength, statTimeout);
+    DBG(25, "stat: reading %d bytes, timeout %d\n", (int)statLength, actTimeout);
     ret = sanei_usb_read_bulk(s->fd, statBuffer, &statActual);
     DBG(25, "stat: read %d bytes, retval %d\n", (int)statActual, ret);
     hexdump(30, "stat: <<", statBuffer, statActual);
@@ -7518,7 +8745,7 @@ do_usb_clear(struct scanner *s, int clear, int runRS)
       DBG (15, "do_usb_clear: clear halt\n");
       ret = sanei_usb_clear_halt(s->fd);
       if(ret != SANE_STATUS_GOOD){
-        DBG(5,"do_usb_clear: cant clear halt, returning %d\n", ret);
+        DBG(5,"do_usb_clear: can't clear halt, returning %d\n", ret);
         return ret;
       }
     }
@@ -7538,7 +8765,7 @@ do_usb_clear(struct scanner *s, int clear, int runRS)
 
         DBG(25,"rs sub call >>\n");
         ret2 = do_cmd(
-          s,0,0,
+          s, 0, 0,
           rs_cmd, rs_cmdLen,
           NULL,0,
           rs_in, &rs_inLen
@@ -7580,7 +8807,7 @@ wait_scanner(struct scanner *s)
   set_SCSI_opcode(cmd,TEST_UNIT_READY_code);
 
   ret = do_cmd (
-    s, 0, 1,
+    s, 0, s->tur_timeout,
     cmd, cmdLen,
     NULL, 0,
     NULL, NULL
@@ -7589,7 +8816,7 @@ wait_scanner(struct scanner *s)
   if (ret != SANE_STATUS_GOOD) {
     DBG(5,"WARNING: Brain-dead scanner. Hitting with stick.\n");
     ret = do_cmd (
-      s, 0, 1,
+      s, 0, s->tur_timeout,
       cmd, cmdLen,
       NULL, 0,
       NULL, NULL
@@ -7598,7 +8825,7 @@ wait_scanner(struct scanner *s)
   if (ret != SANE_STATUS_GOOD) {
     DBG(5,"WARNING: Brain-dead scanner. Hitting with stick again.\n");
     ret = do_cmd (
-      s, 0, 1,
+      s, 0, s->tur_timeout,
       cmd, cmdLen,
       NULL, 0,
       NULL, NULL
@@ -7607,18 +8834,9 @@ wait_scanner(struct scanner *s)
   // some scanners (such as DR-F120) are OK but will not respond to commands
   // when in sleep mode. By checking the sense it wakes them up.
   if (ret != SANE_STATUS_GOOD) {
-    DBG(5,"WARNING: Brain-dead scanner. Hitting with request sense.\n");
+    DBG(5,"WARNING: Brain-dead scanner. Hitting with stick and request sense.\n");
     ret = do_cmd (
-      s, 1, 1,
-      cmd, cmdLen,
-      NULL, 0,
-      NULL, NULL
-    );
-  }
-  if (ret != SANE_STATUS_GOOD) {
-    DBG(5,"WARNING: Brain-dead scanner. Hitting with stick a third time.\n");
-    ret = do_cmd (
-      s, 0, 1,
+      s, 1, s->tur_timeout,
       cmd, cmdLen,
       NULL, 0,
       NULL, NULL
@@ -7627,7 +8845,7 @@ wait_scanner(struct scanner *s)
   if (ret != SANE_STATUS_GOOD) {
     DBG(5,"WARNING: Brain-dead scanner. Hitting with stick a fourth time.\n");
     ret = do_cmd (
-      s, 0, 1,
+      s, 0, s->tur_timeout,
       cmd, cmdLen,
       NULL, 0,
       NULL, NULL
@@ -7678,7 +8896,7 @@ get_page_width(struct scanner *s)
       return s->max_x_fb;
   }
 
-  /* cant overscan larger than scanner max */
+  /* can't overscan larger than scanner max */
   if(width > s->valid_x){
       return s->valid_x;
   }
@@ -7702,7 +8920,7 @@ get_page_height(struct scanner *s)
       return s->max_y_fb;
   }
 
-  /* cant overscan larger than scanner max */
+  /* can't overscan larger than scanner max */
   if(height > s->max_y){
       return s->max_y;
   }

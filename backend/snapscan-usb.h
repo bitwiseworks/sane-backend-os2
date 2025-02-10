@@ -16,9 +16,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-  MA 02111-1307, USA.
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
   As a special exception, the authors of SANE give permission for
   additional uses of the libraries contained in this release of SANE.
@@ -45,8 +43,9 @@
   backend.
 */
 
-/* $Id$
-   SnapScan backend scan data sources */
+/*
+   SnapScan backend scan data sources
+*/
 
 #ifndef snapscan_usb_h
 #define snapscan_usb_h
@@ -104,7 +103,6 @@ static SANE_Status usb_cmd(int fd, const void *src, size_t src_size,
 #endif
 
 /*
- * $Log$
  * Revision 1.6  2003/07/26 17:16:55  oliverschwartz
  * Changed licence to GPL + SANE exception for snapscan-usb.[ch]
  *
@@ -121,7 +119,7 @@ static SANE_Status usb_cmd(int fd, const void *src, size_t src_size,
  *
  * Revision 1.8  2001/09/18 15:01:07  oliverschwartz
  * - Read scanner id string again after firmware upload
- *   to indentify correct model
+ *   to identify correct model
  * - Make firmware upload work for AGFA scanners
  * - Change copyright notice
  *

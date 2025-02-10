@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -47,7 +45,6 @@
 
 /* ------------------------------------------------------------------------- */
 /*
- * $Log$
  * Revision 1.6  2005/09/19 19:57:48  fzago-guest
  * Replaced __unused__ with __sane_unused__ to avoid a namespace conflict.
  *
@@ -212,9 +209,12 @@ static scsiblk inquiryB =
 #define get_IN_response_format(in)         getbitfield(in + 0x03, 0x0f, 0)
 #define IN_recognized                         0x02
 #define get_IN_additional_length(in)       in[0x04]
-#define get_IN_vendor(in, buf)             strncpy(buf, in + 0x08, 0x08)
-#define get_IN_product(in, buf)            strncpy(buf, in + 0x10, 0x010)
-#define get_IN_version(in, buf)            strncpy(buf, in + 0x20, 0x04)
+#define get_IN_vendor(in, buf)             snprintf(buf, 0x08 + 1, "%.*s", \
+                                                    0x08, in + 0x08)
+#define get_IN_product(in, buf)            snprintf(buf, 0x10 + 1, "%.*s", \
+                                                    0x10, in + 0x10)
+#define get_IN_version(in, buf)            snprintf(buf, 0x04 + 1, "%.*s", \
+                                                    0x04, in + 0x20)
 #define get_IN_color_mode(in)              getbitfield(in + 0x24, 0xf, 0)
 #define get_IN_color_seq(in)               getbitfield(in + 0x24, 0x7, 4)
 #define get_IN_adf(in)                     getbitfield(in + 0x24, 0x1, 7)

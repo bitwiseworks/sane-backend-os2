@@ -14,9 +14,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -387,14 +385,14 @@ sane_init (SANE_Int *version_code, SANE_Auth_Callback authCB)
 
   DBG_INIT();
 
-  authCB=authCB; /* compiler */
+  (void) authCB; /* compiler */
 
   DBG(DEBUG_VERBOSE,"SM3600 init\n");
   if (version_code)
    {
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
     DBG(DEBUG_VERBOSE,"SM3600 version: %x\n",
-    	SANE_VERSION_CODE(SANE_CURRENT_MAJOR, V_MINOR, BUILD));
+    	SANE_VERSION_CODE(SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD));
    }
 
   pdevFirst=NULL;
@@ -672,7 +670,7 @@ SetupInternalParameters(TInstance *this)
 SANE_Status
 sane_get_parameters (SANE_Handle handle, SANE_Parameters *p)
 {
-  /* extremly important for xscanimage */
+  /* extremely important for xscanimage */
   TInstance *this;
   this=(TInstance*)handle;
   SetupInternalParameters(this);
@@ -714,7 +712,7 @@ sane_start (SANE_Handle handle)
   if (this->state.bScanning) return SANE_STATUS_DEVICE_BUSY;
   rc=SetupInternalParameters(this);
   this->state.bCanceled=false;
-  if (!rc) rc=DoInit(this); /* oopsi, we should initalise :-) */
+  if (!rc) rc=DoInit(this); /* oopsi, we should initialise :-) */
   if (!rc && !this->bOptSkipOriginate) rc=DoOriginate(this,true);
   if (!rc) rc=DoJog(this,this->calibration.yMargin);
   if (rc) return rc;
@@ -785,7 +783,7 @@ sane_cancel (SANE_Handle handle)
 SANE_Status
 sane_set_io_mode(SANE_Handle h, SANE_Bool m)
 {
-  h=h;
+  (void) h;
   if (m==SANE_TRUE) /* no non-blocking-mode */
     return SANE_STATUS_UNSUPPORTED;
   return SANE_STATUS_GOOD;
@@ -794,6 +792,6 @@ sane_set_io_mode(SANE_Handle h, SANE_Bool m)
 SANE_Status
 sane_get_select_fd(SANE_Handle handle, SANE_Int *fd)
 {
-  handle=handle; fd=fd;
+  (void) handle; (void) fd;
   return SANE_STATUS_UNSUPPORTED; /* we have no file IO */
 }

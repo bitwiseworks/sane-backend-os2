@@ -53,9 +53,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -81,7 +79,7 @@
  */
 #include "plustek-pp_scan.h"
 
-/*************************** some definitons *********************************/
+/*************************** some definitions *********************************/
 
 /* #define _A3I_EN */
 
@@ -203,7 +201,7 @@ static void motorP96GetStartStopGap( pScanData ps, Bool fCheckState )
 
 
 /*.............................................................................
- * wait for the ScanState stop or ScanState reachs the dwScanStateCount
+ * wait for the ScanState stop or ScanState reaches the dwScanStateCount
  */
 static Bool motorCheckMotorPresetLength( pScanData ps )
 {
@@ -2040,7 +2038,7 @@ static void motorGoHalfStep1( pScanData ps )
 }
 
 /*.............................................................................
- * when loosing data, we use this function to go back some lines and read them
+ * when losing data, we use this function to go back some lines and read them
  * again...
  */
 static void motorP96WaitBack( pScanData ps )
@@ -2126,7 +2124,7 @@ static void motorP96WaitBack( pScanData ps )
 }
 
 /*.............................................................................
- * when loosing data, we use this function to go back some lines and read them
+ * when losing data, we use this function to go back some lines and read them
  * again...
  */
 static void motorP98WaitBack( pScanData ps )
@@ -2523,7 +2521,7 @@ static void motorP98SetSpeed( pScanData ps, Byte bSpeed, Bool fSetRunState )
 
 		if((lastFifoState > _P96_FIFOOVERFLOWTHRESH) &&
 													(bData < lastFifoState)) {
-			DBG( DBG_HIGH, "FIFO OVERFLOW, loosing data !!\n" );
+			DBG( DBG_HIGH, "FIFO OVERFLOW, losing data !!\n" );
 			overflow = _TRUE;
         }
         lastFifoState = bData;
@@ -3130,7 +3128,7 @@ _LOC Bool MotorP96AheadToDarkArea( pScanData ps )
 		if((bDark < 0x80) || (wTotalLastLine==wTL)) {
 
 		    IOCmdRegisterToScanner( ps, ps->RegMotorControl, 0 );
-	    	return _TRUE;
+		    return _TRUE;
 		}
     }
 #else
@@ -3218,9 +3216,10 @@ _LOC void MotorP98003BackToHomeSensor( pScanData ps )
 	MiscStartTimer( &timer, _SECOND * 2 );
 
     while(!(IOGetScanState( ps, _TRUE ) & _SCANSTATE_STOP) &&
-                                                    !MiscCheckTimer( &timer ));
+                                                     !MiscCheckTimer( &timer ))
+	    ;
 
-	_DODELAY( 1000UL );
+    _DODELAY( 1000UL );
 
     ps->AsicReg.RD_ModeControl = _ModeScan;
 
@@ -3326,7 +3325,8 @@ _LOC void MotorP98003PositionYProc( pScanData ps, ULong steps)
 	MiscStartTimer( &timer, _SECOND * 5 );
 
     while(!(IOGetScanState( ps, _TRUE ) & _SCANSTATE_STOP) &&
-                                                (!MiscCheckTimer( &timer )));
+                                                     !MiscCheckTimer( &timer ))
+	    ;
 
     _DODELAY( 12 );
 

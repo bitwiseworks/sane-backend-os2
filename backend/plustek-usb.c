@@ -63,9 +63,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -193,6 +191,7 @@ usb_initDev( Plustek_Device *dev, int idx, int handle, int vendor )
 	int       i;
 	ScanParam sParam;
 	u_short   tmp = 0;
+	int       ret = 0;
 
 	DBG( _DBG_INFO, "usb_initDev(%d,0x%04x,%i)\n",
 	                idx, vendor, dev->initialized );
@@ -305,11 +304,16 @@ usb_initDev( Plustek_Device *dev, int idx, int handle, int vendor )
 	}
 
 	ptr = getenv ("HOME");
-	if( NULL == ptr ) {
-		sprintf( tmp_str2, "/tmp/%s", tmp_str1 );
-	} else {
-		sprintf( tmp_str2, "%s/.sane/%s", ptr, tmp_str1 );
+	ret = ( NULL == ptr )?
+		snprintf( tmp_str2, sizeof(tmp_str2), "/tmp/%s", tmp_str1 ):
+		snprintf( tmp_str2, sizeof(tmp_str2), "%s/.sane/%s", ptr, tmp_str1 );
+
+	if ((ret < 0) || (ret > (int)sizeof(tmp_str2))) {
+		DBG( _DBG_WARNING,
+		     "Failed to generate calibration file path. Default substituted.\n" );
+		snprintf(tmp_str2, sizeof(tmp_str2), "/tmp/plustek-default");
 	}
+
 	dev->calFile = strdup( tmp_str2 );
 	DBG( _DBG_INFO, "Calibration file-names set to:\n" );
 	DBG( _DBG_INFO, ">%s-coarse.cal<\n", dev->calFile );
@@ -429,10 +433,10 @@ static void usbDev_shutdown( Plustek_Device *dev  )
 }
 
 /**
- * This function checks wether a device, described by a given
+ * This function checks whether a device, described by a given
  * string(vendor and product ID), is support by this backend or not
  *
- * @param usbIdStr - sting consisting out of product and vendor ID
+ * @param usbIdStr - string consisting out of product and vendor ID
  *                   format: "0xVVVVx0xPPPP" VVVV = Vendor ID, PPP = Product ID
  * @returns; SANE_TRUE if supported, SANE_FALSE if not
  */
@@ -896,7 +900,7 @@ usbDev_setScanEnv( Plustek_Device *dev, ScanInfo *si )
 		scan->sParam.dMCLK = dMCLK_ADF;
 	}
 
-    /* Save necessary informations */
+    /* Save necessary information */
 	scan->fGrayFromColor = 0;
 
 	/* for some devices and settings, we tweak the physical settings
@@ -1340,7 +1344,7 @@ usbDev_Prepare( Plustek_Device *dev, SANE_Byte *buf )
 			}
 		}
 
-		/* set a funtion to process the RAW data... */
+		/* set a function to process the RAW data... */
 		usb_GetImageProc( dev );
 
 		if( scan->sParam.bSource == SOURCE_ADF )

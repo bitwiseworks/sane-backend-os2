@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -103,7 +101,7 @@ gt6801_check_plustek_firmware (GT68xx_Device * dev, SANE_Bool * loaded)
     *loaded = SANE_FALSE;
 
   /* Until I find out if testing for req[3] & 0x80 is save, load the firmware
-     everytime */
+     every time */
   *loaded = SANE_FALSE;
 
   return SANE_STATUS_GOOD;

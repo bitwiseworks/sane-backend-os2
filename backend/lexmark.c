@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -528,12 +526,12 @@ sane_init (SANE_Int * version_code,
   DBG_INIT ();
 
   DBG (1, "SANE Lexmark backend version %d.%d.%d-devel\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD);
+       SANE_CURRENT_MINOR, BUILD);
 
   DBG (2, "sane_init: version_code=%p\n", (void *) version_code);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
 #ifndef FAKE_USB
   sanei_usb_init ();
@@ -624,7 +622,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
 /**
  * Open the backend, ie return the struct handle of a detected scanner
  * The struct returned is choosne if it matches the name given, which is
- * usefull when several scanners handled by the backend have been detected.
+ * useful when several scanners handled by the backend have been detected.
  * However, special case empty string "" and "lexmark" pick the first
  * available handle.
  */
@@ -649,7 +647,7 @@ sane_open (SANE_String_Const devicename, SANE_Handle * handle)
       return SANE_STATUS_INVAL;
     }
 
-  /* walk the linked list of scanner device until ther is a match
+  /* walk the linked list of scanner device until there is a match
    * with the device name */
   for (lexmark_device = first_lexmark_device; lexmark_device;
        lexmark_device = lexmark_device->next)
@@ -831,7 +829,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option, SANE_Action action,
     case SANE_ACTION_SET_VALUE:
 
       if (!SANE_OPTION_IS_SETTABLE (lexmark_device->opt[option].cap))
-	return SANE_STATUS_INVAL;
+        return SANE_STATUS_INVAL;
 
       /* Make sure boolean values are only TRUE or FALSE */
       if (lexmark_device->opt[option].type == SANE_TYPE_BOOL)

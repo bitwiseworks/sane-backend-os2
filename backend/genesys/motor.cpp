@@ -15,37 +15,16 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #define DEBUG_DECLARE_ONLY
 
+#include "low.h"
 #include "motor.h"
 #include "utilities.h"
 #include <cmath>
+#include <numeric>
 
 namespace genesys {
 
@@ -62,9 +41,69 @@ unsigned MotorSlope::get_table_step_shifted(unsigned step, StepType step_type) c
     return static_cast<unsigned>(1.0f / speed_v) >> static_cast<unsigned>(step_type);
 }
 
-MotorSlopeTable create_slope_table(const MotorSlope& slope, unsigned target_speed_w,
-                                   StepType step_type, unsigned steps_alignment,
-                                   unsigned min_size)
+float compute_acceleration_for_steps(unsigned initial_w, unsigned max_w, unsigned steps)
+{
+    float initial_speed_v = 1.0f / static_cast<float>(initial_w);
+    float max_speed_v = 1.0f / static_cast<float>(max_w);
+    return (max_speed_v * max_speed_v - initial_speed_v * initial_speed_v) / (2 * steps);
+}
+
+
+MotorSlope MotorSlope::create_from_steps(unsigned initial_w, unsigned max_w,
+                                         unsigned steps)
+{
+    MotorSlope slope;
+    slope.initial_speed_w = initial_w;
+    slope.max_speed_w = max_w;
+    slope.acceleration = compute_acceleration_for_steps(initial_w, max_w, steps);
+    return slope;
+}
+
+void MotorSlopeTable::slice_steps(unsigned count, unsigned step_multiplier)
+{
+    if (count > table.size() || count < step_multiplier) {
+        throw SaneException("Invalid steps count");
+    }
+    count = align_multiple_floor(count, step_multiplier);
+    table.resize(count);
+    generate_pixeltime_sum();
+}
+
+void MotorSlopeTable::expand_table(unsigned count, unsigned step_multiplier)
+{
+    if (table.empty()) {
+        throw SaneException("Can't expand empty table");
+    }
+    count = align_multiple_ceil(count, step_multiplier);
+    table.resize(table.size() + count, table.back());
+    generate_pixeltime_sum();
+}
+
+void MotorSlopeTable::generate_pixeltime_sum()
+{
+    pixeltime_sum_ = std::accumulate(table.begin(), table.end(),
+                                     std::size_t{0}, std::plus<std::size_t>());
+}
+
+unsigned get_slope_table_max_size(AsicType asic_type)
+{
+    switch (asic_type) {
+        case AsicType::GL646:
+        case AsicType::GL841:
+        case AsicType::GL842: return 255;
+        case AsicType::GL843:
+        case AsicType::GL845:
+        case AsicType::GL846:
+        case AsicType::GL847:
+        case AsicType::GL124: return 1024;
+        default:
+            throw SaneException("Unknown asic type");
+    }
+}
+
+MotorSlopeTable create_slope_table_for_speed(const MotorSlope& slope, unsigned target_speed_w,
+                                             StepType step_type, unsigned steps_alignment,
+                                             unsigned min_size, unsigned max_size)
 {
     DBG_HELPER_ARGS(dbg, "target_speed_w: %d, step_type: %d, steps_alignment: %d, min_size: %d",
                     target_speed_w, static_cast<unsigned>(step_type), steps_alignment, min_size);
@@ -76,44 +115,45 @@ MotorSlopeTable create_slope_table(const MotorSlope& slope, unsigned target_spee
     unsigned max_speed_shifted_w = slope.max_speed_w >> step_shift;
 
     if (target_speed_shifted_w < max_speed_shifted_w) {
-        dbg.log(DBG_warn, "failed to reach target speed");
+        dbg.vlog(DBG_warn, "failed to reach target speed %d %d", target_speed_w,
+                  slope.max_speed_w);
+    }
+
+    if (target_speed_shifted_w >= std::numeric_limits<std::uint16_t>::max()) {
+        throw SaneException("Target motor speed is too low");
     }
 
     unsigned final_speed = std::max(target_speed_shifted_w, max_speed_shifted_w);
 
-    table.table.reserve(MotorSlopeTable::SLOPE_TABLE_SIZE);
+    table.table.reserve(max_size);
 
-    while (true) {
+    while (table.table.size() < max_size - 1) {
         unsigned current = slope.get_table_step_shifted(table.table.size(), step_type);
         if (current <= final_speed) {
             break;
         }
         table.table.push_back(current);
-        table.pixeltime_sum += current;
     }
 
     // make sure the target speed (or the max speed if target speed is too high) is present in
     // the table
     table.table.push_back(final_speed);
-    table.pixeltime_sum += table.table.back();
 
     // fill the table up to the specified size
-    while (table.table.size() % steps_alignment != 0 || table.table.size() < min_size) {
+    while (table.table.size() < max_size - 1 &&
+           (table.table.size() % steps_alignment != 0 || table.table.size() < min_size))
+    {
         table.table.push_back(table.table.back());
-        table.pixeltime_sum += table.table.back();
     }
 
-    table.scan_steps = table.table.size();
-
-    // fill the rest of the table with the final speed
-    table.table.resize(MotorSlopeTable::SLOPE_TABLE_SIZE, final_speed);
+    table.generate_pixeltime_sum();
 
     return table;
 }
 
 std::ostream& operator<<(std::ostream& out, const MotorSlope& slope)
 {
-    out << "Genesys_Motor_Slope{\n"
+    out << "MotorSlope{\n"
         << "    initial_speed_w: " << slope.initial_speed_w << '\n'
         << "    max_speed_w: " << slope.max_speed_w << '\n'
         << "    a: " << slope.acceleration << '\n'
@@ -121,36 +161,30 @@ std::ostream& operator<<(std::ostream& out, const MotorSlope& slope)
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const MotorSlopeLegacy& slope)
+std::ostream& operator<<(std::ostream& out, const MotorProfile& profile)
 {
-    out << "MotorSlopeLegacy{\n"
-        << "    maximum_start_speed: " << slope.maximum_start_speed << '\n'
-        << "    maximum_speed: " << slope.maximum_speed << '\n'
-        << "    minimum_steps: " << slope.minimum_steps << '\n'
-        << "    g: " << slope.g << '\n'
+    out << "MotorProfile{\n"
+        << "    max_exposure: " << profile.max_exposure << '\n'
+        << "    step_type: " << profile.step_type << '\n'
+        << "    motor_vref: " << profile.motor_vref << '\n'
+        << "    resolutions: " << format_indent_braced_list(4, profile.resolutions) << '\n'
+        << "    scan_methods: " << format_indent_braced_list(4, profile.scan_methods) << '\n'
+        << "    slope: " << format_indent_braced_list(4, profile.slope) << '\n'
         << '}';
-    return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const Genesys_Motor_Slope& slope)
-{
-    if (slope.type() == Genesys_Motor_Slope::LEGACY) {
-        out << slope.legacy();
-    } else {
-        out << slope.physical();
-    }
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const Genesys_Motor& motor)
 {
     out << "Genesys_Motor{\n"
-        << "    id: " << static_cast<unsigned>(motor.id) << '\n'
+        << "    id: " << motor.id << '\n'
         << "    base_ydpi: " << motor.base_ydpi << '\n'
-        << "    optical_ydpi: " << motor.optical_ydpi << '\n'
-        << "    slopes: "
-        << format_indent_braced_list(4, format_vector_indent_braced(4, "Genesys_Motor_Slope",
-                                                                    motor.slopes))
+        << "    profiles: "
+        << format_indent_braced_list(4, format_vector_indent_braced(4, "MotorProfile",
+                                                                    motor.profiles)) << '\n'
+        << "    fast_profiles: "
+        << format_indent_braced_list(4, format_vector_indent_braced(4, "MotorProfile",
+                                                                    motor.fast_profiles)) << '\n'
         << '}';
     return out;
 }

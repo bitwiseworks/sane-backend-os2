@@ -20,9 +20,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -69,7 +67,7 @@
  *	/pub/hakimian directory. The complete URL is:
  *	    ftp://ftp.eecs.wsu.edu/pub/hakimian/dc20.tar.gz
  *
- *	This package also includes a sligthly modified version of the Comet to ppm
+ *	This package also includes a slightly modified version of the Comet to ppm
  *	conversion routine written by YOSHIDA Hideki <hideki@yk.rim.or.jp>
  *
  *	This program is free software; you can redistribute it and/or modify

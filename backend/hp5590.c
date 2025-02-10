@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -482,11 +480,11 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
   DBG_INIT();
 
   DBG (1, "SANE backed for HP ScanJet 4500C/4570C/5500C/5550C/5590/7650 %u.%u.%u\n",
-       SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
   DBG (1, "(c) Ilia Sotnikov <hostcc@gmail.com>\n");
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   sanei_usb_init();
 

@@ -21,9 +21,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -55,10 +53,10 @@
    . - sane_open() : open a particular scanner-device and attach_scanner(devicename,&dev)
    . . - sane_set_io_mode : set blocking-mode
    . . - sane_get_select_fd : get scanner-fd
-   . . - sane_get_option_descriptor() : get option informations
+   . . - sane_get_option_descriptor() : get option information
    . . - sane_control_option() : change option values
    . .
-   . . - sane_start() : start image aquisition
+   . . - sane_start() : start image acquisition
    . .   - sane_get_parameters() : returns actual scan-parameters
    . .   - sane_read() : read image-data (from pipe)
    . . - sane_cancel() : cancel operation, kill reader_process
@@ -82,9 +80,9 @@
  . - init_options
  - sane_set_io_mode : set blocking-mode
  - sane_get_select_fd : get scanner-fd
- - sane_get_option_descriptor() : get option informations
+ - sane_get_option_descriptor() : get option information
  - sane_control_option() : change option values
- - sane_start() : start image aquisition
+ - sane_start() : start image acquisition
    - sane_get_parameters() : returns actual scan-parameters
    - sane_read() : read image-data (from pipe)
    - sane_cancel() : cancel operation, kill reader_process
@@ -819,14 +817,12 @@ attach (const char *devnam, CANON_Device ** devp)
 
   dev->sane.name = strdup (devnam);
   dev->sane.vendor = "CANON";
-  if ((str = calloc (16 + 1, 1)) == NULL)
+  if ((str = strndup ((char *) ibuf + 16, 16)) == NULL)
     {
       sanei_scsi_close (fd);
       fd = -1;
       return (SANE_STATUS_NO_MEM);
     }
-  strncpy (str, (char *) (ibuf + 16), 16);
-  dev->sane.model = str;
 
   /* Register the fixed properties of the scanner below:
      - whether it is a film scanner or a flatbed scanner
@@ -844,6 +840,7 @@ attach (const char *devnam, CANON_Device ** devp)
   if (!strncmp (str, "IX-27015", 8))		/* FS2700S */
     {
       dev->info.model = CS2700;
+      dev->sane.model = strdup("FS2700S");
       dev->sane.type = SANE_I18N("film scanner");
       dev->adf.Status = ADF_STAT_NONE;
       dev->tpu.Status = TPU_STAT_NONE;
@@ -859,6 +856,7 @@ attach (const char *devnam, CANON_Device ** devp)
   else if (!strncmp (str, "IX-27025E", 9))	/* FS2710S */
     {
       dev->info.model = FS2710;
+      dev->sane.model = strdup("FS2710S");
       dev->sane.type = SANE_I18N("film scanner");
       dev->adf.Status = ADF_STAT_NONE;
       dev->tpu.Status = TPU_STAT_NONE;
@@ -874,6 +872,7 @@ attach (const char *devnam, CANON_Device ** devp)
   else if (!strncmp (str, "IX-06035E", 9))	/* FB620S */
     {
       dev->info.model = FB620;
+      dev->sane.model = strdup("FB620S");
       dev->sane.type = SANE_I18N("flatbed scanner");
       dev->adf.Status = ADF_STAT_NONE;
       dev->tpu.Status = TPU_STAT_NONE;
@@ -889,6 +888,7 @@ attach (const char *devnam, CANON_Device ** devp)
   else if (!strncmp (str, "IX-12015E", 9))	/* FB1200S */
     {
       dev->info.model = FB1200;
+      dev->sane.model = strdup("FB1200S");
       dev->sane.type = SANE_I18N("flatbed scanner");
       dev->adf.Status = ADF_STAT_INACTIVE;
       dev->tpu.Status = TPU_STAT_INACTIVE;
@@ -931,6 +931,20 @@ attach (const char *devnam, CANON_Device ** devp)
       dev->info.is_filmscanner = SANE_FALSE;
       dev->info.has_fixed_resolutions = SANE_FALSE;
     }
+
+  /*
+   * Use the model from the device if we don't have more
+   * common model name for the device, otherwise free the
+   * string with internal model name.
+   *
+   * Please keep the memory allocation source consistent
+   * for model string - allocate on the heap via dynamic
+   * allocation.
+   */
+  if (dev->sane.model == NULL)
+    dev->sane.model = str;
+  else
+    free(str);
 
   DBG (5, "dev->sane.name = '%s'\n", dev->sane.name);
   DBG (5, "dev->sane.vendor = '%s'\n", dev->sane.vendor);

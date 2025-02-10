@@ -12,6 +12,7 @@ GETTING STARTED
   about it. You should mention that the code will be open-source, however.
 
 * Read the SANE standard.
+  See https://sane-project.gitlab.io/standard/
 
 * One approach is to write a stand-alone scanning program first. Debugging
   this program is usually easier than using the SANE libraries. However, keep
@@ -157,8 +158,6 @@ sane-backends/doc/
      Used by doxygen to create the documentation of the sanei code.
    * releases.txt:
      Explains how to make releases of sane-backends.
-   * sane.tex, net.tex:
-     Contains the LaTeX source of the SANE standard.
    * descriptions/ (directory)
      Contains the .desc files for every backend that is included into
      sane-backends.
@@ -186,7 +185,7 @@ sane-backends/include/
        used by several backends.
      * sanei_*:
        Sanei (SANE internal) headers. Needed for code used in several backends
-       like USB access. For more details, see the documentaion on the SANE website.
+       like USB access. For more details, see the documentation on the SANE website.
 
 sane-backends/japi/
      Contains Java interface for SANE. See README.JAVA for details.
@@ -200,7 +199,7 @@ sane-backends/po/
 
 sane-backends/sanei/
      Sanei (SANE internal) code. Needed for code used in several backends
-     like USB access. For more details, see the documentaion on the SANE
+     like USB access. For more details, see the documentation on the SANE
      website.
 
 sane-backends/testsuite/
@@ -311,7 +310,7 @@ PROGRAMMING
   the doc/ directory.
 
 * Initialize global variables explicitly in sane_init. Keep in mind that
-  sane_init can be called more than once (if sane_exit is called everytime
+  sane_init can be called more than once (if sane_exit is called every time
   after sane_init). Therefore don't depend on automatic initialization to
   0 / NULL.
 
@@ -421,7 +420,7 @@ DOCUMENTATION
   "doc/descriptions-external" (for included and external backends).
 
 * "doc/descriptions.txt" describes the format of the ".desc" files. There is
-  also a template for new .desc files: "template.desc.". The format of the
+  also a template for new .desc files: "template.desc". The format of the
   files in the two directories is very similar.  If you'd like to try parsing
   your creation to recreate the sane-backends webpages, cd into "tools/" and
   enter "make sane-desc". You can either use sane-desc directly (try

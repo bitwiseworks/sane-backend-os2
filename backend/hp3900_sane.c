@@ -14,8 +14,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -157,7 +156,7 @@ typedef struct
   SANE_Int rest_amount;
   SANE_Int mylin;
 
-  /* convertion settings */
+  /* conversion settings */
   struct st_convert cnv;
 
   /* ranges */
@@ -188,7 +187,7 @@ static SANE_Status bknd_models (TScanner * scanner);
 static SANE_Status bknd_resolutions (TScanner * scanner, SANE_Int model);
 static SANE_Status bknd_sources (TScanner * scanner, SANE_Int model);
 
-/* convertions */
+/* conversions */
 static void Color_Negative (SANE_Byte * buffer, SANE_Int size,
 			    SANE_Int depth);
 static void Color_to_Gray (SANE_Byte * buffer, SANE_Int size, SANE_Int depth);
@@ -381,7 +380,7 @@ bknd_colormodes (TScanner * scanner, SANE_Int model)
 	{ SANE_VALUE_SCAN_MODE_COLOR, SANE_VALUE_SCAN_MODE_GRAY, SANE_VALUE_SCAN_MODE_LINEART, 0 };
 
       /* silence gcc */
-      model = model;
+      (void) model;
 
       colormode = (SANE_String_Const *) malloc (sizeof (mycolormode));
       if (colormode != NULL)
@@ -461,7 +460,7 @@ bknd_depths (TScanner * scanner, SANE_Int model)
       SANE_Int mydepth[] = { 2, 8, 16 };	/*{3, 8, 12, 16}; */
 
       /* silence gcc */
-      model = model;
+      (void) model;
 
       depth = (SANE_Int *) malloc (sizeof (mydepth));
       if (depth != NULL)
@@ -894,7 +893,7 @@ gamma_create (TScanner * s, double gamma)
       /* default result */
       rst = OK;
 
-      /* destroy previus gamma tables */
+      /* destroy previous gamma tables */
       gamma_free (s);
 
       /* check gamma value */
@@ -1161,7 +1160,7 @@ options_init (TScanner * scanner)
       /* set gamma */
       gamma_create (scanner, 1.0);
 
-      /* color convertion */
+      /* color conversion */
       scanner->cnv.colormode = -1;
       scanner->cnv.negative = FALSE;
       scanner->cnv.threshold = 40;
@@ -1178,12 +1177,12 @@ options_init (TScanner * scanner)
       scanner->rng_gamma.max = 65535;
       scanner->rng_gamma.quant = 0;
 
-      /* setting default horizontal constrain in milimeters */
+      /* setting default horizontal constraint in millimeters */
       scanner->rng_horizontal.min = 0;
       scanner->rng_horizontal.max = 220;
       scanner->rng_horizontal.quant = 1;
 
-      /* setting default vertical constrain in milimeters */
+      /* setting default vertical constraint in millimeters */
       scanner->rng_vertical.min = 0;
       scanner->rng_vertical.max = 300;
       scanner->rng_vertical.quant = 1;
@@ -1761,7 +1760,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG (DBG_FNC, "> sane_init\n");
 
   /* silence gcc */
-  authorize = authorize;
+  (void) authorize;
 
   /* Initialize usb */
   sanei_usb_init ();
@@ -1807,7 +1806,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 
   /* Return backend version */
   if (version_code != NULL)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   return SANE_STATUS_GOOD;
 }
@@ -1817,7 +1816,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
 {
   SANE_Status rst = SANE_STATUS_GOOD;
 
-  local_only = local_only;
+  (void) local_only;
 
   if (_pSaneDevList)
     free (_pSaneDevList);
@@ -2261,7 +2260,7 @@ sane_get_parameters (SANE_Handle h, SANE_Parameters * p)
       /* resolution */
       res = s->aValues[opt_resolution].w;
 
-      /* image coordinates in milimeters */
+      /* image coordinates in millimeters */
       coords.left = s->aValues[opt_tlx].w;
       coords.top = s->aValues[opt_tly].w;
       coords.width = s->aValues[opt_brx].w;
@@ -2384,7 +2383,7 @@ sane_start (SANE_Handle h)
 	  RTS_Debug->SaveCalibFile =
 	    (s->aValues[opt_dbgimages].w == SANE_TRUE) ? TRUE : FALSE;
 
-	  /* Get image coordinates in milimeters */
+	  /* Get image coordinates in millimeters */
 	  coords.left = s->aValues[opt_tlx].w;
 	  coords.top = s->aValues[opt_tly].w;
 	  coords.width = s->aValues[opt_brx].w;
@@ -2583,7 +2582,7 @@ sane_read (SANE_Handle h, SANE_Byte * buf, SANE_Int maxlen, SANE_Int * len)
 		     buf : will contain postprocessed image
 		     len : will contain size in bytes of postprocessed image */
 
-		  /* apply gamma if neccesary */
+		  /* apply gamma if necessary */
 		  if (RTS_Debug->EnableGamma == TRUE)
 		    gamma_apply (s, buffer, emul_len, s->ScanParams.depth);
 
@@ -2623,7 +2622,7 @@ sane_read (SANE_Handle h, SANE_Byte * buf, SANE_Int maxlen, SANE_Int * len)
 		    {
 		      /* I didn't see any scanner supporting lineart mode.
 		         Windows drivers scan in grayscale and then convert image to lineart
-		         so let's perform convertion */
+		         so let's perform conversion */
 		      SANE_Int rest = emul_len % 8;
 
 		      Gray_to_Lineart (buffer, emul_len, s->cnv.threshold);
@@ -2655,7 +2654,7 @@ sane_cancel (SANE_Handle h)
   DBG (DBG_FNC, "> sane_cancel\n");
 
   /* silence gcc */
-  h = h;
+  (void) h;
 
   device->status->cancel = TRUE;
 }
@@ -2666,8 +2665,8 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
   DBG (DBG_FNC, "> sane_set_io_mode\n");
 
   /* silence gcc */
-  handle = handle;
-  non_blocking = non_blocking;
+  (void) handle;
+  (void) non_blocking;
 
   return SANE_STATUS_UNSUPPORTED;
 }
@@ -2678,8 +2677,8 @@ sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
   DBG (DBG_FNC, "> sane_get_select_fd\n");
 
   /* silence gcc */
-  handle = handle;
-  fd = fd;
+  (void) handle;
+  (void) fd;
 
   return SANE_STATUS_UNSUPPORTED;
 }
@@ -2691,7 +2690,7 @@ sane_close (SANE_Handle h)
 
   DBG (DBG_FNC, "- sane_close...\n");
 
-  /* stop previus scans */
+  /* stop previous scans */
   RTS_Scanner_StopScan (device, TRUE);
 
   /* close usb */
@@ -2700,7 +2699,7 @@ sane_close (SANE_Handle h)
   /* free scanner internal variables */
   RTS_Scanner_End (device);
 
-  /* free RTS enviroment */
+  /* free RTS environment */
   RTS_Free (device);
 
   /* free backend variables */

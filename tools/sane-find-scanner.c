@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
 
@@ -91,9 +89,12 @@ scsiblk;
 #define set_inquiry_return_size(icb,val)	icb[0x04]=val
 #define IN_periph_devtype_cpu			0x03
 #define IN_periph_devtype_scanner		0x06
-#define get_scsi_inquiry_vendor(in, buf)	strncpy(buf, in + 0x08, 0x08)
-#define get_scsi_inquiry_product(in, buf)	strncpy(buf, in + 0x10, 0x010)
-#define get_scsi_inquiry_version(in, buf)	strncpy(buf, in + 0x20, 0x04)
+#define get_scsi_inquiry_vendor(in, buf)	snprintf(buf, 0x08 + 1, "%.*s", \
+								0x08, in + 0x08)
+#define get_scsi_inquiry_product(in, buf)	snprintf(buf, 0x10 + 1, "%.*s", \
+								0x10, in + 0x10)
+#define get_scsi_inquiry_version(in, buf)	snprintf(buf, 0x04 + 1, "%.*s", \
+								0x04, in + 0x20)
 #define get_scsi_inquiry_periph_devtype(in)	(in[0] & 0x1f)
 #define get_scsi_inquiry_additional_length(in)	in[0x04]
 #define set_scsi_inquiry_length(out,n)		out[0x04]=n-5
@@ -386,7 +387,7 @@ check_usb_file (char *file_name)
 	{
 	  if (verbose > 1)
 	    printf (" open ok, vendor and product ids were identified\n");
-	  printf ("found USB scanner (vendor=0x%04x, "
+	  printf ("found possible USB scanner (vendor=0x%04x, "
 		  "product=0x%04x) at %s\n", vendor, product, file_name);
 	}
       else
@@ -394,8 +395,8 @@ check_usb_file (char *file_name)
 	  if (verbose > 1)
 	    printf (" open ok, but vendor and product could NOT be "
 		    "identified\n");
-	  printf ("found USB scanner (UNKNOWN vendor and product) "
-		  "at device %s\n", file_name);
+	  printf ("found possible USB scanner (UNKNOWN vendor and "
+		  "product) at %s\n", file_name);
 	  unknown_found = SANE_TRUE;
 	}
       device_found = SANE_TRUE;
@@ -678,7 +679,8 @@ check_libusb_device (struct usb_device *dev, SANE_Bool from_file)
     {
       char * chipset = check_usb_chip (dev, verbose, from_file);
 
-      printf ("found USB scanner (vendor=0x%04x", dev->descriptor.idVendor);
+      printf ("found possible USB scanner (vendor=0x%04x",
+	      dev->descriptor.idVendor);
       if (vendor)
 	printf (" [%s]", vendor);
       printf (", product=0x%04x", dev->descriptor.idProduct);
@@ -1068,7 +1070,7 @@ check_libusb_device (libusb_device *dev, SANE_Bool from_file)
       if(!from_file)
         chipset = check_usb_chip (verbose, desc, hdl, config0);
 
-      printf ("found USB scanner (vendor=0x%04x", vid);
+      printf ("found possible USB scanner (vendor=0x%04x", vid);
       if (vendor)
 	printf (" [%s]", vendor);
       printf (", product=0x%04x", pid);
@@ -1767,7 +1769,12 @@ main (int argc, char **argv)
 	"/dev/scanner",
 	"/dev/sg0", "/dev/sg1", "/dev/sg2", "/dev/sg3",
 	"/dev/sg4", "/dev/sg5", "/dev/sg6", "/dev/sg7",
-	"/dev/sg8", "/dev/sg9",
+	"/dev/sg8", "/dev/sg9", "/dev/sg10", "/dev/sg11",
+	"/dev/sg12", "/dev/sg13", "/dev/sg14", "/dev/sg15",
+	"/dev/sg16", "/dev/sg17", "/dev/sg18", "/dev/sg19",
+	"/dev/sg20", "/dev/sg21", "/dev/sg22", "/dev/sg23",
+	"/dev/sg24", "/dev/sg25", "/dev/sg26", "/dev/sg27",
+	"/dev/sg28", "/dev/sg29", "/dev/sg30", "/dev/sg31",
 	"/dev/sga", "/dev/sgb", "/dev/sgc", "/dev/sgd",
 	"/dev/sge", "/dev/sgf", "/dev/sgg", "/dev/sgh",
 	"/dev/sgi", "/dev/sgj", "/dev/sgk", "/dev/sgl",

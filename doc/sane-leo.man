@@ -19,14 +19,18 @@ The scanners that should work with this backend are:
    Vendor Model           status
 ----------------------  -----------
   Across FS-1130          tested
-  Leo S3                  tested
+  LEO S3                  tested
 .fi
 .ft R
 .RE
 
 The options the backend supports can either be selected through
-command line options to programs like scanimage or through GUI
-elements in xscanimage or xsane.
+command line options to programs like
+.BR scanimage (1)
+or through GUI elements in
+.BR xscanimage (1)
+or
+.BR xsane (1).
 
 .br
 If you have any strange behavior, please report to the backend
@@ -42,15 +46,18 @@ scanimage \-\-help \-d leo
 
 .TP
 .B \-\-mode
-selects the basic mode of operation of the scanner valid choices are
-.I Black & White
-,
+selects the basic mode of operation of the scanner. Valid choices are
+.IR "Black & White" ,
 .I Grayscale
 and
+.IR Color .
+The
+.I Black & White
+mode is black and white only (1 bit).
+.I Grayscale
+mode will produce 256 levels of gray (8 bits).
 .I Color
-The Black & White mode is black and white only (1 bit). Grayscale
-will produce 256 levels of gray (8 bits). Color will produce a 24 bits
-color image.
+mode will produce a 24 bit color image.
 
 .TP
 .B \-\-resolution
@@ -94,15 +101,12 @@ for the blue channel. The table must be 256 bytes long.
 .TP
 .B \-\-halftone
 (Black & White only) select the halftone mask to use. Possible values are
-.I Diamond
-,
-.I 8x8 Coarse Fatting
-,
-.I 8x8 Fine Fatting
-,
+.IR Diamond ,
+.IR "8x8 Coarse Fatting" ,
+.IR "8x8 Fine Fatting" ,
 .I 8x8 Bayer
 and
-.I 8x8 Vertical Line
+.IR "8x8 Vertical Line" .
 
 .TP
 .B \-\-preview
@@ -112,7 +116,10 @@ selected. The default is "no".
 
 
 .SH CONFIGURATION FILE
-The configuration file @CONFIGDIR@/leo.conf supports only one information: the device name to use (eg /dev/scanner).
+The configuration file
+.I @CONFIGDIR@/leo.conf
+supports only one information: the device name to use (eg
+.IR /dev/scanner ).
 
 
 .SH FILES
@@ -141,13 +148,16 @@ implements what the scanner can support.
 
 
 .SH BUGS
-
 None known.
 
 
 .SH "SEE ALSO"
 
-sane\-scsi(5), scanimage(1), xscanimage(1), xsane(1), sane(7)
+.BR sane\-scsi (5),
+.BR scanimage (1),
+.BR xscanimage (1),
+.BR xsane (1),
+.BR sane (7)
 
 
 .SH AUTHOR

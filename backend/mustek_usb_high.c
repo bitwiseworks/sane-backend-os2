@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -279,7 +277,7 @@ usb_high_cal_setup (Calibrator * cal, SANE_Word major_average,
 SANE_Status
 usb_high_cal_evaluate_white (Calibrator * cal, double factor)
 {
-  /* Caculate white_line */
+  /* Calculate white_line */
   double loop_division;
   double average;
   SANE_Int *buffer;
@@ -328,7 +326,7 @@ usb_high_cal_evaluate_dark (Calibrator * cal, double factor)
   double loop_division;
 
   DBG (5, "usb_high_cal_evaluate_dark: start\n");
-  /* Caculate dark_line */
+  /* Calculate dark_line */
   factor *= 16.0;
   loop_division = (double) (cal->major_average * cal->minor_average);
   for (i = 0; i < cal->width; i++)
@@ -2179,7 +2177,7 @@ usb_high_scan_calibration_rgb_24 (Mustek_Usb_Device * dev)
 						 dev->skips_per_row)));
     }
   RIE (usb_low_stop_rowing (dev->chip));
-  /* Caculate average */
+  /* Calculate average */
   RIE (usb_high_cal_evaluate_white (dev->green_calibrator,
 				    dev->init_green_factor));
   RIE (usb_high_cal_evaluate_white (dev->blue_calibrator,
@@ -2275,7 +2273,7 @@ usb_high_scan_calibration_mono_8 (Mustek_Usb_Device * dev)
 						 dev->skips_per_row)));
     }
   RIE (usb_low_stop_rowing (dev->chip));
-  /* Caculate average */
+  /* Calculate average */
   RIE (usb_high_cal_evaluate_white (dev->mono_calibrator,
 				    dev->init_gray_factor));
 
@@ -2295,10 +2293,10 @@ usb_high_scan_calibration_mono_8 (Mustek_Usb_Device * dev)
     }
   RIE (usb_low_stop_rowing (dev->chip));
   RIE (usb_low_turn_lamp_power (dev->chip, SANE_TRUE));
-  /* Caculate Green Black */
+  /* Calculate Green Black */
   RIE (usb_high_cal_evaluate_dark (dev->mono_calibrator,
 				   dev->init_gray_black_factor));
-  /* Caculate Mapping */
+  /* Calculate Mapping */
   RIE (usb_high_cal_evaluate_calibrator (dev->mono_calibrator));
   DBG (5, "usb_high_scan_calibration_mono_8: exit\n");
   return SANE_STATUS_GOOD;
@@ -2674,7 +2672,7 @@ usb_high_scan_get_rgb_24_bit_line (Mustek_Usb_Device * dev, SANE_Byte * line,
   SANE_Word lines_left;
 
   DBG (5, "usb_high_scan_get_rgb_24_bit_line: start, dev=%p, line=%p, "
-       "is_order_invert=%d\n", (void *) dev, line, is_order_invert);
+       "is_order_invert=%d\n", (void *) dev, (void *) line, is_order_invert);
 
   RIE (usb_low_get_row (dev->chip, dev->green, &lines_left));
 
@@ -2703,7 +2701,7 @@ usb_high_scan_get_mono_8_bit_line (Mustek_Usb_Device * dev, SANE_Byte * line,
   SANE_Word lines_left;
 
   DBG (5, "usb_high_scan_get_mono_8_bit_line: start, dev=%p, line=%p, "
-       "is_order_invert=%d\n", (void *) dev, line, is_order_invert);
+       "is_order_invert=%d\n", (void *) dev, (void *) line, is_order_invert);
 
   RIE (usb_low_get_row (dev->chip, dev->green, &lines_left));
   RIE (usb_high_cal_calibrate (dev->mono_calibrator, dev->green +

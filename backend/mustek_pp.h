@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -52,7 +50,7 @@
 #include "../include/sane/sanei_debug.h"
 
 /* Please note: ASSERT won't go away if you define NDEBUG, it just won't
- * output a message when ASSERT failes. So if "cond" does anything, it will
+ * output a message when ASSERT fails. So if "cond" does anything, it will
  * be executed, even if NDEBUG is defined...
  */
 #define	ASSERT(cond, retval)	do { 					\
@@ -90,7 +88,7 @@ typedef struct {
 					SANE_String_Const port,
 					SANE_String_Const name,
 					SANE_Attach_Callback attach);
-	/* this function returns the informationen needed to set up
+	/* this function returns the information needed to set up
 	 * the device entry. the info parameter is passed from
 	 * init to the attach_callback to this function, to
 	 * help to identify the device, before it is registered
@@ -119,7 +117,7 @@ typedef struct {
 	/* stop scanning session */
 	void			(*close)(SANE_Handle hndl);
 
-	/* start actuall scan */
+	/* start actual scan */
 	SANE_Status		(*start)(SANE_Handle hndl);
 
 	/* read data (one line) */

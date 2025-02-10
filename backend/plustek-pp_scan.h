@@ -36,9 +36,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -65,8 +63,6 @@
 #ifndef __PLUSTEK_SCAN_H__
 #define __PLUSTEK_SCAN_H__
 
-#ifndef __KERNEL__
-
 # include <stdlib.h>
 # include <stdarg.h>
 # include <string.h>
@@ -78,19 +74,6 @@
 # ifdef HAVE_SYS_IO_H
 #  include <sys/io.h>
 # endif
-#else
-# include <linux/kernel.h>
-# include <linux/init.h>
-# include <linux/version.h>
-# include "plustek-pp_sysdep.h"
-# include <linux/delay.h>
-# include <linux/parport.h>
-
-#ifdef LINUX_24
-# include <linux/parport_pc.h>
-#endif	/* LINUX_24   */
-
-#endif  /* __KERNEL__ */
 
 /*.............................................................................
  * driver properties
@@ -106,20 +89,6 @@
 # define _OPF	ps->IO.fnOut
 # define _IPF	ps->IO.fnIn
 
-#ifdef __KERNEL__
-
-#define _OUTB_CTRL(pSD,port_value)	 _OPF(port_value,pSD->IO.pbControlPort)
-#define _OUTB_DATA(pSD,port_value)	 _OPF(port_value,pSD->IO.pbSppDataPort)
-#define _OUTB_ECTL(pSD,port_value)	 _OPF(port_value,(pSD->IO.portBase+0x402))
-
-#define _INB_CTRL(pSD)				_IPF(pSD->IO.pbControlPort)
-#define _INB_DATA(pSD)				_IPF(pSD->IO.pbSppDataPort)
-#define _INB_EPPDATA(pSD)			_IPF(pSD->IO.pbEppDataPort)
-#define _INB_STATUS(pSD)			_IPF(pSD->IO.pbStatusPort)
-#define _INB_ECTL(pSD)				_IPF((pSD->IO.portBase+0x402))
-
-#else
-
 #define _OUTB_CTRL(pSD,port_value)   sanei_pp_outb_ctrl(pSD->pardev, port_value)
 #define _OUTB_DATA(pSD,port_value)   sanei_pp_outb_data(pSD->pardev, port_value)
 #define _OUTB_ECTL(pSD,port_value)
@@ -129,32 +98,19 @@
 #define _INB_EPPDATA(pSD)            sanei_pp_inb_epp(pSD->pardev)
 #define _INB_STATUS(pSD)             sanei_pp_inb_stat(pSD->pardev)
 
-#endif
-
 /*.............................................................................
  * for memory allocation
  */
-#ifndef __KERNEL__
 # define _KALLOC(x,y)   malloc(x)
 # define _KFREE(x)		free(x)
 # define _VMALLOC(x)	malloc(x)
 # define _VFREE(x)		free(x)
-#else
-# define _KALLOC(x,y)   kmalloc(x,y)
-# define _KFREE(x)		kfree(x)
-# define _VMALLOC(x)	vmalloc(x)
-# define _VFREE(x)		vfree(x)
-#endif
 
 /*
  * WARNING - never use the _SECOND define with the _DODELAY macro !!
  * they are for use the MiscStartTimer function and the _DO_UDELAY macro
  */
-#ifndef __KERNEL__
 typedef double TimerDef, *pTimerDef;
-#else
-typedef long long TimerDef, *pTimerDef;
-#endif
 
 #define _MSECOND    1000             /* based on 1 us */
 #define _SECOND     (1000*_MSECOND)
@@ -162,13 +118,8 @@ typedef long long TimerDef, *pTimerDef;
 /*.............................................................................
  * timer topics
  */
-#ifndef __KERNEL__
 # define _DO_UDELAY(usecs)   sanei_pp_udelay(usecs)
 # define _DODELAY(msecs)     { int i; for( i = msecs; i--; ) _DO_UDELAY(1000); }
-#else
-# define _DO_UDELAY(usecs)   udelay(usecs)
-# define _DODELAY(msecs)     mdelay(msecs)
-#endif
 
 /*.............................................................................
  * include the shared stuff right here, this concerns the ioctl interface

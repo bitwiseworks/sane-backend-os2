@@ -111,7 +111,7 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 #define I_periph_devtype_scanner          0x06
 #define I_periph_devtype_unknown          0x1f
 
-/* dont use these, until vendor */
+/* don't use these, until vendor */
 #define get_I_rmb(in)                     getbitfield(in + 1, 7, 1)
 #define get_I_devtype_qual(in)            getbitfield(in + 1, 0, 0x7f)
 
@@ -133,10 +133,14 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 #define get_I_cmdque(in)                  getbitfield(in + 7, 1, 1)
 #define get_I_sftre(in)                   getbitfield(in + 7, 0, 1)
 
-#define get_I_vendor(in, buf)             strncpy(buf,(char *)in + 0x08, 0x08)
-#define get_I_product(in, buf)            strncpy(buf,(char *)in + 0x10, 0x10)
-#define get_I_version(in, buf)            strncpy(buf,(char *)in + 0x20, 0x04)
-#define get_I_build(in, buf)              strncpy(buf,(char *)in + 0x24, 0x02)
+#define get_I_vendor(in, buf)             snprintf(buf, 0x08 + 1, "%.*s", \
+                                                   0x08, (char *)in + 0x08)
+#define get_I_product(in, buf)            snprintf(buf, 0x10 + 1, "%.*s", \
+                                                   0x10, (char *)in + 0x10)
+#define get_I_version(in, buf)            snprintf(buf, 0x04 + 1, "%.*s", \
+                                                   0x04, (char *)in + 0x20)
+#define get_I_build(in, buf)              snprintf(buf, 0x02 + 1, "%.*s", \
+                                                   0x02, (char *)in + 0x24)
 
 #define get_I_mf_disable(in)              getbitfield(in + 38, 7, 1)
 #define get_I_checkdigit(in)              getbitfield(in + 38, 6, 1)

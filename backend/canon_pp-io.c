@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -42,8 +40,6 @@
 
    This file is part of the canon_pp backend, supporting Canon CanoScan
    Parallel scanners and also distributed as part of the stand-alone driver.
-
-   canon_pp-io.c: $Revision$
 
    Low Level Function library for Canon CanoScan Parallel Scanners by
    Simon Krix <kinsei@users.sourceforge.net>
@@ -73,11 +69,6 @@ static void DBG(int level, const char *format, ...)
 	va_end(args);
 }
 #else
-
-/* Definitions which only apply to SANE compiles */
-#ifndef VERSION
-#define VERSION "$Revision$"
-#endif
 
 /* Fix problem with DBG macro definition having a - in the name */
 #define DEBUG_DECLARE_ONLY
@@ -187,8 +178,8 @@ int sanei_canon_pp_wake_scanner(struct parport *port, int mode)
 			usleep(100000);
 		}
 
-	} while ((i < max_cycles) && (!expect(port,"Scanner wakeup reply 2",
-					0x03, 0x1f, 100000) == 0));
+	} while ((i < max_cycles) && expect(port, "Scanner wakeup reply 2",
+					0x03, 0x1f, 100000));
 
 	/* Block just after chessboarding
 	   Reply 1 (S3 and S4 on, S5 and S7 off) */

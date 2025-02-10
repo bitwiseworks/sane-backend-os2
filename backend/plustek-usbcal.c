@@ -14,7 +14,7 @@
  * The basic premise: The stock Plustek-usbshading.c in the plustek
  * driver is effectively nonfunctional for Canon CanoScan scanners.
  * These scanners rely heavily on all calibration steps, especially
- * fine white, to produce acceptible scan results.  However, to make
+ * fine white, to produce acceptable scan results.  However, to make
  * autocalibration work and make it work well involves some
  * substantial mucking aobut in code that supports thirty other
  * scanners with widely varying characteristics... none of which I own
@@ -63,9 +63,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -102,7 +100,7 @@
 static int strip_state = 0;
 
 /** depending on the strip state, the sensor is moved to the shading position
- *  and the lamp ist switched on
+ *  and the lamp is switched on
  */
 static int
 cano_PrepareToReadWhiteCal( Plustek_Device *dev, SANE_Bool mv2shading_pos )
@@ -306,7 +304,7 @@ cano_AdjustLightsource( Plustek_Device *dev )
 	min_rgb.Blue  = hw->blue_lamp_on;
 
 	if((dev->adj.rlampoff != -1) &&
-	   (dev->adj.glampoff != -1) && (dev->adj.rlampoff != -1)) {
+	   (dev->adj.glampoff != -1) && (dev->adj.blampoff != -1)) {
 		DBG( _DBG_INFO, "- function skipped, using frontend values!\n" );
 		return SANE_TRUE;
 	}

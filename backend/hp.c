@@ -14,9 +14,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -44,11 +42,9 @@
 */
 
 static char *hp_backend_version = "1.06";
-static char *hp_backend_revision = "$Revision$";
 /* Changes:
 
    V 1.06:
-   $Log$
    Revision 1.22  2008/11/26 21:21:25  kitno-guest
    * backend/ *.[ch]: nearly every backend used V_MAJOR
    instead of SANE_CURRENT_MAJOR in sane_init()
@@ -69,7 +65,7 @@ static char *hp_backend_revision = "$Revision$";
    Revision 1.18  2003/10/09 19:37:29  kig-guest
    Redo when TEST UNIT READY failed
    Redo when read returns with 0 bytes (non-SCSI only)
-   Bug #300241: fix invers image on 3c/4c/6100C at 10 bit depth
+   Bug #300241: fix inverse image on 3c/4c/6100C at 10 bit depth
 
    Revision 1.17  2003/10/06 19:54:07  kig-guest
    Bug #300248: correct "Negatives" to "Negative" in option description
@@ -132,7 +128,7 @@ static char *hp_backend_revision = "$Revision$";
       - remove inlines
    V 0.88, 20-Jul-2000, PK:
       - Use sanei_config_read()
-      - dont write chars < 32 to DBG
+      - don't write chars < 32 to DBG
    V 0.88, 09-Jul-2000, PK:
       - Add front button support by Chris S. Cowles, Houston, Texas,
         c_cowles@ieee.org
@@ -146,7 +142,7 @@ static char *hp_backend_revision = "$Revision$";
         (Jens Heise, <heisbeee@calvados.zrz.TU-Berlin.DE>)
       - add option enable-image-buffering
    V 0.85, 30-Jan-2000, PK:
-      - correct and enhace data widths > 8 (Ewald de Wit  <ewald@pobox.com>)
+      - correct and enhance data widths > 8 (Ewald de Wit  <ewald@pobox.com>)
       - enable data width for all scanners
       - PhotoSmart: exposure "Off" changed to "Default"
       - PhotoSmart: even if max. datawidth 24 is reported, allow 30 bits.
@@ -585,13 +581,9 @@ hp_get_dev (const char *devname, HpDevice* devp)
   DBG(3, "hp_get_dev: New device %s, connect-%s, scsi-request=%lu\n",
       devname, connect, (unsigned long)info->config.use_scsi_request);
 
-  if (!ptr)
-  {
-     status =  sanei_hp_device_new (&new, devname);
-
-     if ( status != SANE_STATUS_GOOD )
-       return status;
-  }
+  status = sanei_hp_device_new (&new, devname);
+  if (status != SANE_STATUS_GOOD)
+      return status;
 
   if (devp)
       *devp = new;
@@ -654,8 +646,8 @@ hp_read_config (void)
   is_df_config = 1;
   cu_device[0] = '\0';
 
-  DBG(1, "hp_read_config: hp backend v%s/%s starts reading config file\n",
-      hp_backend_version, hp_backend_revision);
+  DBG(1, "hp_read_config: hp backend v%s starts reading config file\n",
+      hp_backend_version);
 
   if ((fp = sanei_config_open(HP_CONFIG_FILE)) != 0)
     {
@@ -820,7 +812,7 @@ sane_init (SANE_Int *version_code, SANE_Auth_Callback __sane_unused__ authorize)
   hp_destroy();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, VERSIO);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, VERSIO);
 
   status = hp_init();
   DBG(3, "sane_init will finish with %s\n", sane_strstatus (status));

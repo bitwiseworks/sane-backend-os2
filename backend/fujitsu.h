@@ -112,6 +112,7 @@ enum fujitsu_Option
   OPT_HOPPER,
   OPT_OMR,
   OPT_ADF_OPEN,
+  OPT_CARD_LOADED,
   OPT_SLEEP,
   OPT_SEND_SW,
   OPT_MANUAL_FEED,
@@ -277,6 +278,7 @@ struct fujitsu
   int has_comp_JPG2;
   int has_comp_JPG3;
   int has_op_halt;
+  int has_return_path;
 
   /*FIXME: more endorser data? */
   int endorser_type_f;
@@ -321,19 +323,17 @@ struct fujitsu
   int color_interlace;  /* different models interlace colors differently     */
   int duplex_interlace; /* different models interlace sides differently      */
   int jpeg_interlace;   /* different models interlace jpeg sides differently */
-  int cropping_mode;    /* lower-end scanners dont crop from paper size      */
+  int cropping_mode;    /* lower-end scanners don't crop from paper size      */
   int ghs_in_rs;
-  int window_gamma;
   int endorser_string_len;
   int has_pixelsize;
   int has_short_pixelsize; /* m3091/2 put weird stuff at end, ignore it */
 
   int broken_diag_serial;   /* some scanners are just plain borked */
-  int need_q_table;         /* some scanners wont work without these */
+  int need_q_table;         /* some scanners won't work without these */
   int need_diag_preread;
-  int late_lut;
-  int hopper_before_op;     /* some scanners dont like OP when hopper empty */
-  int no_wait_after_op;     /* some scanners dont like TUR after OP */
+  int hopper_before_op;     /* some scanners don't like OP when hopper empty */
+  int no_wait_after_op;     /* some scanners don't like TUR after OP */
 
   int has_vuid_mono;    /* mono set window data */
   int has_vuid_3091;    /* 3091/2 set window data */
@@ -361,7 +361,7 @@ struct fujitsu
 
   /*mode group*/
   SANE_String_Const mode_list[7];
-  SANE_String_Const source_list[5];
+  SANE_String_Const source_list[8];
 
   SANE_Int res_list[17];
   SANE_Range res_range;
@@ -519,6 +519,7 @@ struct fujitsu
   /* the user never directly modifies these */
 
   int s_mode; /*color,lineart,etc: sent to scanner*/
+  int window_gamma; /* depends on brightness/contrast and lut */
 
   /* this is defined in sane spec as a struct containing:
 	SANE_Frame format;
@@ -565,7 +566,7 @@ struct fujitsu
   int req_driv_lut;
 
   /* --------------------------------------------------------------------- */
-  /* values used by the software enhancment code (deskew, crop, etc)       */
+  /* values used by the software enhancement code (deskew, crop, etc)      */
   SANE_Status deskew_stat;
   int deskew_vals[2];
   double deskew_slope;
@@ -599,6 +600,7 @@ struct fujitsu
   int hw_hopper;
   int hw_omr;
   int hw_adf_open;
+  int hw_card_loaded;
 
   int hw_sleep;
   int hw_send_sw;
@@ -618,7 +620,7 @@ struct fujitsu
   int hw_density_sw;
 
   /* values which are used to track the frontend's access to sensors  */
-  char hw_read[NUM_OPTIONS-OPT_TOP];
+  char hw_data_avail[NUM_OPTIONS-OPT_TOP];
 };
 
 #define CONNECTION_SCSI   0 /* SCSI interface */
@@ -631,6 +633,9 @@ struct fujitsu
 #define SOURCE_ADF_FRONT 1
 #define SOURCE_ADF_BACK 2
 #define SOURCE_ADF_DUPLEX 3
+#define SOURCE_CARD_FRONT 4
+#define SOURCE_CARD_BACK 5
+#define SOURCE_CARD_DUPLEX 6
 
 #define COMP_NONE WD_cmp_NONE
 #define COMP_JPEG WD_cmp_JPG1

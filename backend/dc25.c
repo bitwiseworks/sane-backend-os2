@@ -3,8 +3,6 @@
 
    dc25.c
 
-   $Id$
-
    This file (C) 1998 Peter Fales
 
    This file is part of the SANE package.
@@ -20,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -69,7 +65,7 @@
  *	/pub/hakimian directory. The complete URL is:
  *	    ftp://ftp.eecs.wsu.edu/pub/hakimian/dc20.tar.gz
  *
- *	This package also includes a sligthly modified version of the Comet to ppm
+ *	This package also includes a slightly modified version of the Comet to ppm
  *	conversion routine written by YOSHIDA Hideki <hideki@yk.rim.or.jp>
  *
  *	This program is free software; you can redistribute it and/or modify
@@ -138,8 +134,7 @@ static char tty_name[PATH_MAX];
 #define DEF_TTY_NAME "/dev/ttyS0"
 
 static speed_t tty_baud = DEFAULT_TTY_BAUD;
-static char *tmpname;
-static char tmpnamebuf[] = "/tmp/dc25XXXXXX";
+#define TMPFILE_PATTERN "/tmp/dc25XXXXXX";
 
 static Dc20Info *dc20_info;
 static Dc20Info CameraInfo;
@@ -929,7 +924,6 @@ adjust_color_and_saturation (short red[], short green[], short blue[])
   int line, column;
   int r_min = SMAX, g_min = SMAX, b_min = SMAX;
   int r_max = 0, g_max = 0, b_max = 0;
-  int r_sum = 0, g_sum = 0, b_sum = 0;
   float sqr_saturation = sqrt (saturation);
   for (line = TOP_MARGIN; line < HEIGHT - BOTTOM_MARGIN; line++)
     {
@@ -1012,9 +1006,6 @@ adjust_color_and_saturation (short red[], short green[], short blue[])
 	    g_max = g;
 	  if (b_max < b)
 	    b_max = b;
-	  r_sum += r;
-	  g_sum += g;
-	  b_sum += b;
 	  BIDIM_ARRAY (red, column, line, columns) = r;
 	  BIDIM_ARRAY (green, column, line, columns) = g;
 	  BIDIM_ARRAY (blue, column, line, columns) = b;
@@ -1107,7 +1098,7 @@ if (verbose) printf ("%s: determine_limits: low_i = %d, high_i = %d\n", __progna
 }
 
 /*
- * The original dc20ctrl program used a default gamma of 0.35, but I thougt
+ * The original dc20ctrl program used a default gamma of 0.35, but I thought
  * 0.45 looks better.  In addition, since xscanimage seems to always force
  * a resolution of 0.1, I multiply everything by 10 and make the default
  * 4.5.
@@ -1157,7 +1148,6 @@ output_rgb (const short red[],
 {
   int r_min = 255, g_min = 255, b_min = 255;
   int r_max = 0, g_max = 0, b_max = 0;
-  int r_sum = 0, g_sum = 0, b_sum = 0;
   int column, line;
   unsigned char *gamma_table = make_gamma_table (high_i - low_i);
 
@@ -1206,19 +1196,9 @@ output_rgb (const short red[],
 	    g_max = g;
 	  if (b_max < b)
 	    b_max = b;
-	  r_sum += r;
-	  g_sum += g;
-	  b_sum += b;
 	}
     }
   free (gamma_table);
-/*
-	{
-		fprintf (stderr, "%s: output_rgb: r: min = %d, max = %d, ave = %d\n", __progname, r_min, r_max, r_sum / NET_PIXELS);
-		fprintf (stderr, "%s: output_rgb: g: min = %d, max = %d, ave = %d\n", __progname, g_min, g_max, g_sum / NET_PIXELS);
-		fprintf (stderr, "%s: output_rgb: b: min = %d, max = %d, ave = %d\n", __progname, b_min, b_max, b_sum / NET_PIXELS);
-	}
-*/
   return 0;
 }
 
@@ -1389,7 +1369,7 @@ convert_pic (char *base_name, int format)
   if (format & SAVE_ADJASPECT)
     {
       /*
-       *      Strech image
+       *      Stretch image
        */
 
       if (res)
@@ -1764,7 +1744,7 @@ erase (int fd)
       /*
        * This block may really apply to the DC20 also, but since I
        * don't have one, it's hard to say for sure.  On the DC25, erase
-       * takes long enought that the read may timeout without returning
+       * takes long enough that the read may timeout without returning
        * any data before the erase is complete.   We let this happen
        * up to 4 times, then give up.
        */
@@ -1837,12 +1817,11 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
   DBG_INIT ();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (DC25_CONFIG_FILE);
 
-  DBG (127,
-       "sane_init() $Id$\n");
+  DBG (127, "sane_init()\n");
 
   if (!fp)
     {
@@ -2025,16 +2004,6 @@ sane_open (SANE_String_Const devicename, SANE_Handle * handle)
   if (dc20_info == NULL)
     {
       DBG (1, "No device info\n");
-    }
-
-  if (tmpname == NULL)
-    {
-      tmpname = tmpnamebuf;
-      if (!mkstemp (tmpname))
-	{
-	  DBG (1, "Unable to make temp file %s\n", tmpname);
-	  return SANE_STATUS_INVAL;
-	}
     }
 
   DBG (3, "sane_open: pictures taken=%d\n", dc20_info->pic_taken);
@@ -2450,14 +2419,15 @@ sane_start (SANE_Handle handle)
        * port overruns on a 90MHz pentium until I used hdparm
        * to set the "-u1" flag on the system drives.
        */
-      int fd;
+      char tmpnamebuf[] = TMPFILE_PATTERN;
 
-      fd = open (tmpname, O_CREAT | O_EXCL | O_WRONLY, 0600);
+      int fd = mkstemp (tmpnamebuf);
       if (fd == -1)
-	{
-	  DBG (0, "Unable to open tmp file\n");
-	  return SANE_STATUS_INVAL;
-	}
+        {
+          DBG (0, "Unable to make temp file %s\n", tmpnamebuf);
+          return SANE_STATUS_INVAL;
+        }
+
       f = fdopen (fd, "wb");
       if (f == NULL)
 	{
@@ -2529,12 +2499,12 @@ sane_start (SANE_Handle handle)
       else
 	{
 	  fclose (f);
-	  if (convert_pic (tmpname, SAVE_ADJASPECT | SAVE_24BITS) == -1)
+	  if (convert_pic (tmpnamebuf, SAVE_ADJASPECT | SAVE_24BITS) == -1)
 	    {
 	      DBG (3, "sane_open: unable to convert\n");
 	      return SANE_STATUS_INVAL;
 	    }
-	  unlink (tmpname);
+	  unlink (tmpnamebuf);
 	  outbytes = 0;
 	}
     }
@@ -2632,7 +2602,7 @@ sane_read (SANE_Handle __sane_unused__ handle, SANE_Byte * data,
        * If outbytes is zero, then this is the first time
        * we've been called, so update the contrast table.
        * The formula is something I came up with that has the
-       * following prooperties:
+       * following properties:
        * 1) It's a smooth curve that provides the effect I wanted
        *    (bright pixels are made brighter, dim pixels are made
        *    dimmer)

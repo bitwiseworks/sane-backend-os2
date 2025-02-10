@@ -22,6 +22,9 @@
 #define BACKEND_NAME epson2
 #define DEBUG_NOT_STATIC
 
+#define mode_params epson2_mode_params
+#define source_list epson2_source_list
+
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
@@ -79,6 +82,9 @@
 #define LINES_SHUFFLE_MAX	17	/* 2 x 8 lines plus 1 */
 #define SANE_EPSON_MAX_RETRIES	14	/* warmup max retry */
 #define CMD_SIZE_EXT_STATUS	42
+
+#define FOCUS_ON_GLASS 64
+#define FOCUS_ABOVE_25MM (64 + 25)
 
 /* NOTE: you can find these codes with "man ascii". */
 #define STX	0x02
@@ -172,7 +178,7 @@
 #define EPSON_LEVEL_D7		12
 #define EPSON_LEVEL_D8		13
 
-/* there is also a function level "A5", which I'm igoring here until somebody can
+/* there is also a function level "A5", which I'm ignoring here until somebody can
  * convince me that this is still needed. The A5 level was for the GT-300, which
  * was (is) a monochrome only scanner. So if somebody really wants to use this
  * scanner with SANE get in touch with me and we can work something out - khk
@@ -253,11 +259,13 @@ enum {
 	OPT_TL_Y,
 	OPT_BR_X,
 	OPT_BR_Y,
+	OPT_FOCUS_GROUP,
+	OPT_AUTOFOCUS,
+	OPT_FOCUS_POS,
 	OPT_EQU_GROUP,
 	OPT_SOURCE,
 	OPT_AUTO_EJECT,
 	OPT_FILM_TYPE,
-	OPT_FOCUS,
 	OPT_BAY,
 	OPT_EJECT,
 	OPT_ADF_MODE,
@@ -387,7 +395,6 @@ struct Epson_Scanner
 	SANE_Int lines_written;		/* debug variable */
 
 	SANE_Int left, top, lcount;
-	SANE_Bool focusOnGlass;
 	SANE_Byte currentFocusPosition;
 
 	/* network buffers */

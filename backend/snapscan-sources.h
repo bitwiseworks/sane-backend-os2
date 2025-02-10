@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -44,11 +42,12 @@
    If you do not wish that, delete this exception notice.
 
    This file is a component of the implementation of a backend for many
-   of the AGFA SnapScan and Acer Vuego/Prisa flatbed scanners. */
+   of the AGFA SnapScan and Acer Vuego/Prisa flatbed scanners.
+*/
 
-
-/* $Id$
-   SnapScan backend scan data sources */
+/*
+   SnapScan backend scan data sources
+*/
 
 #ifndef SNAPSCAN_SOURCES_H
 #define SNAPSCAN_SOURCES_H
@@ -87,7 +86,6 @@ static SANE_Status Source_init (Source *pself,
 #endif
 
 /*
- * $Log$
  * Revision 1.5  2001/12/17 22:51:50  oliverschwartz
  * Update to snapscan-20011212 (snapscan 1.4.3)
  *
@@ -96,7 +94,7 @@ static SANE_Status Source_init (Source *pself,
  *
  * Revision 1.4  2001/09/18 15:01:07  oliverschwartz
  * - Read scanner id string again after firmware upload
- *   to indentify correct model
+ *   to identify correct model
  * - Make firmware upload work for AGFA scanners
  * - Change copyright notice
  *
@@ -105,5 +103,5 @@ static SANE_Status Source_init (Source *pself,
  * Support for 1212U_2
  *
  * Revision 1.2  2000/10/13 03:50:27  cbagwell
- * Updating to source from SANE 1.0.3.  Calling this versin 1.1
+ * Updating to source from SANE 1.0.3.  Calling this version 1.1
  * */

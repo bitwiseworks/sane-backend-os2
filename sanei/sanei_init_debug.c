@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -118,7 +116,7 @@ is_socket (int fd)
 
 #if defined(S_ISSOCK)
   return S_ISSOCK(sbuf.st_mode);
-#elif defined (S_IFMT) && defined(S_IFMT)
+#elif defined (S_IFMT) && defined(S_IFSOCK)
   return (sbuf.st_mode & S_IFMT) == S_IFSOCK;
 #else
   return 0;
@@ -133,6 +131,7 @@ sanei_debug_msg
 
   if (max_level >= level)
     {
+#if defined(LOG_DEBUG)
       if (is_socket(fileno(stderr)))
 	{
 	  msg = (char *)malloc (sizeof(char) * (strlen(be) + strlen(fmt) + 4));
@@ -149,6 +148,7 @@ sanei_debug_msg
 	    }
 	}
       else
+#endif
 	{
           struct timeval tv;
           struct tm *t;

@@ -15,30 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef BACKEND_GENESYS_GL843_REGISTERS_H
@@ -337,6 +314,16 @@ static constexpr RegAddr REG_CK3MAP = 0x77;
 static constexpr RegAddr REG_CK4MAP = 0x7a;
 
 static constexpr RegAddr REG_0x7E = 0x7e;
+
+static constexpr RegAddr REG_0x80 = 0x80;
+static constexpr RegMask REG_0x80_TABLE1_NORMAL = 0x03;
+static constexpr RegShift REG_0x80S_TABLE1_NORMAL = 0;
+static constexpr RegMask REG_0x80_TABLE2_BACK = 0x0c;
+static constexpr RegShift REG_0x80S_TABLE2_BACK = 2;
+static constexpr RegMask REG_0x80_TABLE4_FAST = 0x30;
+static constexpr RegShift REG_0x80S_TABLE4_FAST = 4;
+static constexpr RegMask REG_0x80_TABLE5_GO_HOME = 0xc0;
+static constexpr RegShift REG_0x80S_TABLE5_GO_HOME = 6;
 
 static constexpr RegAddr REG_0x9D = 0x9d;
 static constexpr RegShift REG_0x9DS_STEPTIM = 2;

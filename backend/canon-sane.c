@@ -55,7 +55,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
 #endif
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (CANON_CONFIG_FILE);
   if (fp)
@@ -181,7 +181,7 @@ sane_open (SANE_String_Const devnam, SANE_Handle * handle)
 	  s->gamma_table[i][0] = 0;
 	}
       for (j = 1; j < 4096; ++j)
-	{			/* FS2710 needs inital gamma 2.0 */
+	{			/* FS2710 needs initial gamma 2.0 */
 	  c = (int) (256.0 * pow (((double) j) / 4096.0, 0.5));
 	  for (i = 0; i < 4; i++)
 	    {
@@ -520,7 +520,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	    }
 	  return SANE_STATUS_GOOD;
 
-	  /* 990320, ss: switch between slider and option menue for resolution */
+	  /* 990320, ss: switch between slider and option menu for resolution */
 	case OPT_HW_RESOLUTION_ONLY:
 	  if (s->val[option].w != *(SANE_Word *) val)
 	    {
@@ -1111,9 +1111,6 @@ sane_start (SANE_Handle handle)
   u_char cbuf[2];			/* modification for FB620S */
   size_t buf_size, i;
 
-  char tmpfilename[] = "/tmp/canon.XXXXXX"; /* for FB1200S */
-  char *thistmpfile; /* for FB1200S */
-
   DBG (1, ">> sane_start\n");
 
   s->tmpfile = -1; /* for FB1200S */
@@ -1121,36 +1118,18 @@ sane_start (SANE_Handle handle)
 /******* making a tempfile for 1200 dpi scanning of FB1200S ******/
   if (s->hw->info.model == FB1200)
     {
-      thistmpfile = strdup(tmpfilename);
+      char tmpfilename[] = "/tmp/canon.XXXXXX"; /* for FB1200S */
 
-      if (thistmpfile != NULL)
-        {
-          if (!mkstemp(thistmpfile))
-            {
-              DBG(1, "mkstemp(thistmpfile) is failed\n");
-              return (SANE_STATUS_INVAL);
-	    }
-	}
-      else
-        {
-	  DBG(1, "strdup(thistmpfile) is failed\n");
-	  return (SANE_STATUS_INVAL);
-	}
-
-      s->tmpfile = open(thistmpfile, O_RDWR | O_CREAT | O_EXCL, 0600);
-
+      s->tmpfile = mkstemp(tmpfilename);
       if (s->tmpfile == -1)
 	{
-	  DBG(1, "error opening temp file %s\n", thistmpfile);
+	  DBG(1, "error opening temp file %s\n", tmpfilename);
 	  DBG(1, "errno: %i; %s\n", errno, strerror(errno));
 	  errno = 0;
 	  return (SANE_STATUS_INVAL);
 	}
       DBG(1, " ****** tmpfile is opened ****** \n");
-
-      unlink(thistmpfile);
-      free (thistmpfile);
-      DBG(1, "free thistmpfile\n");
+      unlink(tmpfilename);
     }
 /******************************************************************/
 

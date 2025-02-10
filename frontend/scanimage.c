@@ -20,8 +20,8 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 
 #ifdef _AIX
 # include "../include/lalloca.h"                /* MUST come first for AIX! */
@@ -39,7 +39,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdarg.h>
-
+#include <errno.h>
+#include <libgen.h>     // for basename()
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -60,6 +61,10 @@
 #include "sicc.h"
 #include "stiff.h"
 
+#ifdef HAVE_LIBJPEG
+#include "jpegtopdf.h"
+#endif
+
 #include "../include/md5.h"
 
 #ifndef PATH_MAX
@@ -73,6 +78,7 @@ typedef struct
   int height;
   int x;
   int y;
+  int num_channels;
 }
 Image;
 
@@ -98,7 +104,7 @@ static struct option basic_options[] = {
   {"test", no_argument, NULL, 'T'},
   {"all-options", no_argument, NULL, 'A'},
   {"version", no_argument, NULL, 'V'},
-  {"buffer-size", optional_argument, NULL, 'B'},
+  {"buffer-size", required_argument, NULL, 'B'},
   {"batch", optional_argument, NULL, 'b'},
   {"batch-count", required_argument, NULL, OPTION_BATCH_COUNT},
   {"batch-start", required_argument, NULL, OPTION_BATCH_START_AT},
@@ -118,30 +124,32 @@ static struct option basic_options[] = {
 #define OUTPUT_TIFF     2
 #define OUTPUT_PNG      3
 #define OUTPUT_JPEG     4
+#define OUTPUT_PDF      5
 
-#define BASE_OPTSTRING	"d:hi:Lf:o:B::nvVTAbp"
+#define BASE_OPTSTRING	"d:hi:Lf:o:B:nvVTAbp"
 #define STRIP_HEIGHT	256	/* # lines we increment image height */
 
-static struct option *all_options;
-static int option_number_len;
-static int *option_number;
-static SANE_Handle device;
-static int verbose;
+static struct option *all_options = NULL;
+static int option_number_len = 0;
+static int *option_number = 0;
+static SANE_Handle device = 0;
+static int verbose = 0;
 static int progress = 0;
 static const char* output_file = NULL;
-static int test;
-static int all;
+static int test = 0;
+static int all = 0;
 static int output_format = OUTPUT_UNKNOWN;
-static int help;
+static int help = 0;
 static int dont_scan = 0;
-static const char *prog_name;
+static const char *prog_name = NULL;
 static int resolution_optind = -1, resolution_value = 0;
 
 /* window (area) related options */
-static SANE_Option_Descriptor window_option[4]; /*updated descs for x,y,l,t*/
-static int window[4]; /*index into backend options for x,y,l,t*/
-static SANE_Word window_val[2]; /*the value for x,y options*/
-static int window_val_user[2];	/* is x,y user-specified? */
+static SANE_Option_Descriptor window_option[4] = {0}; /*updated descs for x,y,l,t*/
+static int window[4] = {0}; /*index into backend options for x,y,l,t*/
+static SANE_Word window_val[2] = {0}; /*the value for x,y options*/
+static int window_val_user[2] = {0};	/* is x,y user-specified? */
+static char *full_optstring = NULL;
 
 static int accept_only_md5_auth = 0;
 static const char *icc_profile = NULL;
@@ -153,18 +161,16 @@ static SANE_Word tl_x = 0;
 static SANE_Word tl_y = 0;
 static SANE_Word br_x = 0;
 static SANE_Word br_y = 0;
-static SANE_Byte *buffer;
-static size_t buffer_size;
+static SANE_Byte *buffer = NULL;
+static size_t buffer_size = 0;
 
 
 static void
 auth_callback (SANE_String_Const resource,
 	       SANE_Char * username, SANE_Char * password)
 {
-  char tmp[3 + 128 + SANE_MAX_USERNAME_LEN + SANE_MAX_PASSWORD_LEN], *wipe;
-  unsigned char md5digest[16];
+  char tmp[3 + 128 + SANE_MAX_USERNAME_LEN + SANE_MAX_PASSWORD_LEN];
   int md5mode = 0, len, query_user = 1;
-  FILE *pass_file;
   struct stat stat_buf;
   char * uname = NULL;
 
@@ -188,6 +194,7 @@ auth_callback (SANE_String_Const resource,
 	}
       else
 	{
+          FILE *pass_file;
 
 	  if ((pass_file = fopen (tmp, "r")) != NULL)
 	    {
@@ -205,51 +212,30 @@ auth_callback (SANE_String_Const resource,
 		  if ((strlen (tmp) > 0) && (tmp[strlen (tmp) - 1] == '\r'))
 		    tmp[strlen (tmp) - 1] = 0;
 
-		  if (strchr (tmp, ':') != NULL)
+		  char *colon1 = strchr (tmp, ':');
+		  if (colon1 != NULL)
 		    {
+		      char *tmp_username = tmp;
+		      *colon1 = '\0';
 
-		      if (strchr (strchr (tmp, ':') + 1, ':') != NULL)
+		      char *colon2 = strchr (colon1 + 1, ':');
+		      if (colon2 != NULL)
 			{
+			  char *tmp_password = colon1 + 1;
+			  *colon2 = '\0';
 
-			  if ((strncmp
-			       (strchr (strchr (tmp, ':') + 1, ':') + 1,
-				resource, len) == 0)
-			      &&
-			      ((int) strlen
-			       (strchr (strchr (tmp, ':') + 1, ':') + 1) ==
-			       len))
+			  if ((strncmp (colon2 + 1, resource, len) == 0)
+			      && ((int) strlen (colon2 + 1) == len))
 			    {
+			      if ((strlen (tmp_username) < SANE_MAX_USERNAME_LEN) &&
+                                  (strlen (tmp_password) < SANE_MAX_PASSWORD_LEN))
+                                {
+                                  strncpy (username, tmp_username, SANE_MAX_USERNAME_LEN);
+                                  strncpy (password, tmp_password, SANE_MAX_PASSWORD_LEN);
 
-			      if ((strchr (tmp, ':') - tmp) <
-				  SANE_MAX_USERNAME_LEN)
-				{
-
-				  if ((strchr (strchr (tmp, ':') + 1, ':') -
-				       (strchr (tmp, ':') + 1)) <
-				      SANE_MAX_PASSWORD_LEN)
-				    {
-
-				      strncpy (username, tmp,
-					       strchr (tmp, ':') - tmp);
-
-				      username[strchr (tmp, ':') - tmp] = 0;
-
-				      strncpy (password,
-					       strchr (tmp, ':') + 1,
-					       strchr (strchr (tmp, ':') + 1,
-						       ':') -
-					       (strchr (tmp, ':') + 1));
-				      password[strchr
-					       (strchr (tmp, ':') + 1,
-						':') - (strchr (tmp,
-								':') + 1)] =
-					0;
-
-				      query_user = 0;
-				      break;
-				    }
-				}
-
+                                  query_user = 0;
+                                  break;
+                                }
 			    }
 			}
 		    }
@@ -298,6 +284,7 @@ auth_callback (SANE_String_Const resource,
   if (query_user == 1)
     {
 #ifdef HAVE_GETPASS
+      char *wipe;
       strcpy (password, (wipe = getpass ("Enter password: ")));
       memset (wipe, 0, strlen (password));
 #else
@@ -307,6 +294,7 @@ auth_callback (SANE_String_Const resource,
 
   if (md5mode)
     {
+      unsigned char md5digest[16];
 
       sprintf (tmp, "%.128s%.*s", (strstr (resource, "$MD5$")) + 5,
 	       SANE_MAX_PASSWORD_LEN - 1, password);
@@ -330,10 +318,10 @@ auth_callback (SANE_String_Const resource,
 static void
 sighandler (int signum)
 {
-  static SANE_Bool first_time = SANE_TRUE;
-
   if (device)
     {
+      static SANE_Bool first_time = SANE_TRUE;
+
       fprintf (stderr, "%s: received signal %d\n", prog_name, signum);
       if (first_time)
 	{
@@ -390,13 +378,13 @@ print_option (SANE_Device * device, int opt_num, const SANE_Option_Descriptor *o
   }
 
   /* if both of these are set, option is invalid */
-  if(opt->cap & SANE_CAP_SOFT_SELECT && opt->cap & SANE_CAP_HARD_SELECT){
+  if((opt->cap & SANE_CAP_SOFT_SELECT) && (opt->cap & SANE_CAP_HARD_SELECT)){
     fprintf (stderr, "%s: invalid option caps, SS+HS\n", prog_name);
     return;
   }
 
   /* invalid to select but not detect */
-  if(opt->cap & SANE_CAP_SOFT_SELECT && !(opt->cap & SANE_CAP_SOFT_DETECT)){
+  if((opt->cap & SANE_CAP_SOFT_SELECT) && !(opt->cap & SANE_CAP_SOFT_DETECT)){
     fprintf (stderr, "%s: invalid option caps, SS!SD\n", prog_name);
     return;
   }
@@ -461,88 +449,108 @@ print_option (SANE_Device * device, int opt_num, const SANE_Option_Descriptor *o
 	  break;
 
 	case SANE_CONSTRAINT_RANGE:
-	  if (opt->type == SANE_TYPE_INT)
-	    {
-	      if (!strcmp (opt->name, "x"))
-		{
-		  printf ("%d..%d",
-                          opt->constraint.range->min,
-                          opt->constraint.range->max - tl_x);
-		}
-	      else if (!strcmp (opt->name, "y"))
-		{
-		  printf ("%d..%d",
-                          opt->constraint.range->min,
-                          opt->constraint.range->max - tl_y);
-		}
-	      else
-		{
-		  printf ("%d..%d",
-			  opt->constraint.range->min,
-			  opt->constraint.range->max);
-		}
-	      print_unit (opt->unit);
-	      if (opt->size > (SANE_Int) sizeof (SANE_Word))
-		fputs (",...", stdout);
-	      if (opt->constraint.range->quant)
-		printf (" (in steps of %d)", opt->constraint.range->quant);
-	    }
-	  else
-	    {
-	      if (!strcmp (opt->name, "x"))
-		{
-		  printf ("%g..%g",
-			  SANE_UNFIX (opt->constraint.range->min),
-			  SANE_UNFIX (opt->constraint.range->max - tl_x));
-		}
-	      else if (!strcmp (opt->name, "y"))
-		{
-		  printf ("%g..%g",
-			  SANE_UNFIX (opt->constraint.range->min),
-			  SANE_UNFIX (opt->constraint.range->max - tl_y));
-		}
-	      else
-		{
-		  printf ("%g..%g",
-			  SANE_UNFIX (opt->constraint.range->min),
-			  SANE_UNFIX (opt->constraint.range->max));
-		}
-	      print_unit (opt->unit);
-	      if (opt->size > (SANE_Int) sizeof (SANE_Word))
-		fputs (",...", stdout);
-	      if (opt->constraint.range->quant)
-		printf (" (in steps of %g)",
-			SANE_UNFIX (opt->constraint.range->quant));
-	    }
-	  break;
+	  // Check for no range - some buggy backends can miss this out.
+          if (!opt->constraint.range)
+            {
+              fputs ("{no_range}", stdout);
+            }
+          else
+            {
+              if (opt->type == SANE_TYPE_INT)
+                {
+                  if (!strcmp (opt->name, "x"))
+                    {
+                      printf ("%d..%d", opt->constraint.range->min,
+                              opt->constraint.range->max - tl_x);
+                    }
+                  else if (!strcmp (opt->name, "y"))
+                    {
+                      printf ("%d..%d", opt->constraint.range->min,
+                              opt->constraint.range->max - tl_y);
+                    }
+                  else
+                    {
+                      printf ("%d..%d", opt->constraint.range->min,
+                              opt->constraint.range->max);
+                    }
+                  print_unit (opt->unit);
+                  if (opt->size > (SANE_Int) sizeof(SANE_Word))
+                    fputs (",...", stdout);
+                  if (opt->constraint.range->quant)
+                    printf (" (in steps of %d)", opt->constraint.range->quant);
+                }
+              else
+                {
+                  if (!strcmp (opt->name, "x"))
+                    {
+                      printf ("%g..%g", SANE_UNFIX(opt->constraint.range->min),
+                              SANE_UNFIX(opt->constraint.range->max - tl_x));
+                    }
+                  else if (!strcmp (opt->name, "y"))
+                    {
+                      printf ("%g..%g", SANE_UNFIX(opt->constraint.range->min),
+                              SANE_UNFIX(opt->constraint.range->max - tl_y));
+                    }
+                  else
+                    {
+                      printf ("%g..%g", SANE_UNFIX(opt->constraint.range->min),
+                              SANE_UNFIX(opt->constraint.range->max));
+                    }
+                  print_unit (opt->unit);
+                  if (opt->size > (SANE_Int) sizeof(SANE_Word))
+                    fputs (",...", stdout);
+                  if (opt->constraint.range->quant)
+                    printf (" (in steps of %g)",
+                            SANE_UNFIX(opt->constraint.range->quant));
+                }
+            }
+          break;
 
 	case SANE_CONSTRAINT_WORD_LIST:
-	  for (i = 0; i < opt->constraint.word_list[0]; ++i)
-	    {
-	      if (not_first)
-		fputc ('|', stdout);
+	  // Check no words in list or no list -  - some buggy backends can miss this out.
+	  // Note the check on < 1 as SANE_Int is signed.
+          if (!opt->constraint.word_list || (opt->constraint.word_list[0] < 1))
+            {
+              fputs ("{no_wordlist}", stdout);
+            }
+          else
+            {
+              for (i = 0; i < opt->constraint.word_list[0]; ++i)
+                {
+                  if (not_first)
+                    fputc ('|', stdout);
 
-	      not_first = SANE_TRUE;
+                  not_first = SANE_TRUE;
 
-	      if (opt->type == SANE_TYPE_INT)
-		printf ("%d", opt->constraint.word_list[i + 1]);
-	      else
-		printf ("%g", SANE_UNFIX (opt->constraint.word_list[i + 1]));
-	    }
+                  if (opt->type == SANE_TYPE_INT)
+                    printf ("%d", opt->constraint.word_list[i + 1]);
+                  else
+                    printf ("%g", SANE_UNFIX(opt->constraint.word_list[i + 1]));
+                }
+            }
+
 	  print_unit (opt->unit);
 	  if (opt->size > (SANE_Int) sizeof (SANE_Word))
 	    fputs (",...", stdout);
 	  break;
 
 	case SANE_CONSTRAINT_STRING_LIST:
-	  for (i = 0; opt->constraint.string_list[i]; ++i)
-	    {
-	      if (i > 0)
-		fputc ('|', stdout);
+          // Check for missing strings - some buggy backends can miss this out.
+          if (!opt->constraint.string_list || !opt->constraint.string_list[0])
+            {
+              fputs ("{no_stringlist}", stdout);
+            }
+          else
+            {
+              for (i = 0; opt->constraint.string_list[i]; ++i)
+                {
+                  if (i > 0)
+                    fputc ('|', stdout);
 
-	      fputs (opt->constraint.string_list[i], stdout);
-	    }
-	  break;
+                  fputs (opt->constraint.string_list[i], stdout);
+                }
+            }
+          break;
 	}
     }
 
@@ -630,8 +638,11 @@ print_option (SANE_Device * device, int opt_num, const SANE_Option_Descriptor *o
   else if(opt->cap & SANE_CAP_HARD_SELECT)
     fputs (" [hardware]", stdout);
 
-  else if(!(opt->cap & SANE_CAP_SOFT_SELECT) && opt->cap & SANE_CAP_SOFT_DETECT)
+  else if(!(opt->cap & SANE_CAP_SOFT_SELECT) && (opt->cap & SANE_CAP_SOFT_DETECT))
     fputs (" [read-only]", stdout);
+
+  else if (opt->cap & SANE_CAP_ADVANCED)
+    fputs (" [advanced]", stdout);
 
   fputs ("\n        ", stdout);
 
@@ -909,9 +920,10 @@ fetch_options (SANE_Device * device)
 	  scanimage_exit (1);
 	}
 
-      /* create command line option only for settable options */
-      if (!SANE_OPTION_IS_SETTABLE (opt->cap) || opt->type == SANE_TYPE_GROUP)
-	continue;
+      /* create command line option only for non-group options */
+      /* Also we sometimes see options with no name in rogue backends. */
+      if ((opt->type == SANE_TYPE_GROUP) || (opt->name == NULL))
+        continue;
 
       option_number[option_count] = i;
 
@@ -1008,7 +1020,15 @@ set_option (SANE_Handle device, int optnum, void *valuep)
   SANE_Int info = 0;
 
   opt = sane_get_option_descriptor (device, optnum);
-  if (opt && (!SANE_OPTION_IS_ACTIVE (opt->cap)))
+  if (!opt)
+    {
+      if (verbose > 0)
+        fprintf (stderr, "%s: ignored request to set invalid option %d\n",
+                 prog_name, optnum);
+      return;
+    }
+
+  if (!SANE_OPTION_IS_ACTIVE (opt->cap))
     {
       if (verbose > 0)
 	fprintf (stderr, "%s: ignored request to set inactive option %s\n",
@@ -1056,6 +1076,12 @@ process_backend_option (SANE_Handle device, int optnum, const char *optarg)
 
   opt = sane_get_option_descriptor (device, optnum);
 
+  if (!SANE_OPTION_IS_SETTABLE (opt->cap))
+    {
+      fprintf (stderr, "%s: attempted to set readonly option %s\n",
+               prog_name, opt->name);
+      scanimage_exit (1);
+    }
   if (!SANE_OPTION_IS_ACTIVE (opt->cap))
     {
       fprintf (stderr, "%s: attempted to set inactive option %s\n",
@@ -1137,6 +1163,8 @@ process_backend_option (SANE_Handle device, int optnum, const char *optarg)
       return;
     }
   set_option (device, optnum, valuep);
+  if (opt->type == SANE_TYPE_STRING && valuep)
+    free(valuep);
 }
 
 static void
@@ -1177,18 +1205,17 @@ write_png_header (SANE_Frame format, int width, int height, int depth, int dpi, 
   /* There are nominally 39.3700787401575 inches in a meter. */
   const double pixels_per_meter = dpi * 39.3700787401575;
   size_t icc_size = 0;
-  void *icc_buffer;
 
   *png_ptr = png_create_write_struct
        (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!*png_ptr) {
     fprintf(stderr, "png_create_write_struct failed\n");
-    exit(1);
+    scanimage_exit (1);
   }
   *info_ptr = png_create_info_struct(*png_ptr);
   if (!*info_ptr) {
     fprintf(stderr, "png_create_info_struct failed\n");
-    exit(1);
+    scanimage_exit (1);
   }
   png_init_io(*png_ptr, ofp);
 
@@ -1216,7 +1243,7 @@ write_png_header (SANE_Frame format, int width, int height, int depth, int dpi, 
 
   if (icc_profile)
     {
-      icc_buffer = sanei_load_icc_profile(icc_profile, &icc_size);
+      void *icc_buffer = sanei_load_icc_profile(icc_profile, &icc_size);
       if (icc_size > 0)
         {
 	  /* libpng will abort if the profile and image colour spaces do not match*/
@@ -1227,7 +1254,21 @@ write_png_header (SANE_Frame format, int width, int height, int depth, int dpi, 
 	  if ((is_gray_profile && color_type == PNG_COLOR_TYPE_GRAY) ||
 	      (is_rgb_profile && color_type == PNG_COLOR_TYPE_RGB))
 	    {
-	      png_set_iCCP(*png_ptr, *info_ptr, basename(icc_profile), PNG_COMPRESSION_TYPE_BASE, icc_buffer, icc_size);
+	      char *icc_profile_cp = strdup(icc_profile);
+	      if (icc_profile_cp == NULL)
+	        {
+                  fprintf(stderr, "Memory allocation failure prevented the setting of PNG ICC profile.\n");
+	        }
+	      else
+	        {
+                  png_set_iCCP (*png_ptr,
+                                *info_ptr,
+                                basename (icc_profile_cp),
+                                PNG_COMPRESSION_TYPE_BASE,
+                                icc_buffer,
+                                icc_size);
+                  free(icc_profile_cp);
+	        }
 	    }
 	  else
 	    {
@@ -1250,7 +1291,9 @@ write_png_header (SANE_Frame format, int width, int height, int depth, int dpi, 
 
 #ifdef HAVE_LIBJPEG
 static void
-write_jpeg_header (SANE_Frame format, int width, int height, int dpi, FILE *ofp, struct jpeg_compress_struct *cinfo, struct jpeg_error_mgr *jerr)
+write_jpeg_header (SANE_Frame format, int width, int height, int dpi, FILE *ofp,
+                   struct jpeg_compress_struct *cinfo,
+                   struct jpeg_error_mgr *jerr)
 {
   cinfo->err = jpeg_std_error(jerr);
   jpeg_create_compress(cinfo);
@@ -1296,10 +1339,10 @@ advance (Image * image)
 	  size_t old_size = 0, new_size;
 
 	  if (image->data)
-	    old_size = image->height * image->width;
+	    old_size = image->height * image->width * image->num_channels;
 
 	  image->height += STRIP_HEIGHT;
-	  new_size = image->height * image->width;
+	  new_size = image->height * image->width * image->num_channels;
 
 	  if (image->data)
 	    image->data = realloc (image->data, new_size);
@@ -1316,14 +1359,14 @@ advance (Image * image)
 }
 
 static SANE_Status
-scan_it (FILE *ofp)
+scan_it (FILE *ofp, void* pw)
 {
   int i, len, first_frame = 1, offset = 0, must_buffer = 0;
   uint64_t hundred_percent = 0;
   SANE_Byte min = 0xff, max = 0;
   SANE_Parameters parm;
   SANE_Status status;
-  Image image = { 0, 0, 0, 0, 0 };
+  Image image = { 0, 0, 0, 0, 0, 0 };
   static const char *format_name[] = {
     "gray", "RGB", "red", "green", "blue"
   };
@@ -1341,6 +1384,8 @@ scan_it (FILE *ofp)
   struct jpeg_compress_struct cinfo;
   struct jpeg_error_mgr jerr;
 #endif
+
+  (void)pw;
 
   do
     {
@@ -1393,6 +1438,7 @@ scan_it (FILE *ofp)
 
       if (first_frame)
 	{
+          image.num_channels = 1;
 	  switch (parm.format)
 	    {
 	    case SANE_FRAME_RED:
@@ -1401,6 +1447,7 @@ scan_it (FILE *ofp)
 	      assert (parm.depth == 8);
 	      must_buffer = 1;
 	      offset = parm.format - SANE_FRAME_RED;
+	      image.num_channels = 3;
 	      break;
 
 	    case SANE_FRAME_RGB:
@@ -1434,6 +1481,14 @@ scan_it (FILE *ofp)
 		    break;
 #endif
 #ifdef HAVE_LIBJPEG
+		  case OUTPUT_PDF:
+		    sane_pdf_start_page ( pw, parm.pixels_per_line, parm.lines,
+		               resolution_value, SANE_PDF_IMAGE_COLOR,
+		               SANE_PDF_ROTATE_OFF);
+		    write_jpeg_header (parm.format, parm.pixels_per_line,
+				       parm.lines, resolution_value,
+				       ofp, &cinfo, &jerr);
+		    break;
 		  case OUTPUT_JPEG:
 		    write_jpeg_header (parm.format, parm.pixels_per_line,
 				       parm.lines, resolution_value,
@@ -1451,7 +1506,7 @@ scan_it (FILE *ofp)
 	    pngbuf = malloc(parm.bytes_per_line);
 #endif
 #ifdef HAVE_LIBJPEG
-	  if(output_format == OUTPUT_JPEG)
+	  if(output_format == OUTPUT_JPEG || output_format == OUTPUT_PDF)
 	    jpegbuf = malloc(parm.bytes_per_line);
 #endif
 
@@ -1528,6 +1583,7 @@ scan_it (FILE *ofp)
 		case SANE_FRAME_RED:
 		case SANE_FRAME_GREEN:
 		case SANE_FRAME_BLUE:
+		  image.num_channels = 3;
 		  for (i = 0; i < len; ++i)
 		    {
 		      image.data[offset + 3 * i] = buffer[i];
@@ -1541,6 +1597,7 @@ scan_it (FILE *ofp)
 		  break;
 
 		case SANE_FRAME_RGB:
+		  image.num_channels = 1;
 		  for (i = 0; i < len; ++i)
 		    {
 		      image.data[offset + i] = buffer[i];
@@ -1554,6 +1611,7 @@ scan_it (FILE *ofp)
 		  break;
 
 		case SANE_FRAME_GRAY:
+		  image.num_channels = 1;
 		  for (i = 0; i < len; ++i)
 		    {
 		      image.data[offset + i] = buffer[i];
@@ -1575,11 +1633,11 @@ scan_it (FILE *ofp)
 #ifdef HAVE_LIBPNG
 	      if (output_format == OUTPUT_PNG)
 	        {
-		  int i = 0;
+		  int idx = 0;
 		  int left = len;
 		  while(pngrow + left >= parm.bytes_per_line)
 		    {
-		      memcpy(pngbuf + pngrow, buffer + i, parm.bytes_per_line - pngrow);
+		      memcpy(pngbuf + pngrow, buffer + idx, parm.bytes_per_line - pngrow);
 		      if(parm.depth == 1)
 			{
 			  int j;
@@ -1602,40 +1660,40 @@ scan_it (FILE *ofp)
                         }
 #endif
 		      png_write_row(png_ptr, pngbuf);
-		      i += parm.bytes_per_line - pngrow;
+		      idx += parm.bytes_per_line - pngrow;
 		      left -= parm.bytes_per_line - pngrow;
 		      pngrow = 0;
 		    }
-		  memcpy(pngbuf + pngrow, buffer + i, left);
+		  memcpy(pngbuf + pngrow, buffer + idx, left);
 		  pngrow += left;
 		}
 	      else
 #endif
 #ifdef HAVE_LIBJPEG
-	      if (output_format == OUTPUT_JPEG)
+	      if (output_format == OUTPUT_JPEG || output_format == OUTPUT_PDF)
 	        {
-		  int i = 0;
+		  int idx = 0;
 		  int left = len;
 		  while(jpegrow + left >= parm.bytes_per_line)
 		    {
-		      memcpy(jpegbuf + jpegrow, buffer + i, parm.bytes_per_line - jpegrow);
+		      memcpy(jpegbuf + jpegrow, buffer + idx, parm.bytes_per_line - jpegrow);
 		      if(parm.depth == 1)
 			{
 			  int col1, col8;
 			  JSAMPLE *buf8 = malloc(parm.bytes_per_line * 8);
 			  for(col1 = 0; col1 < parm.bytes_per_line; col1++)
 			    for(col8 = 0; col8 < 8; col8++)
-			      buf8[col1 * 8 + col8] = jpegbuf[col1] & (1 << (8 - col8 - 1)) ? 0 : 0xff;
+			      buf8[col1 * 8 + col8] = (jpegbuf[col1] & (1 << (8 - col8 - 1))) ? 0 : 0xff;
 		          jpeg_write_scanlines(&cinfo, &buf8, 1);
 			  free(buf8);
 			} else {
 		          jpeg_write_scanlines(&cinfo, &jpegbuf, 1);
 			}
-		      i += parm.bytes_per_line - jpegrow;
+		      idx += parm.bytes_per_line - jpegrow;
 		      left -= parm.bytes_per_line - jpegrow;
 		      jpegrow = 0;
 		    }
-		  memcpy(jpegbuf + jpegrow, buffer + i, left);
+		  memcpy(jpegbuf + jpegrow, buffer + idx, left);
 		  jpegrow += left;
 		}
 	      else
@@ -1645,7 +1703,7 @@ scan_it (FILE *ofp)
 	      else
 		{
 #if !defined(WORDS_BIGENDIAN)
-		  int i, start = 0;
+		  int start = 0;
 
 		  /* check if we have saved one byte from the last sane_read */
 		  if (hang_over > -1)
@@ -1659,12 +1717,12 @@ scan_it (FILE *ofp)
 			}
 		    }
 		  /* now do the byte-swapping */
-		  for (i = start; i < (len - 1); i += 2)
+		  for (int idx = start; idx < (len - 1); idx += 2)
 		    {
 		      unsigned char LSB;
-		      LSB = buffer[i];
-		      buffer[i] = buffer[i + 1];
-		      buffer[i + 1] = LSB;
+		      LSB = buffer[idx];
+		      buffer[idx] = buffer[idx + 1];
+		      buffer[idx + 1] = LSB;
 		    }
 		  /* check if we have an odd number of bytes */
 		  if (((len - start) % 2) != 0)
@@ -1712,6 +1770,14 @@ scan_it (FILE *ofp)
       break;
 #endif
 #ifdef HAVE_LIBJPEG
+      case OUTPUT_PDF:
+	sane_pdf_start_page ( pw, parm.pixels_per_line, parm.lines,
+	           resolution_value, SANE_PDF_IMAGE_COLOR,
+	           SANE_PDF_ROTATE_OFF);
+	write_jpeg_header (parm.format, parm.pixels_per_line,
+			   parm.lines, resolution_value,
+			   ofp, &cinfo, &jerr);
+      break;
       case OUTPUT_JPEG:
 	write_jpeg_header (parm.format, parm.pixels_per_line,
 			   parm.lines, resolution_value,
@@ -1725,25 +1791,24 @@ scan_it (FILE *ofp)
       /* FIXME: other bit depths? */
       if (output_format != OUTPUT_TIFF && parm.depth == 16)
 	{
-	  int i;
-	  for (i = 0; i < image.height * image.width; i += 2)
+	  for (int idx = 0; idx < image.height * image.width; idx += 2)
 	    {
 	      unsigned char LSB;
-	      LSB = image.data[i];
-	      image.data[i] = image.data[i + 1];
-	      image.data[i + 1] = LSB;
+	      LSB = image.data[idx];
+	      image.data[idx] = image.data[idx + 1];
+	      image.data[idx + 1] = LSB;
 	    }
 	}
 #endif
 
-	fwrite (image.data, 1, image.height * image.width, ofp);
+	fwrite (image.data, 1, image.height * image.width * image.num_channels, ofp);
     }
 #ifdef HAVE_LIBPNG
     if(output_format == OUTPUT_PNG)
 	png_write_end(png_ptr, info_ptr);
 #endif
 #ifdef HAVE_LIBJPEG
-    if(output_format == OUTPUT_JPEG)
+    if(output_format == OUTPUT_JPEG || output_format == OUTPUT_PDF)
 	jpeg_finish_compress(&cinfo);
 #endif
 
@@ -1758,7 +1823,7 @@ cleanup:
   }
 #endif
 #ifdef HAVE_LIBJPEG
-  if(output_format == OUTPUT_JPEG) {
+  if(output_format == OUTPUT_JPEG || output_format == OUTPUT_PDF) {
     jpeg_destroy_compress(&cinfo);
     free(jpegbuf);
   }
@@ -1811,7 +1876,7 @@ test_it (void)
   int i, len;
   SANE_Parameters parm;
   SANE_Status status;
-  Image image = { 0, 0, 0, 0, 0 };
+  Image image = { 0, 0, 0, 0, 0, 0 };
   static const char *format_name[] =
     { "gray", "RGB", "red", "green", "blue" };
 
@@ -1938,6 +2003,8 @@ scanimage_exit (int status)
     fprintf (stderr, "Calling sane_exit\n");
   sane_exit ();
 
+  if (full_optstring)
+    free(full_optstring);
   if (all_options)
     free (all_options);
   if (option_number)
@@ -1955,20 +2022,21 @@ scanimage_exit (int status)
  */
 static void print_options(SANE_Device * device, SANE_Int num_dev_options, SANE_Bool ro)
 {
-  int i, j;
-  const SANE_Option_Descriptor *opt;
-
-  for (i = 1; i < num_dev_options; ++i)
+  for (int i = 1; i < num_dev_options; ++i)
     {
-      opt = 0;
+      const SANE_Option_Descriptor *opt = 0;
 
       /* scan area uses modified option struct */
-      for (j = 0; j < 4; ++j)
+      for (int j = 0; j < 4; ++j)
 	if (i == window[j])
 	  opt = window_option + j;
 
       if (!opt)
 	opt = sane_get_option_descriptor (device, i);
+
+      /* Some options from rogue backends are empty. */
+      if (opt->name == NULL)
+        continue;
 
       if (ro || SANE_OPTION_IS_SETTABLE (opt->cap)
 	  || opt->type == SANE_TYPE_GROUP)
@@ -2000,7 +2068,8 @@ static int guess_output_format(const char* output_file)
         { ".jpg", OUTPUT_JPEG },
         { ".jpeg", OUTPUT_JPEG },
         { ".tiff", OUTPUT_TIFF },
-        { ".tif", OUTPUT_TIFF }
+        { ".tif", OUTPUT_TIFF },
+        { ".pdf", OUTPUT_PDF }
       };
       for (unsigned i = 0; i < sizeof(formats) / sizeof(formats[0]); ++i)
         {
@@ -2009,35 +2078,31 @@ static int guess_output_format(const char* output_file)
         }
     }
 
-  // it would be very confusing if user makes a typo in the filename and the output format changes.
-  // This is most likely not what the user wanted.
-  fprintf(stderr, "Could not guess output format from the given path and no --format given.\n");
-  exit(1);
+  return OUTPUT_UNKNOWN;
 }
 
 int
 main (int argc, char **argv)
 {
-  int ch, i, index, all_options_len;
+  int ch, index;
   const SANE_Device **device_list;
   SANE_Int num_dev_options = 0;
   const char *devname = 0;
   const char *defdevname = 0;
   const char *format = 0;
-  char readbuf[2];
-  char *readbuf2;
   int batch = 0;
   int batch_print = 0;
   int batch_prompt = 0;
   int batch_count = BATCH_COUNT_UNLIMITED;
   int batch_start_at = 1;
   int batch_increment = 1;
+  int promptc;
   SANE_Status status;
-  char *full_optstring;
   SANE_Int version_code;
+  void *pw = NULL;
   FILE *ofp = NULL;
 
-  buffer_size = (32 * 1024);	/* default size */
+  buffer_size = (1024 * 1024);	/* default size */
 
   prog_name = strrchr (argv[0], '/');
   if (prog_name)
@@ -2084,10 +2149,7 @@ main (int argc, char **argv)
           output_file = optarg;
           break;
 	case 'B':
-          if (optarg)
-	    buffer_size = 1024 * atoi(optarg);
-          else
-	    buffer_size = (1024 * 1024);
+          buffer_size = 1024 * atoi(optarg);
 	  break;
 	case 'T':
 	  test = 1;
@@ -2126,7 +2188,7 @@ main (int argc, char **argv)
 	      output_format = OUTPUT_PNG;
 #else
 	      fprintf(stderr, "PNG support not compiled in\n");
-	      exit(1);
+	      scanimage_exit (1);
 #endif
 	    }
 	  else if (strcmp (optarg, "jpeg") == 0)
@@ -2135,7 +2197,16 @@ main (int argc, char **argv)
 	      output_format = OUTPUT_JPEG;
 #else
 	      fprintf(stderr, "JPEG support not compiled in\n");
-	      exit(1);
+	      scanimage_exit (1);
+#endif
+	    }
+	  else if (strcmp (optarg, "pdf") == 0)
+	    {
+#ifdef HAVE_LIBJPEG
+	      output_format = OUTPUT_PDF;
+#else
+	      fprintf(stderr, "PDF support not compiled in\n");
+	      scanimage_exit (1);
 #endif
 	    }
           else if (strcmp (optarg, "pnm") == 0)
@@ -2153,7 +2224,7 @@ main (int argc, char **argv)
               fprintf(stderr, ", jpeg");
 #endif
               fprintf(stderr, ".\n");
-              exit(1);
+              scanimage_exit (1);
             }
 	  break;
 	case OPTION_MD5:
@@ -2183,14 +2254,14 @@ main (int argc, char **argv)
 	      }
 	    else
 	      {
-		int i = 0, int_arg = 0;
-		const char *percent, *start;
+		int int_arg = 0;
+		const char *percent;
 		const char *text_arg = 0;
 		char ftype;
 
-		for (i = 0; device_list[i]; ++i)
+		for (int dev_num = 0; device_list[dev_num]; ++dev_num)
 		  {
-		    start = optarg;
+		    const char *start = optarg;
 		    while (*start && (percent = strchr (start, '%')))
 		      {
 			int start_len = percent - start;
@@ -2200,23 +2271,23 @@ main (int argc, char **argv)
 			    switch (*percent)
 			      {
 			      case 'd':
-				text_arg = device_list[i]->name;
+				text_arg = device_list[dev_num]->name;
 				ftype = 's';
 				break;
 			      case 'v':
-				text_arg = device_list[i]->vendor;
+				text_arg = device_list[dev_num]->vendor;
 				ftype = 's';
 				break;
 			      case 'm':
-				text_arg = device_list[i]->model;
+				text_arg = device_list[dev_num]->model;
 				ftype = 's';
 				break;
 			      case 't':
-				text_arg = device_list[i]->type;
+				text_arg = device_list[dev_num]->type;
 				ftype = 's';
 				break;
 			      case 'i':
-				int_arg = i;
+				int_arg = dev_num;
 				ftype = 'i';
 				break;
 			      case 'n':
@@ -2291,7 +2362,7 @@ standard output.\n\
 Parameters are separated by a blank from single-character options (e.g.\n\
 -d epson) and by a \"=\" from multi-character options (e.g. --device-name=epson).\n\
 -d, --device-name=DEVICE   use a given scanner device (e.g. hp:/dev/scanner)\n\
-    --format=pnm|tiff|png|jpeg  file format of output file\n\
+    --format=pnm|tiff|png|jpeg|pdf  file format of output file\n\
 -i, --icc-profile=PROFILE  include this ICC profile into TIFF file\n", prog_name);
       printf ("\
 -L, --list-devices         show available scanner devices\n\
@@ -2328,12 +2399,20 @@ Parameters are separated by a blank from single-character options (e.g.\n\
   if (batch && output_file != NULL)
     {
       fprintf(stderr, "--batch and --output-file can't be used together.\n");
-      exit(1);
+      scanimage_exit (1);
     }
 
   if (output_format == OUTPUT_UNKNOWN)
-    output_format = guess_output_format(output_file);
-
+    {
+      output_format = guess_output_format(output_file);
+      if (output_format == OUTPUT_UNKNOWN)
+        {
+          // it would be very confusing if user makes a typo in the filename and the output format changes.
+          // This is most likely not what the user wanted.
+          fprintf(stderr, "Could not guess output format from the given path and no --format given.\n");
+          scanimage_exit (1);
+        }
+    }
   if (!devname)
     {
       /* If no device name was specified explicitly, we look at the
@@ -2401,7 +2480,7 @@ Parameters are separated by a blank from single-character options (e.g.\n\
 	}
 
       /* malloc global option lists */
-      all_options_len = num_dev_options + NELEMS (basic_options) + 1;
+      int all_options_len = num_dev_options + NELEMS (basic_options) + 1;
       all_options = malloc (all_options_len * sizeof (all_options[0]));
       option_number_len = num_dev_options;
       option_number = malloc (option_number_len * sizeof (option_number[0]));
@@ -2506,6 +2585,7 @@ Parameters are separated by a blank from single-character options (e.g.\n\
 	}
 
       free (full_optstring);
+      full_optstring = NULL;
 
       /* convert x/y to br_x/br_y */
       for (index = 0; index < 2; ++index)
@@ -2551,7 +2631,7 @@ List of available devices:", prog_name);
 	{
 	  int column = 80;
 
-	  for (i = 0; device_list[i]; ++i)
+	  for (int i = 0; device_list[i]; ++i)
 	    {
 	      if (column + strlen (device_list[i]->name) + 1 >= 80)
 		{
@@ -2605,6 +2685,9 @@ List of available devices:", prog_name);
 	    break;
 #endif
 #ifdef HAVE_LIBJPEG
+	  case OUTPUT_PDF:
+	    format = "out%d.pdf";
+	    break;
 	  case OUTPUT_JPEG:
 	    format = "out%d.jpg";
 	    break;
@@ -2620,11 +2703,18 @@ List of available devices:", prog_name);
               ofp = fopen(output_file, "w");
               if (ofp == NULL)
                 {
-                  fprintf(stderr, "%s: could not open input file '%s', "
+                  fprintf(stderr, "%s: could not open output file '%s', "
                           "exiting\n", prog_name, output_file);
                   scanimage_exit(1);
                 }
             }
+#ifdef HAVE_LIBJPEG
+         if (output_format == OUTPUT_PDF)
+           {
+             sane_pdf_open(&pw, ofp );
+             sane_pdf_start_doc( pw );
+           }
+#endif
         }
 
       if (batch)
@@ -2650,28 +2740,36 @@ List of available devices:", prog_name);
 	{
 	  char path[PATH_MAX];
 	  char part_path[PATH_MAX];
-	  if (batch)		/* format is NULL unless batch mode */
+	  if (batch)  /* format is NULL unless batch mode */
 	    {
 	      sprintf (path, format, n);	/* love --(C++) */
 	      strcpy (part_path, path);
-	      strcat (part_path, ".part");
-	    }
+#ifdef HAVE_LIBJPEG
+	      if (output_format != OUTPUT_PDF)
+#endif
+     	         strcat (part_path, ".part");
 
-
-	  if (batch)
-	    {
 	      if (batch_prompt)
 		{
 		  fprintf (stderr, "Place document no. %d on the scanner.\n",
 			   n);
 		  fprintf (stderr, "Press <RETURN> to continue.\n");
-		  fprintf (stderr, "Press Ctrl + D to terminate.\n");
-		  readbuf2 = fgets (readbuf, 2, stdin);
+		  fprintf (stderr, "Press Ctrl + D (EOF) to terminate.\n");
+		  while ((promptc = getchar()) != '\n' && promptc != EOF);
 
-		  if (readbuf2 == NULL)
+		  if (promptc == EOF)
 		    {
+		      if (ferror(stdin))
+			fprintf(stderr, "%s: stdin error: %s\n", prog_name, strerror(errno));
 		      if (ofp)
 			{
+#ifdef HAVE_LIBJPEG
+	                  if (output_format == OUTPUT_PDF)
+			    {
+		              sane_pdf_end_doc( pw );
+			      sane_pdf_close ( pw );
+			    }
+#endif
 			  fclose (ofp);
 			  ofp = NULL;
 			}
@@ -2694,8 +2792,15 @@ List of available devices:", prog_name);
 	    {
 	      fprintf (stderr, "%s: sane_start: %s\n",
 		       prog_name, sane_strstatus (status));
-	      if (ofp)
+	      if (ofp )
 		{
+#ifdef HAVE_LIBJPEG
+	          if (output_format == OUTPUT_PDF)
+		    {
+		       sane_pdf_end_doc( pw );
+		       sane_pdf_close ( pw );
+		     }
+#endif
 		  fclose (ofp);
 		  ofp = NULL;
 		}
@@ -2706,15 +2811,42 @@ List of available devices:", prog_name);
 	  /* write to .part file while scanning is in progress */
 	  if (batch)
 	    {
-	      if (NULL == (ofp = fopen (part_path, "w")))
+#ifdef HAVE_LIBJPEG
+	      SANE_Bool init_pdf = SANE_FALSE;
+#endif
+	      if (ofp == NULL)
+	        {
+	          ofp = fopen (part_path, "w");
+#ifdef HAVE_LIBJPEG
+	          if (output_format == OUTPUT_PDF && ofp != NULL)
+	             init_pdf = SANE_TRUE;
+#endif
+	        }
+	      if (NULL == ofp)
 		{
 		  fprintf (stderr, "cannot open %s\n", part_path);
 		  sane_cancel (device);
 		  return SANE_STATUS_ACCESS_DENIED;
 		}
+#ifdef HAVE_LIBJPEG
+	      if (init_pdf )
+	        {
+		  sane_pdf_open( &pw, ofp );
+		  sane_pdf_start_doc ( pw );
+		}
+#endif
 	    }
 
-	  status = scan_it (ofp);
+	  status = scan_it (ofp, pw);
+
+#ifdef HAVE_LIBJPEG
+	  if (output_format == OUTPUT_PDF)
+	    {
+		  sane_pdf_end_page( pw );
+		  fflush( ofp );
+	    }
+#endif
+
 	  if (batch)
 	    {
 	      fprintf (stderr, "Scanned page %d.", n);
@@ -2728,32 +2860,47 @@ List of available devices:", prog_name);
 	      status = SANE_STATUS_GOOD;
 	      if (batch)
 		{
-		  if (!ofp || 0 != fclose(ofp))
+#ifdef HAVE_LIBJPEG
+	          if (output_format != OUTPUT_PDF)
 		    {
-		      fprintf (stderr, "cannot close image file\n");
-		      sane_cancel (device);
-		      return SANE_STATUS_ACCESS_DENIED;
+#endif
+		      if (!ofp || 0 != fclose(ofp))
+		        {
+		           fprintf (stderr, "cannot close image file\n");
+		           sane_cancel (device);
+		           return SANE_STATUS_ACCESS_DENIED;
+		        }
+		      else
+		        {
+		           ofp = NULL;
+		           /* let the fully scanned file show up */
+		           if (rename (part_path, path))
+		             {
+		               fprintf (stderr, "cannot rename %s to %s\n",
+		                        part_path, path);
+			       sane_cancel (device);
+			       return SANE_STATUS_ACCESS_DENIED;
+			     }
+		           if (batch_print)
+			     {
+			        fprintf (stdout, "%s\n", path);
+			        fflush (stdout);
+			     }
+		        }
+#ifdef HAVE_LIBJPEG
 		    }
-		  else
-		    {
-		      ofp = NULL;
-		      /* let the fully scanned file show up */
-		      if (rename (part_path, path))
-			{
-			  fprintf (stderr, "cannot rename %s to %s\n",
-				part_path, path);
-			  sane_cancel (device);
-			  return SANE_STATUS_ACCESS_DENIED;
-			}
-		      if (batch_print)
-			{
-			  fprintf (stdout, "%s\n", path);
-			  fflush (stdout);
-			}
-		    }
+#endif
 		}
               else
                 {
+#ifdef HAVE_LIBJPEG
+	              if (output_format == OUTPUT_PDF)
+		            {
+			          sane_pdf_end_doc( pw );
+			          fflush( ofp );
+			          sane_pdf_close ( pw );
+			        }
+#endif
                   if (output_file && ofp)
                     {
                       fclose(ofp);
@@ -2766,13 +2913,20 @@ List of available devices:", prog_name);
 		{
 		  if (ofp)
 		    {
-		      fclose (ofp);
-		      ofp = NULL;
-		    }
+		          fclose (ofp);
+		          ofp = NULL;
+			}
 		  unlink (part_path);
 		}
               else
                 {
+#ifdef HAVE_LIBJPEG
+                  if (output_format == OUTPUT_PDF)
+                    {
+                       sane_pdf_end_doc( pw );
+                       sane_pdf_close ( pw );
+                    }
+#endif
                   if (output_file && ofp)
                     {
                       fclose(ofp);
@@ -2790,6 +2944,19 @@ List of available devices:", prog_name);
 
       if (batch)
 	{
+#ifdef HAVE_LIBJPEG
+	  if (output_format == OUTPUT_PDF)
+            {
+	      if (output_file && ofp)
+	        {
+	          sane_pdf_end_doc( pw );
+	          fflush( ofp );
+	          sane_pdf_close ( pw );
+                  fclose(ofp);
+                  ofp = NULL;
+		}
+	    }
+#endif
 	  int num_pgs = (n - batch_start_at) / batch_increment;
 	  fprintf (stderr, "Batch terminated, %d page%s scanned\n",
 		   num_pgs, num_pgs == 1 ? "" : "s");

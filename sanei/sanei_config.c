@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -239,7 +237,8 @@ sanei_config_read (char *str, int n, FILE *stream)
 SANE_Status
 sanei_configure_attach (const char *config_file, SANEI_Config * config,
 			SANE_Status (*attach) (SANEI_Config * config,
-					       const char *devname))
+					       const char *devname, void *data),
+			void *data)
 {
   SANE_Char line[PATH_MAX];
   SANE_Char *token, *string;
@@ -296,6 +295,12 @@ sanei_configure_attach (const char *config_file, SANEI_Config * config,
        * So we parse the line 2 time to find an option */
       /* check if it is an option */
       lp = sanei_config_get_string (lp, &token);
+      if (NULL == token)
+        {
+          // Invalid format?
+          continue;
+        }
+
       if (strncmp (token, "option", 6) == 0)
 	{
 	  /* skip the "option" token */
@@ -443,7 +448,7 @@ sanei_configure_attach (const char *config_file, SANEI_Config * config,
 	  DBG (3, "sanei_configure_attach: trying to attach with '%s'\n",
 	       lp2);
 	  if(attach!=NULL)
-	  	attach (config, lp2);
+	  	attach (config, lp2, data);
 	}
     }
 

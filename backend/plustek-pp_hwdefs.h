@@ -43,9 +43,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -264,7 +262,7 @@ typedef struct {
     UShort  thresholdColor;
 } ThreshDef, *pThreshDef;
 
-/* for decription of the DAC specific stuff*/
+/* for description of the DAC specific stuff*/
 typedef struct {
     ColorWord	GainResize;
     ColorWord   DarkCmpHi;
@@ -588,19 +586,6 @@ typedef struct
  * structure to hold IO port specific stuff
  */
 typedef struct {
-
-#ifdef __KERNEL__
-	pFnOut fnOut;
-	pFnIn  fnIn;
-
-	UShort pbSppDataPort;
-	UShort pbEppDataPort;
-
-	UShort pbStatusPort;
-	UShort pbControlPort;
-	UShort pbAddrOffsetPort;
-#endif
-
 	UShort portBase;
 	UShort portMode;
 	UShort lastPortMode;

@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -74,7 +72,7 @@
 
 */
 
-extern int sanei_umax_pp_attach (int port, char *name);
+extern int sanei_umax_pp_attach (int port, const char *name);
 
 /*
  recognizes 1220P from 2000P
@@ -104,7 +102,7 @@ extern int sanei_umax_pp_lamp (int on);
  initialize transport layer
  initialize scanner
 
- on succes returns UMAX1220P_OK,
+ on success returns UMAX1220P_OK,
  else one of the error above.
 
  port: addr when doing direc I/O
@@ -117,7 +115,7 @@ extern int sanei_umax_pp_open (int port, char *name);
 
 
 /*
-	release any ressource acquired during open
+	release any resource acquired during open
 	since there may be only one scanner, no port parameter
 */
 extern int sanei_umax_pp_close (void);

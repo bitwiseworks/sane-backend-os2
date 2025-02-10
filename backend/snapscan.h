@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -44,10 +42,12 @@
    If you do not wish that, delete this exception notice.
 
    This file is a component of the implementation of a backend for many
-   of the AGFA SnapScan and Acer Vuego/Prisa flatbed scanners. */
+   of the AGFA SnapScan and Acer Vuego/Prisa flatbed scanners.
+*/
 
-/* $Id$
-   SANE SnapScan backend */
+/*
+   SANE SnapScan backend
+*/
 
 #ifndef snapscan_h
 #define snapscan_h
@@ -437,7 +437,6 @@ struct snapscan_scanner
 #endif
 
 /*
- * $Log$
  * Revision 1.42  2008/05/15 12:50:24  ellert-guest
  * Fix for bug #306751: sanei-thread with pthreads on 64 bit
  *
@@ -586,7 +585,7 @@ struct snapscan_scanner
  *
  * Revision 1.15  2001/09/18 15:01:07  oliverschwartz
  * - Read scanner id string again after firmware upload
- *   to indentify correct model
+ *   to identify correct model
  * - Make firmware upload work for AGFA scanners
  * - Change copyright notice
  *
@@ -622,7 +621,7 @@ struct snapscan_scanner
  * Adding USB files for optional USB compiles.
  *
  * Revision 1.4  2000/10/13 03:50:27  cbagwell
- * Updating to source from SANE 1.0.3.  Calling this versin 1.1
+ * Updating to source from SANE 1.0.3.  Calling this version 1.1
  *
  * Revision 1.3  2000/08/12 15:09:37  pere
  * Merge devel (v1.0.3) into head branch.

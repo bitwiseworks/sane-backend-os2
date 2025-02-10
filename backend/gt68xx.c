@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -124,7 +122,7 @@ static const SANE_Device **devlist = 0;
 static GT68xx_Device **new_dev = 0;
 /* Length of new_dev array */
 static SANE_Int new_dev_len = 0;
-/* Number of entries alloced for new_dev */
+/* Number of entries allocated for new_dev */
 static SANE_Int new_dev_alloced = 0;
 /* Is this computer little-endian ?*/
 SANE_Bool little_endian;
@@ -947,25 +945,30 @@ download_firmware_file (GT68xx_Device * dev)
   if (strncmp (dev->model->firmware_name, PATH_SEP, 1) != 0)
     {
       /* probably filename only */
-      snprintf (filename, PATH_MAX, "%s%s%s%s%s%s%s",
+      snprintf (filename, sizeof(filename), "%s%s%s%s%s%s%s",
                 STRINGIFY (PATH_SANE_DATA_DIR),
                 PATH_SEP, "sane", PATH_SEP, "gt68xx", PATH_SEP,
                 dev->model->firmware_name);
-      snprintf (dirname, PATH_MAX, "%s%s%s%s%s",
+      snprintf (dirname, sizeof(dirname), "%s%s%s%s%s",
                 STRINGIFY (PATH_SANE_DATA_DIR),
                 PATH_SEP, "sane", PATH_SEP, "gt68xx");
-      strncpy (basename, dev->model->firmware_name, PATH_MAX);
+      strncpy (basename, dev->model->firmware_name, sizeof(basename) - 1);
+      basename[sizeof(basename) - 1] = '\0';
     }
   else
     {
       /* absolute path */
       char *pos;
-      strncpy (filename, dev->model->firmware_name, PATH_MAX);
-      strncpy (dirname, dev->model->firmware_name, PATH_MAX);
+      strncpy (filename, dev->model->firmware_name, sizeof(filename) - 1);
+      filename[sizeof(filename) - 1] = '\0';
+      strncpy (dirname, dev->model->firmware_name, sizeof(dirname) - 1);
+      dirname[sizeof(dirname) - 1] = '\0';
+
       pos = strrchr (dirname, PATH_SEP[0]);
       if (pos)
         pos[0] = '\0';
-      strncpy (basename, pos + 1, PATH_MAX);
+      strncpy (basename, pos + 1, sizeof(basename) - 1);
+      basename[sizeof(basename) - 1] = '\0';
     }
 
   /* first, try to open with exact case */
@@ -994,11 +997,16 @@ download_firmware_file (GT68xx_Device * dev)
             {
               direntry = readdir (dir);
               if (direntry
-                  && (strncasecmp (direntry->d_name, basename, PATH_MAX) ==
-                      0))
+                  && (strncasecmp (direntry->d_name, basename, PATH_MAX) == 0))
                 {
-                  snprintf (filename, PATH_MAX, "%s%s%s",
-                            dirname, PATH_SEP, direntry->d_name);
+                  int len = snprintf (filename, sizeof(filename), "%s%s%s",
+                                      dirname, PATH_SEP, direntry->d_name);
+                  if ((len < 0) || (len >= (int) sizeof(filename)))
+                    {
+                      DBG (5, "download_firmware: filepath `%s%s%s' too long\n",
+                           dirname, PATH_SEP, direntry->d_name);
+                      status = SANE_STATUS_INVAL;
+                    }
                   break;
                 }
             }
@@ -1166,8 +1174,11 @@ static SANE_Status probe_gt68xx_devices(void)
                        new_dev[i]->model->firmware_name);
                 }
               if (i == 0)
-                DBG (5, "sane_init: firmware %s can't be loaded, set device "
-                     "first\n", word);
+                {
+                  DBG (5, "sane_init: firmware %s can't be loaded, set device "
+                       "first\n", word);
+                  free (word);
+                }
             }
           else
             {
@@ -1190,8 +1201,11 @@ static SANE_Status probe_gt68xx_devices(void)
                        new_dev[i]->model->name, new_dev[i]->model->vendor);
                 }
               if (i == 0)
-                DBG (5, "sane_init: can't set vendor name %s, set device "
-                     "first\n", word);
+                {
+                  DBG (5, "sane_init: can't set vendor name %s, set device "
+                       "first\n", word);
+                  free (word);
+                }
             }
           else
             {
@@ -1213,9 +1227,11 @@ static SANE_Status probe_gt68xx_devices(void)
                        new_dev[i]->model->name, new_dev[i]->model->model);
                 }
               if (i == 0)
-                DBG (5, "sane_init: can't set model name %s, set device "
-                     "first\n", word);
-              free (word);
+                {
+                  DBG (5, "sane_init: can't set model name %s, set device "
+                       "first\n", word);
+                  free (word);
+                }
             }
           else
             {
@@ -1324,10 +1340,10 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
     }
 #endif
   DBG (2, "SANE GT68xx backend version %d.%d build %d from %s\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   DBG (5, "sane_init: authorize %s null\n", authorize ? "!=" : "==");
 
@@ -1517,7 +1533,7 @@ sane_open (SANE_String_Const devicename, SANE_Handle * handle)
     }
 
   /* The firmware check is disabled by default because it may confuse
-     some scanners: So the firmware is loaded everytime. */
+     some scanners: So the firmware is loaded every time. */
 #if 0
   RIE (gt68xx_device_check_firmware (dev, &firmware_loaded));
   firmware_loaded = SANE_FALSE;
@@ -2020,7 +2036,7 @@ sane_start (SANE_Handle handle)
         } while ((i<5) && (document==SANE_FALSE));
       if(document==SANE_FALSE)
         {
-          DBG (4, "sane_start: no doucment detected after %d s\n",i);
+          DBG (4, "sane_start: no document detected after %d s\n",i);
           return SANE_STATUS_NO_DOCS;
         }
     }
@@ -2120,6 +2136,7 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len,
       && s->byte_count >= s->reader->params.pixel_xs)
     {
       DBG (4, "sane_read: nothing more to scan: EOF\n");
+      gt68xx_scanner_stop_scan(s);
       return SANE_STATUS_EOF;
     }
 
@@ -2333,8 +2350,10 @@ sane_cancel (SANE_Handle handle)
           gt68xx_device_carriage_home (s->dev);
         }
       if (s->gamma_table)
-        free (s->gamma_table);
-      s->gamma_table = 0;
+        {
+          free (s->gamma_table);
+          s->gamma_table = 0;
+        }
     }
   else
     {

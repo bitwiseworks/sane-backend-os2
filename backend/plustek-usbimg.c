@@ -48,9 +48,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -1693,7 +1691,7 @@ static void usb_GrayScalePseudo16( Plustek_Device *dev )
 	}
 }
 
-/** function to select the apropriate pixel copy function
+/** function to select the appropriate pixel copy function
  */
 static void usb_GetImageProc( Plustek_Device *dev )
 {

@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -43,10 +41,9 @@
 
 Userspace scan tool for the Microtek 3600 scanner
 
-$Id$
-
 ====================================================================== */
 
+#include <stdarg.h>
 #include <unistd.h>
 #include "sm3600-scantool.h"
 
@@ -85,7 +82,7 @@ void debug_printf(unsigned long ulType, const char *szFormat, ...)
 
 SetError(error, format, ...)
 
-The program is aborted, all handles and ressources are freed (this
+The program is aborted, all handles and resources are freed (this
 being global) and the user gets a nice panic screen :-)
 
 ********************************************************************** */

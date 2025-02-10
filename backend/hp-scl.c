@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -43,7 +41,6 @@
 */
 
 /*
-   $Log$
    Revision 1.15  2008/03/28 14:37:36  kitno-guest
    add usleep to improve usb performance, from jim a t meyering d o t net
 
@@ -56,8 +53,6 @@
    Revision 1.12  2003/10/09 19:34:57  kig-guest
    Redo when TEST UNIT READY failed
    Redo when read returns with 0 bytes (non-SCSI only)
-
-
 */
 
 /*
@@ -523,8 +518,8 @@ sanei_hp_nonscsi_new (HpScsi * newp, const char * devname, HpConnect connect)
   }
 
   /* For SCSI-devices we would have the inquire command here */
-  strncpy ((char *)new->inq_data, "\003zzzzzzzHP      ------          R000",
-           sizeof (new->inq_data));
+  memcpy (new->inq_data, "\003zzzzzzzHP      ------          R000",
+          sizeof (new->inq_data));
 
   new->bufp = new->buf + HP_SCSI_CMD_LEN;
   new->devname = sanei_hp_alloc ( strlen ( devname ) + 1 );
@@ -1083,7 +1078,7 @@ is_lowbyte_first_byteorder (void)
 
 /* The SANE standard defines that 2-byte data must use the full 16 bit range.
  * Byte order returned by the backend must be native byte order.
- * Scaling to 16 bit and byte order is achived by hp_scale_to_16bit.
+ * Scaling to 16 bit and byte order is achieved by hp_scale_to_16bit.
  * for >8 bits data, take the two data bytes and scale their content
  * to the full 16 bit range, using
  *     scaled = unscaled << (newlen - oldlen) +

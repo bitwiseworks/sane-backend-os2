@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -82,7 +80,7 @@ static void pieusb_calculate_shading(struct Pieusb_Scanner *scanner, SANE_Byte* 
 /* sub to sanei_pieusb_post() */
 static SANE_Status pieusb_write_pnm_file (char *filename, uint16_t *data, int depth, int channels, int pixels_per_line, int lines);
 
-/* Auxilary */
+/* Auxiliary */
 static size_t max_string_size (SANE_String_Const const strings[]);
 static double getGain(int gain);
 static int getGainSetting(double gain);
@@ -262,7 +260,7 @@ sanei_pieusb_find_device_callback (const char *devicename)
       free (dev);
       DBG (DBG_error, "sanei_pieusb_find_device_callback: get scanner properties (5 bytes) failed with %d\n", status.pieusb_status);
       sanei_usb_close (device_number);
-      return status.pieusb_status;
+      return sanei_pieusb_convert_status (status.pieusb_status);
     }
     /* get full inquiry data */
     sanei_pieusb_cmd_inquiry(device_number, &inq, inq.additionalLength+4, &status);
@@ -270,7 +268,7 @@ sanei_pieusb_find_device_callback (const char *devicename)
         free (dev);
         DBG (DBG_error, "sanei_pieusb_find_device_callback: get scanner properties failed\n");
         sanei_usb_close (device_number);
-        return status.pieusb_status;
+        return sanei_pieusb_convert_status (status.pieusb_status);
     }
 
     /* Close the device again */
@@ -322,7 +320,7 @@ pieusb_initialize_device_definition (Pieusb_Device_Definition* dev, Pieusb_Scann
     buf = malloc(9);
     if (buf == NULL)
       return SANE_STATUS_NO_MEM;
-    strncpy(buf, inq->vendor, 8);
+    memcpy(buf, inq->vendor, 8);
     pp = buf + 8;
     *pp-- = '\0';
     while (*pp == ' ') *pp-- = '\0';
@@ -332,7 +330,7 @@ pieusb_initialize_device_definition (Pieusb_Device_Definition* dev, Pieusb_Scann
     buf = malloc(17);
     if (buf == NULL)
       return SANE_STATUS_NO_MEM;
-    strncpy(buf, inq->product, 16);
+    memcpy(buf, inq->product, 16);
     pp = buf + 16;
     *pp-- = '\0';
     while (*pp == ' ') *pp-- = '\0';
@@ -346,7 +344,7 @@ pieusb_initialize_device_definition (Pieusb_Device_Definition* dev, Pieusb_Scann
     buf = malloc(5);
     if (buf == NULL)
       return SANE_STATUS_NO_MEM;
-    strncpy(buf, inq->productRevision, 4);
+    memcpy(buf, inq->productRevision, 4);
     pp = buf + 4;
     *pp-- = '\0';
     while (*pp == ' ') *pp-- = '\0';
@@ -755,7 +753,7 @@ sanei_pieusb_init_options (Pieusb_Scanner* scanner)
     scanner->opt[OPT_FAST_INFRARED].cap |= SANE_CAP_SOFT_SELECT;
 
     /* automatically advance to next slide after scan */
-    scanner->opt[OPT_ADVANCE_SLIDE].name = "advcane";
+    scanner->opt[OPT_ADVANCE_SLIDE].name = "advance";
     scanner->opt[OPT_ADVANCE_SLIDE].title = "Advance slide";
     scanner->opt[OPT_ADVANCE_SLIDE].desc = "Automatically advance to next slide after scan";
     scanner->opt[OPT_ADVANCE_SLIDE].type = SANE_TYPE_BOOL;
@@ -1171,7 +1169,7 @@ sanei_pieusb_on_cancel (Pieusb_Scanner * scanner)
 }
 
 /**
- * Determine maximum lengt of a set of strings.
+ * Determine maximum length of a set of strings.
  *
  * @param strings Set of strings
  * @return maximum length
@@ -1672,7 +1670,7 @@ static void pieusb_calculate_shading(struct Pieusb_Scanner *scanner, SANE_Byte* 
     SANE_Int shading_width = scanner->device->shading_parameters[0].pixelsPerLine;
     SANE_Int shading_height = scanner->device->shading_parameters[0].nLines;
 
-    /* Initialze all to 0 */
+    /* Initialize all to 0 */
     for (k = 0; k < SHADING_PARAMETERS_INFO_COUNT; k++) {
         scanner->shading_max[k] = 0;
         scanner->shading_mean[k] = 0;
@@ -1783,7 +1781,7 @@ sanei_pieusb_set_frame_from_options(Pieusb_Scanner * scanner)
     scanner->frame.index = 0x80; /* 0x80: value from cyberview */
     sanei_pieusb_cmd_set_scan_frame (scanner->device_number, scanner->frame.index, &(scanner->frame), &status);
     DBG (DBG_info_sane, "sanei_pieusb_set_frame_from_options(): sanei_pieusb_cmd_set_scan_frame status %s\n", sane_strstatus (sanei_pieusb_convert_status (status.pieusb_status)));
-    return status.pieusb_status;
+    return sanei_pieusb_convert_status (status.pieusb_status);
 }
 
 /*
@@ -1862,7 +1860,7 @@ sanei_pieusb_set_mode_from_options(Pieusb_Scanner * scanner)
  * - values default (pieusb_set_default_gain_offset)
  * - values set by options
  * - values set by auto-calibration procedure
- * - values determined from preceeding preview
+ * - values determined from preceding preview
  *
  * @param scanner
  * @return
@@ -1897,7 +1895,7 @@ sanei_pieusb_set_gain_offset(Pieusb_Scanner * scanner, const char *calibration_m
         status.pieusb_status = PIEUSB_STATUS_GOOD;
     } else if ((strcmp(calibration_mode, SCAN_CALIBRATION_PREVIEW) == 0)
 	       && scanner->preview_done) {
-        /* If no preview data availble, do the auto-calibration. */
+        /* If no preview data available, do the auto-calibration. */
         double dg, dgi;
         DBG (DBG_info, "sanei_pieusb_set_gain_offset(): get calibration data from preview. scanner->mode.passes %d\n", scanner->mode.passes);
         switch (scanner->mode.passes) {

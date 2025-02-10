@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -267,7 +265,7 @@ static const SANE_Device **devlist = 0;
 SANE_Status
 sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 {
-  authorize = authorize;	/* get rid of compiler warning */
+  (void) authorize;		/* get rid of compiler warning */
 
   DBG_INIT ();
   DBG (10, "sane_init\n");
@@ -276,7 +274,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   sanei_thread_init ();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   sanei_usb_find_devices (0x03f0, 0x2205, attachScanner);
   sanei_usb_find_devices (0x03f0, 0x2005, attachScanner);
@@ -332,7 +330,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
 
 /**
  * Called to establish connection with the scanner. This function will
- * also establish meaningful defauls and initialize the options.
+ * also establish meaningful defaults and initialize the options.
  *
  * From the SANE spec:
  * This function is used to establish a connection to a particular
@@ -873,7 +871,7 @@ sane_read (SANE_Handle handle, SANE_Byte * buf,
  * handle h is a valid handle) but usually affects long-running
  * operations only (such as image is acquisition). It is safe to call
  * this function asynchronously (e.g., from within a signal handler).
- * It is important to note that completion of this operaton does not
+ * It is important to note that completion of this operation does not
  * imply that the currently pending operation has been cancelled. It
  * only guarantees that cancellation has been initiated. Cancellation
  * completes only when the cancelled call returns (typically with a
@@ -1119,7 +1117,7 @@ init_options (struct hp3500_data *scanner)
 static void
 do_reset (struct hp3500_data *scanner)
 {
-  scanner = scanner;		/* kill warning */
+  (void) scanner;		/* kill warning */
 }
 
 static void
@@ -1290,7 +1288,7 @@ rt_queue_command (int command,
   unsigned char *buffer;
   unsigned char const *data = data_;
 
-  /* We add "bytes" here to account for the possiblity that all of the
+  /* We add "bytes" here to account for the possibility that all of the
    * data bytes are 0xaa and hence require a following 0x00 byte.
    */
   if (command_bytes_outstanding + len + bytes > MAX_COMMANDS_BYTES ||
@@ -1532,8 +1530,6 @@ rt_get_available_bytes (void)
 static int
 rt_get_data (int bytes, void *data)
 {
-  int total = 0;
-
   while (bytes)
     {
       int bytesnow = bytes;
@@ -1544,7 +1540,6 @@ rt_get_data (int bytes, void *data)
 	  (RTCMD_READBYTES, 0, bytesnow, 0, 0, bytesnow, data) < 0
 	  || rt_execute_commands () < 0)
 	return -1;
-      total += bytesnow;
       bytes -= bytesnow;
       data = (char *) data + bytesnow;
     }
@@ -2776,7 +2771,7 @@ rts8801_doscan (unsigned width,
   int result = 0;
   unsigned rows_supplied = 0;
 
-  calib_info = calib_info;	/* Kill warning */
+  (void) calib_info;		/* Kill warning */
   if (cancelled_scan)
     return -1;
   rt_start_moving ();
@@ -3786,7 +3781,7 @@ writefunc (struct hp3500_write_info *winfo, int bytes, char *data)
 static void
 sigtermHandler (int signal)
 {
-  signal = signal;		/* get rid of compiler warning */
+  (void) signal;		/* get rid of compiler warning */
   cancelled_scan = 1;
 }
 #endif

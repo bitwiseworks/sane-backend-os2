@@ -11,8 +11,6 @@ bin_PROGRAMS = sane-find-scanner gamma4scanimage
 noinst_PROGRAMS = sane-desc
 if INSTALL_UMAX_PP_TOOLS
 bin_PROGRAMS += umax_pp
-else
-noinst_PROGRAMS += umax_pp
 endif
 
 if CROSS_COMPILING
@@ -36,6 +34,7 @@ EXTRA_DIST = check-po.awk libtool-get-dll-ext mustek600iin-off.c \
 EXTRA_DIST += style-check.sh
 EXTRA_DIST += create-changelog.sh
 EXTRA_DIST += update-upstreams.sh
+EXTRA_DIST += epson2usb.pl
 
 sane_find_scanner_SOURCES = sane-find-scanner.c
 if have_usblib

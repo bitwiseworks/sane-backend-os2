@@ -15,30 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #define DEBUG_DECLARE_ONLY
@@ -52,6 +29,7 @@ namespace {
 bool s_testing_mode = false;
 std::uint16_t s_vendor_id = 0;
 std::uint16_t s_product_id = 0;
+std::uint16_t s_bcd_device = 0;
 TestCheckpointCallback s_checkpoint_callback;
 
 } // namespace
@@ -66,15 +44,17 @@ void disable_testing_mode()
     s_testing_mode = false;
     s_vendor_id = 0;
     s_product_id = 0;
-
+    s_bcd_device = 0;
 }
 
 void enable_testing_mode(std::uint16_t vendor_id, std::uint16_t product_id,
+                         std::uint16_t bcd_device,
                          TestCheckpointCallback checkpoint_callback)
 {
     s_testing_mode = true;
     s_vendor_id = vendor_id;
     s_product_id = product_id;
+    s_bcd_device = bcd_device;
     s_checkpoint_callback = checkpoint_callback;
 }
 
@@ -86,6 +66,11 @@ std::uint16_t get_testing_vendor_id()
 std::uint16_t get_testing_product_id()
 {
     return s_product_id;
+}
+
+std::uint16_t get_testing_bcd_device()
+{
+    return s_bcd_device;
 }
 
 std::string get_testing_device_name()

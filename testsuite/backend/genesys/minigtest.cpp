@@ -15,21 +15,19 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "minigtest.h"
-
 #define DEBUG_DECLARE_ONLY
+
+#include "minigtest.h"
 
 size_t s_num_successes = 0;
 size_t s_num_failures = 0;
 
 int finish_tests()
 {
-    std::cerr << "Finished tests. Sucessses: " << s_num_successes
+    std::cerr << "Finished tests. Successes: " << s_num_successes
               << " failures: " << s_num_failures << "\n";
     if (s_num_failures > 0)
         return 1;

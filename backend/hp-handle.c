@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -173,7 +171,7 @@ hp_handle_startReader (HpHandle this, HpScsi scsi)
   this->pipe_write_fd = fds[1];
   this->pipe_read_fd = fds[0];
 
-  /* Will childs be forked ? */
+  /* Will child be forked ? */
   this->child_forked = sanei_thread_is_forked ();
 
   /* Start a thread or fork a child. None of them will return here. */

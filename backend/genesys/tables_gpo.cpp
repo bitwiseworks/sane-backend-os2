@@ -15,30 +15,7 @@
     General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-    MA 02111-1307, USA.
-
-    As a special exception, the authors of SANE give permission for
-    additional uses of the libraries contained in this release of SANE.
-
-    The exception is that, if you link a SANE library with other files
-    to produce an executable, this does not by itself cause the
-    resulting executable to be covered by the GNU General Public
-    License.  Your use of that executable is in no way restricted on
-    account of linking the SANE library code into it.
-
-    This exception does not, however, invalidate any other reasons why
-    the executable file might be covered by the GNU General Public
-    License.
-
-    If you submit changes to SANE to the maintainers to be included in
-    a subsequent release, you agree by submitting the changes that
-    those changes may be distributed with this exception intact.
-
-    If you write modifications of your own for SANE, it is your choice
-    whether to permit this exception to apply to your modifications.
-    If you do not wish that, delete this exception notice.
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #define DEBUG_DECLARE_ONLY
@@ -131,6 +108,18 @@ void genesys_init_gpo_tables()
 
 
     gpo = Genesys_Gpo();
+    gpo.id = GpioId::CANON_LIDE_90;
+    gpo.regs = {
+        { 0x6b, 0x03 },
+        { 0x6c, 0x74 },
+        { 0x6d, 0x80 },
+        { 0x6e, 0x7f },
+        { 0x6f, 0xe0 },
+    };
+    s_gpo->push_back(gpo);
+
+
+    gpo = Genesys_Gpo();
     gpo.id = GpioId::XP200;
     gpo.regs = {
         { 0x66, 0x30 },
@@ -188,10 +177,15 @@ void genesys_init_gpo_tables()
     gpo = Genesys_Gpo();
     gpo.id = GpioId::CANON_LIDE_200;
     gpo.regs = {
-        { 0x6c, 0xfb }, // 0xfb when idle , 0xf9/0xe9 (1200) when scanning
+        { 0x6b, 0x02 },
+        { 0x6c, 0xf9 }, // 0xfb when idle , 0xf9/0xe9 (1200) when scanning
         { 0x6d, 0x20 },
         { 0x6e, 0xff },
         { 0x6f, 0x00 },
+        { 0xa6, 0x04 },
+        { 0xa7, 0x04 },
+        { 0xa8, 0x00 },
+        { 0xa9, 0x00 },
     };
     s_gpo->push_back(gpo);
 
@@ -199,10 +193,15 @@ void genesys_init_gpo_tables()
     gpo = Genesys_Gpo();
     gpo.id = GpioId::CANON_LIDE_700F;
     gpo.regs = {
+        { 0x6b, 0x06 },
         { 0x6c, 0xdb },
         { 0x6d, 0xff },
         { 0x6e, 0xff },
         { 0x6f, 0x80 },
+        { 0xa6, 0x15 },
+        { 0xa7, 0x07 },
+        { 0xa8, 0x20 },
+        { 0xa9, 0x10 },
     };
     s_gpo->push_back(gpo);
 
@@ -224,6 +223,21 @@ void genesys_init_gpo_tables()
 
     gpo = Genesys_Gpo();
     gpo.id = GpioId::G4050;
+    gpo.regs = {
+        { 0x6c, 0x20 },
+        { 0x6d, 0x00 },
+        { 0x6e, 0xfc },
+        { 0x6f, 0x00 },
+        { 0xa6, 0x08 },
+        { 0xa7, 0x1e },
+        { 0xa8, 0x3e },
+        { 0xa9, 0x06 },
+    };
+    s_gpo->push_back(gpo);
+
+
+    gpo = Genesys_Gpo();
+    gpo.id = GpioId::G4010;
     gpo.regs = {
         { 0x6c, 0x20 },
         { 0x6d, 0x00 },
@@ -293,6 +307,19 @@ void genesys_init_gpo_tables()
 
 
     gpo = Genesys_Gpo();
+    gpo.id = GpioId::PLUSTEK_OPTICFILM_7200;
+    gpo.regs = {
+        { 0x6b, 0x33 },
+        { 0x6c, 0x00 },
+        { 0x6d, 0x80 },
+        { 0x6e, 0x0c },
+        { 0x6f, 0x80 },
+        { 0x7e, 0x00 }
+    };
+    s_gpo->push_back(gpo);
+
+
+    gpo = Genesys_Gpo();
     gpo.id = GpioId::PLUSTEK_OPTICFILM_7200I;
     gpo.regs = {
         { 0x6c, 0x4c },
@@ -320,6 +347,16 @@ void genesys_init_gpo_tables()
     };
     s_gpo->push_back(gpo);
 
+
+    gpo = Genesys_Gpo();
+    gpo.id = GpioId::PLUSTEK_OPTICFILM_7400;
+    gpo.regs = {
+        { 0x6b, 0x30 }, { 0x6c, 0x4c }, { 0x6d, 0x80 }, { 0x6e, 0x4c }, { 0x6f, 0x80 },
+        { 0xa6, 0x00 }, { 0xa7, 0x07 }, { 0xa8, 0x20 }, { 0xa9, 0x01 },
+    };
+    s_gpo->push_back(gpo);
+
+
     gpo = Genesys_Gpo();
     gpo.id = GpioId::PLUSTEK_OPTICFILM_7500I;
     gpo.regs = {
@@ -334,6 +371,16 @@ void genesys_init_gpo_tables()
     };
     s_gpo->push_back(gpo);
 
+
+    gpo = Genesys_Gpo();
+    gpo.id = GpioId::PLUSTEK_OPTICFILM_8200I;
+    gpo.regs = {
+        { 0x6b, 0x30 }, { 0x6c, 0x4c }, { 0x6d, 0x80 }, { 0x6e, 0x4c }, { 0x6f, 0x80 },
+        { 0xa6, 0x00 }, { 0xa7, 0x07 }, { 0xa8, 0x20 }, { 0xa9, 0x01 },
+    };
+    s_gpo->push_back(gpo);
+
+
     gpo = Genesys_Gpo();
     gpo.id = GpioId::CANON_4400F;
     gpo.regs = {
@@ -345,6 +392,22 @@ void genesys_init_gpo_tables()
         { 0xa7, 0xff },
         { 0xa8, 0x07 },
         { 0xa9, 0x00 },
+    };
+    s_gpo->push_back(gpo);
+
+
+    gpo = Genesys_Gpo();
+    gpo.id = GpioId::CANON_5600F;
+    gpo.regs = {
+        { 0x6b, 0x87 },
+        { 0x6c, 0xf0 },
+        { 0x6d, 0x5f },
+        { 0x6e, 0x7f },
+        { 0x6f, 0xa0 },
+        { 0xa6, 0x07 },
+        { 0xa7, 0x1c },
+        { 0xa8, 0x00 },
+        { 0xa9, 0x04 },
     };
     s_gpo->push_back(gpo);
 
@@ -382,10 +445,8 @@ void genesys_init_gpo_tables()
     gpo = Genesys_Gpo();
     gpo.id = GpioId::IMG101;
     gpo.regs = {
-        { 0x6c, 0x41 },
-        { 0x6d, 0xa4 },
-        { 0x6e, 0x13 },
-        { 0x6f, 0xa7 },
+        { 0x6b, 0x72 }, { 0x6c, 0x1f }, { 0x6d, 0xa4 }, { 0x6e, 0x13 }, { 0x6f, 0xa7 },
+        { 0xa6, 0x11 }, { 0xa7, 0xff }, { 0xa8, 0x19 }, { 0xa9, 0x05 },
     };
     s_gpo->push_back(gpo);
 
@@ -393,10 +454,8 @@ void genesys_init_gpo_tables()
     gpo = Genesys_Gpo();
     gpo.id = GpioId::PLUSTEK_OPTICBOOK_3800;
     gpo.regs = {
-        { 0x6c, 0x41 },
-        { 0x6d, 0xa4 },
-        { 0x6e, 0x13 },
-        { 0x6f, 0xa7 },
+        { 0x6b, 0x30 }, { 0x6c, 0x01 }, { 0x6d, 0x80 }, { 0x6e, 0x2d }, { 0x6f, 0x80 },
+        { 0xa6, 0x0c }, { 0xa7, 0x8f }, { 0xa8, 0x08 }, { 0xa9, 0x04 },
     };
     s_gpo->push_back(gpo);
 

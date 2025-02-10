@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -836,7 +834,7 @@ artec_byte_rgb_to_line_rgb (SANE_Byte * data, SANE_Int len)
 
   DBG (8, "artec_byte_rgb_to_line_rgb()\n");
 
-  /* copy the RGBRGBRGBRGBRGB... formated data to our temp buffer */
+  /* copy the RGBRGBRGBRGBRGB... formatted data to our temp buffer */
   memcpy (tmp_buf, data, len * 3);
 
   /* now copy back to *data in RRRRRRRGGGGGGGBBBBBBB format */
@@ -1999,8 +1997,8 @@ attach (const char *devname, ARTEC_Device ** devp)
       DBG (6, "Found BlackWidow BW4800SP scanner, setting up like AT3\n");
 
       /* setup the vendor and product to mimic the Artec/Ultima AT3 */
-      strncpy (result + 8, "ULTIMA", 6);
-      strncpy (result + 16, "AT3             ", 16);
+      memcpy (result + 8, "ULTIMA", 6);
+      memcpy (result + 16, "AT3             ", 16);
     }
 
   /*
@@ -2013,8 +2011,8 @@ attach (const char *devname, ARTEC_Device ** devp)
       DBG (6, "Found Plustek 19200S scanner, setting up like AM12S\n");
 
       /* setup the vendor and product to mimic the Artec/Ultima AM12S */
-      strncpy (result + 8, "ULTIMA", 6);
-      strncpy (result + 16, "AM12S           ", 16);
+      memcpy (result + 8, "ULTIMA", 6);
+      memcpy (result + 16, "AM12S           ", 16);
     }
 
   /*
@@ -2593,7 +2591,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   strcpy (artec_model, "");
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   if (authorize)
     DBG (7, "sane_init(), authorize %s null\n", (authorize) ? "!=" : "==");
@@ -3476,7 +3474,7 @@ artec_sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len, SANE_Int
   SANE_Byte line_buf[ARTEC_MAX_READ_SIZE];
 
 
-  DBG (7, "artec_sane_read( %p, %p, %d, %d )\n", handle, buf, max_len, *len);
+  DBG (7, "artec_sane_read( %p, %p, %d, %d )\n", handle, (void *) buf, max_len, *len);
 
   *len = 0;
 
@@ -3676,7 +3674,7 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len, SANE_Int * len
   static SANE_Byte temp_buf[ARTEC_MAX_READ_SIZE];
   static int bytes_in_buf = 0;
 
-  DBG (7, "sane_read( %p, %p, %d, %d )\n", handle, buf, max_len, *len);
+  DBG (7, "sane_read( %p, %p, %d, %d )\n", handle, (void *) buf, max_len, *len);
   DBG (9, "sane_read: bib = %d, ml = %d\n", bytes_in_buf, max_len);
 
   if (bytes_in_buf != 0)

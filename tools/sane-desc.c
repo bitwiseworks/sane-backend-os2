@@ -20,9 +20,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <../include/sane/config.h>
@@ -45,7 +43,7 @@
 #include "../include/sane/sanei.h"
 #include "../include/sane/sanei_config.h"
 
-#define SANE_DESC_VERSION "3.5"
+#define SANE_DESC_VERSION "3.6"
 
 #define MAN_PAGE_LINK "man/%s.5.html"
 #define COLOR_MINIMAL      "\"#B00000\""
@@ -268,7 +266,7 @@ static const char *device_type_name[] =
   {"Unknown", "Scanners", "Still cameras", "Video Cameras", "Meta backends",
    "APIs"};
 static const char *device_type_aname[] =
-  {"UKNOWN", "SCANNERS", "STILL", "VIDEO", "META",
+  {"UNKNOWN", "SCANNERS", "STILL", "VIDEO", "META",
    "API"};
 static const char *status_color[] =
   {COLOR_UNKNOWN, COLOR_UNSUPPORTED, COLOR_UNTESTED, COLOR_MINIMAL,
@@ -783,7 +781,7 @@ check_hex (SANE_String string)
   return SANE_TRUE;
 }
 
-/* Read and interprete the .desc files */
+/* Read and interpret the .desc files */
 static SANE_Bool
 read_files (void)
 {
@@ -1698,7 +1696,7 @@ update_model_record_list (model_record_entry * first_model_record,
 
 
 /* Insert manufacturer into list at the alphabetically correct position, */
-/* create new record if neccessary */
+/* create new record if necessary */
 static mfg_record_entry *
 update_mfg_record_list (mfg_record_entry * first_mfg_record, mfg_entry * mfg,
 			backend_entry * be)
@@ -2808,16 +2806,14 @@ html_print_header (void)
 static void
 html_print_footer (void)
 {
-  time_t current_time = time (0);
-
   printf
     ("<hr>\n"
      "<a href=\"./\">SANE homepage</a>\n"
      "<address>\n"
      "<a href=\"imprint.html\"\n"
      ">Contact</a>\n" "</address>\n" "<font size=-1>\n");
-  printf ("This page was last updated on %s by sane-desc %s from %s\n",
-	  asctime (localtime (&current_time)), SANE_DESC_VERSION, PACKAGE_STRING);
+  printf ("This page was created by sane-desc %s from %s\n",
+	  SANE_DESC_VERSION, PACKAGE_STRING);
   printf ("</font>\n");
   printf ("</body> </html>\n");
 }
@@ -3318,21 +3314,22 @@ create_scsiids_table (void)
   return first_scsiid;
 }
 
+static void
+print_header_comment (void)
+{
+  printf ("# This file was generated from description files (*.desc)\n"
+          "# by sane-desc %s from %s\n",
+          SANE_DESC_VERSION, PACKAGE_STRING);
+}
+
 /* print USB usermap file to be used by the hotplug tools */
 static void
 print_usermap_header (void)
 {
-  time_t current_time = time (0);
-
+  print_header_comment ();
   printf
-    ("# This file was automatically created based on description files (*.desc)\n"
-    "# by sane-desc %s from %s on %s"
-    "#\n"
-    ,
-    SANE_DESC_VERSION, PACKAGE_STRING, asctime (localtime (&current_time)));
-
-  printf
-     ("# The entries below are used to detect a USB device and change owner\n"
+    ("#\n"
+     "# The entries below are used to detect a USB device and change owner\n"
      "# and permissions on the \"device node\" used by libusb.\n"
      "#\n"
      "# The 0x0003 match flag means the device is matched by its vendor and\n"
@@ -3396,10 +3393,7 @@ print_usermap (void)
 static void
 print_db_header (void)
 {
-  time_t current_time = time (0);
-  printf ("# This file was automatically created based on description files (*.desc)\n"
-	  "# by sane-desc %s from %s on %s",
-	  SANE_DESC_VERSION, PACKAGE_STRING, asctime (localtime (&current_time)));
+  print_header_comment ();
   printf
     ("#\n"
      "# The entries below are used to detect a USB device when it's plugged in\n"
@@ -3461,11 +3455,7 @@ print_db (void)
 static void
 print_udev_header (void)
 {
-  time_t current_time = time (0);
-  printf ("# This file was automatically created based on description files (*.desc)\n"
-	  "# by sane-desc %s from %s on %s",
-	  SANE_DESC_VERSION, PACKAGE_STRING, asctime (localtime (&current_time)));
-
+  print_header_comment ();
   printf
     ("#\n"
      "# udev rules file for supported USB and SCSI devices\n"
@@ -3504,7 +3494,7 @@ print_udev (void)
   int i;
 
   print_udev_header ();
-  printf("ACTION!=\"add\", GOTO=\"libsane_rules_end\"\n"
+  printf("ACTION==\"remove\", GOTO=\"libsane_rules_end\"\n"
 	 "ENV{DEVTYPE}==\"usb_device\", GOTO=\"libsane_create_usb_dev\"\n"
 	 "SUBSYSTEMS==\"scsi\", GOTO=\"libsane_scsi_rules_begin\"\n"
 	 "SUBSYSTEM==\"usb_device\", GOTO=\"libsane_usb_rules_begin\"\n"
@@ -3554,10 +3544,10 @@ print_udev (void)
       printf ("\n");
 
       if (mode == output_mode_udevacl)
-	printf ("ATTRS{idVendor}==\"%s\", ATTRS{idProduct}==\"%s\", ENV{libsane_matched}=\"yes\"\n",
+	printf ("ATTR{idVendor}==\"%s\", ATTR{idProduct}==\"%s\", ENV{libsane_matched}=\"yes\"\n",
 		usbid->usb_vendor_id + 2,  usbid->usb_product_id + 2);
       else
-	printf ("ATTRS{idVendor}==\"%s\", ATTRS{idProduct}==\"%s\", MODE=\"%s\", GROUP=\"%s\", ENV{libsane_matched}=\"yes\"\n",
+	printf ("ATTR{idVendor}==\"%s\", ATTR{idProduct}==\"%s\", MODE=\"%s\", GROUP=\"%s\", ENV{libsane_matched}=\"yes\"\n",
 		usbid->usb_vendor_id + 2,  usbid->usb_product_id + 2, DEVMODE, DEVGROUP);
 
       usbid = usbid->next;
@@ -3654,11 +3644,7 @@ print_udev (void)
 static void
 print_udevhwdb_header (void)
 {
-  time_t current_time = time (0);
-  printf ("# This file was automatically created based on description files (*.desc)\n"
-	  "# by sane-desc %s from %s on %s",
-	  SANE_DESC_VERSION, PACKAGE_STRING, asctime (localtime (&current_time)));
-
+  print_header_comment ();
   printf
     ("#\n"
      "# udev rules file for supported USB and SCSI devices\n"
@@ -3691,7 +3677,7 @@ print_udevhwdb (void)
   int i;
 
   print_udevhwdb_header ();
-  printf("ACTION!=\"add\", GOTO=\"libsane_rules_end\"\n\n");
+  printf("ACTION==\"remove\", GOTO=\"libsane_rules_end\"\n\n");
 
   printf("# The following rule will disable USB autosuspend for the device\n");
   printf("ENV{DEVTYPE}==\"usb_device\", ENV{libsane_matched}==\"yes\", TEST==\"power/control\", ATTR{power/control}=\"on\"\n\n");
@@ -3764,11 +3750,7 @@ print_udevhwdb (void)
 static void
 print_hwdb_header (void)
 {
-  time_t current_time = time (0);
-  printf ("# This file was automatically created based on description files (*.desc)\n"
-	  "# by sane-desc %s from %s on %s",
-	  SANE_DESC_VERSION, PACKAGE_STRING, asctime (localtime (&current_time)));
-
+  print_header_comment ();
   printf
     ("#\n"
      "# hwdb file for supported USB devices\n"

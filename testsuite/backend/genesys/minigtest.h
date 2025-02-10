@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef SANE_TESTSUITE_BACKEND_GENESYS_MINIGTEST_H
@@ -96,11 +94,11 @@ inline void check_raises_raised_unexpected(const char* function, const char* pat
 #define ASSERT_FALSE(x)  do { check_true(!bool(x), __func__, __FILE__, __LINE__); } \
                          while (false)
 
-#define ASSERT_RAISES(x, e) \
+#define ASSERT_RAISES(x, T) \
     do { try { \
         x; \
         check_raises_did_not_raise(__func__, __FILE__, __LINE__); \
-    } catch (e) { \
+    } catch (const T&) { \
         check_raises_success(__func__, __FILE__, __LINE__); \
     } catch (...) { \
         check_raises_raised_unexpected(__func__, __FILE__, __LINE__); \

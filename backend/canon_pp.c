@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -40,8 +38,6 @@
 
    -----
 
-   canon_pp.c: $Revision$
-
    This file is part of the canon_pp backend, supporting Canon FBX30P
    and NX40P scanners
    */
@@ -58,10 +54,6 @@
 
 #ifndef NOSANE
 #include "../include/sane/config.h"
-#endif
-
-#ifndef VERSION
-#define VERSION "$Revision$"
 #endif
 
 #include  <string.h>
@@ -155,7 +147,7 @@ sane_init (SANE_Int *vc, SANE_Auth_Callback cb)
 #endif
 
 	if(vc)
-		*vc = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+		*vc = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
 	DBG(2,"sane_init: >> ieee1284_find_ports\n");
 	/* Find lp ports */
@@ -367,7 +359,7 @@ sane_init (SANE_Int *vc, SANE_Auth_Callback cb)
 			continue;
 		}
 
-		/* detect_mode suceeded, so the port is open.  This beholdens
+		/* detect_mode succeeded, so the port is open.  This beholdens
 		 * us to call ieee1284_close in any of the remaining error
 		 * cases in this loop. */
 #if 0
@@ -456,7 +448,7 @@ sane_init (SANE_Int *vc, SANE_Auth_Callback cb)
  *
  * sane_get_devices()
  *
- * Gives a list of devices avaialable.  In our case, that's the linked
+ * Gives a list of devices available.  In our case, that's the linked
  * list produced by sane_init.
  *
  *************************************************************************/
@@ -1222,7 +1214,7 @@ sane_read (SANE_Handle h, SANE_Byte *buf, SANE_Int maxlen, SANE_Int *lenp)
 
 	/* At this point we have to read more data from the scanner - or the
 	 * scan has been cancelled, which means we have to call read_segment
-	 * to leave the scanner consistant */
+	 * to leave the scanner consistent */
 
 	/* Decide how many lines we can fit into this buffer */
 	if (cs->vals[OPT_DEPTH] == 0)
@@ -1464,7 +1456,7 @@ sane_exit (void)
 
 		/* Should normally nullify pointers after freeing, but in
 		 * this case we're about to free the whole structure so
-		 * theres not a lot of point. */
+		 * there's not a lot of point. */
 
 		/* Constraints (mostly) allocated when the scanner is opened */
 		if(dev->opt[OPT_TL_X].constraint.range)
@@ -1701,7 +1693,7 @@ static SANE_Status init_device(struct parport *pp)
 
 	/*
 	 * NOTE: Ranges and lists are actually set when scanner is opened,
-	 * becase that's when we find out what sort of scanner it is
+	 * because that's when we find out what sort of scanner it is
 	 */
 
 	DBG(100, "init_device: done opts\n");
@@ -1795,7 +1787,9 @@ static int init_cal(char *file)
  ************************************************************************/
 static SANE_Status fix_weights_file(CANONP_Scanner *cs)
 {
-	char *tmp, *myhome, buf[PATH_MAX];
+	static const char default_weights_file_prefix[] =
+			"~/.sane/canon_pp-calibration-";
+	char *tmp, *myhome;
 	int i;
 	struct stat *f_stat;
 
@@ -1812,31 +1806,32 @@ static SANE_Status fix_weights_file(CANONP_Scanner *cs)
 
 	if (cs->weights_file == NULL)
 	{
-		/* Will be of form canon_pp-calibration-parport0 or -0x378 */
-		sprintf(buf, "~/.sane/canon_pp-calibration-%s",
+		/* Form is ~/.sane/canon_pp-calibration-parport0 or -0x378 */
+		i = strlen(default_weights_file_prefix) +
+				strlen(cs->params.port->name);
+		if ((cs->weights_file = malloc(i + 1)) == NULL)
+			return SANE_STATUS_NO_MEM;
+		sprintf(cs->weights_file, "%s%s", default_weights_file_prefix,
 				cs->params.port->name);
-		cs->weights_file = strdup(buf);
 	}
 
 	/* Get the user's home dir if they used ~ */
 	if (cs->weights_file[0] == '~')
 	{
-		if ((tmp = malloc(PATH_MAX)) == NULL)
-			return SANE_STATUS_NO_MEM;
 		if ((myhome = getenv("HOME")) == NULL)
 		{
 			DBG(0,"fix_weights_file: FATAL: ~ used, but $HOME not"
 					" set!\n");
-			free(tmp);
-			tmp = NULL;
 			return SANE_STATUS_INVAL;
 		}
-		strncpy(tmp, myhome, PATH_MAX);
-		strncpy(tmp+strlen(tmp), (cs->weights_file)+1,
-				PATH_MAX-strlen(tmp));
+		i = strlen(myhome) + strlen(&cs->weights_file[1]);
+		if ((tmp = malloc(i + 1)) == NULL)
+			return SANE_STATUS_NO_MEM;
+		sprintf(tmp, "%s%s", myhome, &cs->weights_file[1]);
 
 		free(cs->weights_file);
 		cs->weights_file = tmp;
+		tmp = NULL;
 	}
 
 	if ((f_stat = malloc(sizeof(*f_stat))) == NULL)

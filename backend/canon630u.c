@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -135,9 +133,9 @@ static SANE_Status
 optionNumOptionsCallback (SANE_Option * option, SANE_Handle handle,
 			  SANE_Action action, void *value, SANE_Int * info)
 {
-  option = option;
-  handle = handle;
-  info = info;			/* Eliminate warning about unused parameters */
+  (void) option;
+  (void) handle;
+  (void) info;			/* Eliminate warning about unused parameters */
 
   if (action != SANE_ACTION_GET_VALUE)
     return SANE_STATUS_INVAL;
@@ -170,8 +168,8 @@ static SANE_Status
 optionCalibrateCallback (SANE_Option * option, SANE_Handle handle,
 			 SANE_Action action, void *value, SANE_Int * info)
 {
-  handle = handle;
-  option = option;		/* Eliminate warning about unused parameters */
+  (void) handle;
+  (void) option;		/* Eliminate warning about unused parameters */
 
   switch (action)
     {
@@ -223,7 +221,7 @@ optionResolutionCallback (SANE_Option * option, SANE_Handle handle,
   SANE_Status status;
   SANE_Word autoValue = 75;
 
-  handle = handle;		/* Eliminate warning about unused parameters */
+  (void) handle;		/* Eliminate warning about unused parameters */
 
   switch (action)
     {
@@ -270,8 +268,8 @@ static SANE_Status
 optionGrayscaleCallback (SANE_Option * option, SANE_Handle handle,
 			 SANE_Action action, void *value, SANE_Int * info)
 {
-  handle = handle;
-  option = option;		/* Eliminate warning about unused parameters */
+  (void) handle;
+  (void) option;		/* Eliminate warning about unused parameters */
 
   switch (action)
     {
@@ -317,9 +315,9 @@ static SANE_Status
 optionAGainCallback (SANE_Option * option, SANE_Handle handle,
 		     SANE_Action action, void *value, SANE_Int * info)
 {
-  option = option;
-  handle = handle;
-  info = info;			/* Eliminate warning about unused parameters */
+  (void) option;
+  (void) handle;
+  (void) info;			/* Eliminate warning about unused parameters */
 
   switch (action)
     {
@@ -359,9 +357,9 @@ static SANE_Status
 optionGammaCallback (SANE_Option * option, SANE_Handle handle,
 		     SANE_Action action, void *value, SANE_Int * info)
 {
-  option = option;
-  handle = handle;
-  info = info;			/* Eliminate warning about unused parameters */
+  (void) option;
+  (void) handle;
+  (void) info;			/* Eliminate warning about unused parameters */
 
   switch (action)
     {
@@ -420,9 +418,9 @@ static SANE_Status
 optionTopLeftXCallback (SANE_Option * option, SANE_Handle handle,
 			SANE_Action action, void *value, SANE_Int * info)
 {
-  option = option;
-  handle = handle;
-  value = value;		/* Eliminate warning about unused parameters */
+  (void) option;
+  (void) handle;
+  (void) value;			/* Eliminate warning about unused parameters */
 
   switch (action)
     {
@@ -464,8 +462,8 @@ optionTopLeftYCallback (SANE_Option * option, SANE_Handle handle,
 			SANE_Action action, void *value, SANE_Int * info)
 {
   /* Eliminate warnings about unused parameters */
-  option = option;
-  handle = handle;
+  (void) option;
+  (void) handle;
 
   switch (action)
     {
@@ -508,8 +506,8 @@ optionBotRightXCallback (SANE_Option * option, SANE_Handle handle,
 			 SANE_Action action, void *value, SANE_Int * info)
 {
   /* Eliminate warnings about unused parameters */
-  option = option;
-  handle = handle;
+  (void) option;
+  (void) handle;
 
   switch (action)
     {
@@ -552,8 +550,8 @@ optionBotRightYCallback (SANE_Option * option, SANE_Handle handle,
 			 SANE_Action action, void *value, SANE_Int * info)
 {
   /* Eliminate warnings about unused parameters */
-  option = option;
-  handle = handle;
+  (void) option;
+  (void) handle;
 
   switch (action)
     {
@@ -722,10 +720,10 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG (2, "sane_init: version_code %s 0, authorize %s 0\n",
        version_code == 0 ? "=" : "!=", authorize == 0 ? "=" : "!=");
   DBG (1, "sane_init: SANE Canon630u backend version %d.%d.%d from %s\n",
-       SANE_CURRENT_MAJOR, V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   sanei_usb_init ();
 
@@ -914,7 +912,7 @@ sane_close (SANE_Handle handle)
 const SANE_Option_Descriptor *
 sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
 {
-  handle = handle;		/* Eliminate compiler warning */
+  (void) handle;		/* Eliminate compiler warning */
 
   DBG (3, "sane_get_option_descriptor: option = %d\n", option);
   if (option < 0 || option >= NELEMS (so))
@@ -926,7 +924,7 @@ SANE_Status
 sane_control_option (SANE_Handle handle, SANE_Int option,
 		     SANE_Action action, void *value, SANE_Int * info)
 {
-  handle = handle;		/* Eliminate compiler warning */
+  (void) handle;		/* Eliminate compiler warning */
 
   DBG (3,
        "sane_control_option: handle=%p, opt=%d, act=%d, val=%p, info=%p\n",
@@ -947,7 +945,7 @@ sane_get_parameters (SANE_Handle handle, SANE_Parameters * params)
     SANE_UNFIX (optionBotRightYValue -
 		optionTopLeftYValue) / MM_IN_INCH * optionResolutionValue;
 
-  handle = handle;		/* Eliminate compiler warning */
+  (void) handle;		/* Eliminate compiler warning */
 
   DBG (3, "sane_get_parameters\n");
   parms.depth = 8;
@@ -1037,7 +1035,7 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
 {
-  handle = handle;                   /* silence gcc */
-  fd = fd;                           /* silence gcc */
+  (void) handle;                /* silence gcc */
+  (void) fd;                    /* silence gcc */
   return SANE_STATUS_UNSUPPORTED;
 }

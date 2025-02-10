@@ -15,30 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef BACKEND_GENESYS_DEVICE_H
@@ -46,7 +23,6 @@
 
 #include "calibration.h"
 #include "command_set.h"
-#include "buffer.h"
 #include "enums.h"
 #include "image_pipeline.h"
 #include "motor.h"
@@ -55,6 +31,7 @@
 #include "register.h"
 #include "usb_device.h"
 #include "scanner_interface.h"
+#include "utilities.h"
 #include <vector>
 
 namespace genesys {
@@ -77,22 +54,15 @@ struct Genesys_Gpo
     GenesysRegisterSettingSet regs;
 };
 
-/// Stores a SANE_Fixed value which is automatically converted from and to floating-point values
-class FixedFloat
+struct MemoryLayout
 {
-public:
-    FixedFloat() = default;
-    FixedFloat(const FixedFloat&) = default;
-    FixedFloat(double number) : value_{SANE_FIX(number)} {}
-    FixedFloat& operator=(const FixedFloat&) = default;
-    FixedFloat& operator=(double number) { value_ = SANE_FIX(number); return *this; }
+    // This is used on GL845, GL846, GL847 and GL124 which have special registers to define the
+    // memory layout
+    MemoryLayout() = default;
 
-    operator double() const { return value(); }
+    ValueFilter<ModelId> models;
 
-    double value() const { return SANE_UNFIX(value_); }
-
-private:
-    SANE_Fixed value_ = 0;
+    GenesysRegisterSettingSet regs;
 };
 
 struct MethodResolutions
@@ -104,6 +74,16 @@ struct MethodResolutions
     unsigned get_min_resolution_x() const
     {
         return *std::min_element(resolutions_x.begin(), resolutions_x.end());
+    }
+
+    unsigned get_nearest_resolution_x(unsigned resolution) const
+    {
+        return *std::min_element(resolutions_x.begin(), resolutions_x.end(),
+                                 [&](unsigned lhs, unsigned rhs)
+        {
+            return std::abs(static_cast<int>(lhs) - static_cast<int>(resolution)) <
+                     std::abs(static_cast<int>(rhs) - static_cast<int>(resolution));
+        });
     }
 
     unsigned get_min_resolution_y() const
@@ -143,51 +123,67 @@ struct Genesys_Model
     // All offsets below are with respect to the sensor home position
 
     // Start of scan area in mm
-    FixedFloat x_offset = 0;
+    float x_offset = 0;
 
     // Start of scan area in mm (Amount of feeding needed to get to the medium)
-    FixedFloat y_offset = 0;
+    float y_offset = 0;
 
     // Size of scan area in mm
-    FixedFloat x_size = 0;
+    float x_size = 0;
 
     // Size of scan area in mm
-    FixedFloat y_size = 0;
+    float y_size = 0;
 
-    // Start of white strip in mm
-    FixedFloat y_offset_calib_white = 0;
+    // Start of white strip in mm for scanners that use separate dark and white shading calibration.
+    float y_offset_calib_white = 0;
+
+    // The size of the scan area that is used to acquire shading data in mm
+    float y_size_calib_mm = 0;
+
+    // Start of the black/white strip in mm for scanners that use unified dark and white shading
+    // calibration.
+    float y_offset_calib_dark_white_mm = 0;
+
+    // The size of the scan area that is used to acquire dark/white shading data in mm
+    float y_size_calib_dark_white_mm = 0;
+
+    // The width of the scan area that is used to acquire shading data
+    float x_size_calib_mm = 0;
 
     // Start of black mark in mm
-    FixedFloat x_offset_calib_black = 0;
+    float x_offset_calib_black = 0;
 
     // Start of scan area in transparency mode in mm
-    FixedFloat x_offset_ta = 0;
+    float x_offset_ta = 0;
 
     // Start of scan area in transparency mode in mm
-    FixedFloat y_offset_ta = 0;
+    float y_offset_ta = 0;
 
     // Size of scan area in transparency mode in mm
-    FixedFloat x_size_ta = 0;
+    float x_size_ta = 0;
 
     // Size of scan area in transparency mode in mm
-    FixedFloat y_size_ta = 0;
+    float y_size_ta = 0;
 
     // The position of the sensor when it's aligned with the lamp for transparency scanning
-    FixedFloat y_offset_sensor_to_ta = 0;
+    float y_offset_sensor_to_ta = 0;
 
     // Start of white strip in transparency mode in mm
-    FixedFloat y_offset_calib_white_ta = 0;
+    float y_offset_calib_white_ta = 0;
 
     // Start of black strip in transparency mode in mm
-    FixedFloat y_offset_calib_black_ta = 0;
+    float y_offset_calib_black_ta = 0;
+
+    // The size of the scan area that is used to acquire shading data in transparency mode in mm
+    float y_size_calib_ta_mm = 0;
 
     // Size of scan area after paper sensor stop sensing document in mm
-    FixedFloat post_scan = 0;
+    float post_scan = 0;
 
     // Amount of feeding needed to eject document after finishing scanning in mm
-    FixedFloat eject_feed = 0;
+    float eject_feed = 0;
 
-    // Line-distance correction (in pixel at optical_ydpi) for CCD scanners
+    // Line-distance correction (in pixel at motor base_ydpi) for CCD scanners
     SANE_Int ld_shift_r = 0;
     SANE_Int ld_shift_g = 0;
     SANE_Int ld_shift_b = 0;
@@ -210,22 +206,24 @@ struct Genesys_Model
     // stepper motor type
     MotorId motor_id = MotorId::UNKNOWN;
 
-    // Which hacks are needed for this scanner?
-    SANE_Word flags = 0;
+    // Which customizations are needed for this scanner?
+    ModelFlag flags = ModelFlag::NONE;
 
     // Button flags, described existing buttons for the model
     SANE_Word buttons = 0;
 
-    // how many lines are used for shading calibration
-    SANE_Int shading_lines = 0;
-    // how many lines are used for shading calibration in TA mode
-    SANE_Int shading_ta_lines = 0;
     // how many lines are used to search start position
     SANE_Int search_lines = 0;
 
+    // returns nullptr if method is not supported
+    const MethodResolutions* get_resolution_settings_ptr(ScanMethod method) const;
+
+    // throws if method is not supported
     const MethodResolutions& get_resolution_settings(ScanMethod method) const;
 
     std::vector<unsigned> get_resolutions(ScanMethod method) const;
+
+    bool has_method(ScanMethod method) const;
 };
 
 /**
@@ -243,8 +241,8 @@ struct Genesys_Device
     // frees commonly used data
     void clear();
 
-    SANE_Word vendorId = 0;			/**< USB vendor identifier */
-    SANE_Word productId = 0;			/**< USB product identifier */
+    std::uint16_t vendorId = 0; // USB vendor identifier
+    std::uint16_t productId = 0; // USB product identifier
 
     // USB mode:
     // 0: not set
@@ -261,41 +259,24 @@ struct Genesys_Device
     // acquiring the positions of the black and white strips and the actual scan area
     bool ignore_offsets = false;
 
-    Genesys_Model *model = nullptr;
+    const Genesys_Model* model = nullptr;
 
     // pointers to low level functions
     std::unique_ptr<CommandSet> cmd_set;
 
     Genesys_Register_Set reg;
-    Genesys_Register_Set calib_reg;
+    Genesys_Register_Set initial_regs;
     Genesys_Settings settings;
     Genesys_Frontend frontend, frontend_initial;
-
-    // whether the frontend is initialized. This is currently used just to preserve historical
-    // behavior
-    bool frontend_is_init = false;
-
     Genesys_Gpo gpo;
+    MemoryLayout memory_layout;
     Genesys_Motor motor;
     std::uint8_t control[6] = {};
 
     size_t average_size = 0;
-    // number of pixels used during shading calibration
-    size_t calib_pixels = 0;
-    // number of lines used during shading calibration
-    size_t calib_lines = 0;
-    size_t calib_channels = 0;
-    size_t calib_resolution = 0;
-     // bytes to read from USB when calibrating. If 0, this is not set
-    size_t calib_total_bytes_to_read = 0;
 
     // the session that was configured for calibration
     ScanSession calib_session;
-
-    // certain scanners support much higher resolution when scanning transparency, but we can't
-    // read whole width of the scanner as a single line at that resolution. Thus for stuff like
-    // calibration we want to read only the possible calibration area.
-    size_t calib_pixels_offset = 0;
 
     // gamma overrides. If a respective array is not empty then it means that the gamma for that
     // color is overridden.
@@ -305,23 +286,13 @@ struct Genesys_Device
     std::vector<std::uint16_t> dark_average_data;
 
     bool already_initialized = false;
-    SANE_Int scanhead_position_in_steps = 0;
 
     bool read_active = false;
-    // signal wether the park command has been issued
+    // signal whether the park command has been issued
     bool parking = false;
 
     // for sheetfed scanner's, is TRUE when there is a document in the scanner
     bool document = false;
-
-    bool needs_home_ta = false;
-
-    Genesys_Buffer read_buffer;
-
-    // buffer for digital lineart from gray data
-    Genesys_Buffer binarize_buffer;
-    // local buffer for gray data during dynamix lineart
-    Genesys_Buffer local_buffer;
 
     // total bytes read sent to frontend
     size_t total_bytes_read = 0;
@@ -331,9 +302,6 @@ struct Genesys_Device
     // contains computed data for the current setup
     ScanSession session;
 
-    // look up table used in dynamic rasterization
-    unsigned char lineart_lut[256] = {};
-
     Calibration calibration_cache;
 
     // number of scan lines used during scan
@@ -342,32 +310,45 @@ struct Genesys_Device
     // array describing the order of the sub-segments of the sensor
     std::vector<unsigned> segment_order;
 
-    // buffer to handle even/odd data
-    Genesys_Buffer oe_buffer = {};
-
     // stores information about how the input image should be processed
     ImagePipelineStack pipeline;
 
     // an buffer that allows reading from `pipeline` in chunks of any size
     ImageBuffer pipeline_buffer;
 
-    // when true the scanned picture is first buffered to allow software image enhancements
-    bool buffer_image = false;
-
-    // image buffer where the scanned picture is stored
-    std::vector<std::uint8_t> img_buffer;
-
-    ImagePipelineNodeBytesSource& get_pipeline_source();
+    ImagePipelineNodeBufferedCallableSource& get_pipeline_source();
 
     std::unique_ptr<ScannerInterface> interface;
 
+    bool is_head_pos_known(ScanHeadId scan_head) const;
+    unsigned head_pos(ScanHeadId scan_head) const;
+    void set_head_pos_unknown(ScanHeadId scan_head);
+    void set_head_pos_zero(ScanHeadId scan_head);
+    void advance_head_pos_by_session(ScanHeadId scan_head);
+    void advance_head_pos_by_steps(ScanHeadId scan_head, Direction direction, unsigned steps);
+
 private:
+    // the position of the primary scan head in motor->base_dpi units
+    unsigned head_pos_primary_ = 0;
+    bool is_head_pos_primary_known_ = true;
+
+    // the position of the secondary scan head in motor->base_dpi units. Only certain scanners
+    // have a secondary scan head.
+    unsigned head_pos_secondary_ = 0;
+    bool is_head_pos_secondary_known_ = true;
+
     friend class ScannerInterfaceUsb;
 };
 
 std::ostream& operator<<(std::ostream& out, const Genesys_Device& dev);
 
 void apply_reg_settings_to_device(Genesys_Device& dev, const GenesysRegisterSettingSet& regs);
+
+void apply_reg_settings_to_device_write_only(Genesys_Device& dev,
+                                             const GenesysRegisterSettingSet& regs);
+GenesysRegisterSettingSet
+    apply_reg_settings_to_device_with_backup(Genesys_Device& dev,
+                                             const GenesysRegisterSettingSet& regs);
 
 } // namespace genesys
 

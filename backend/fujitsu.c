@@ -1,12 +1,12 @@
 /* sane - Scanner Access Now Easy.
 
    This file is part of the SANE package, and implements a SANE backend
-   for various Fujitsu scanners.
+   for various Fujitsu and Ricoh scanners.
 
    Copyright (C) 2000 Randolph Bentson
    Copyright (C) 2001 Frederik Ramm
    Copyright (C) 2001-2004 Oliver Schirrmeister
-   Copyright (C) 2003-2019 m. allan noah
+   Copyright (C) 2003-2023 m. allan noah
 
    JPEG output and low memory usage support funded by:
      Archivista GmbH, www.archivista.ch
@@ -15,7 +15,7 @@
    Automatic length detection support funded by:
      Martin G. Miller, mgmiller at optonline.net
    Software image enhancement routines and recent scanner support funded by:
-     Fujitsu Computer Products of America, Inc. www.fcpa.com
+     PFU America, Inc., fujitsuscanners.com
 
    --------------------------------------------------------------------------
 
@@ -30,9 +30,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -172,11 +170,11 @@
          - use sanei_scsi_open_extended() to set buffer size
          - fix some compiler warns: 32&64 bit gcc
       v26 2006-05-23, MAN
-         - dont send scanner control (F1) if unsupported
+         - don't send scanner control (F1) if unsupported
       v27 2006-05-30, MAN
          - speed up hexdump (adeuring A T gmx D O T net)
          - duplex request same size block from both sides
-         - dont #include or call sanei_thread
+         - don't #include or call sanei_thread
          - split usb/scsi command DBG into 25 and 30
       v28 2006-06-01, MAN
          - sane_read() usleep if scanner is busy
@@ -201,10 +199,10 @@
          - add error msg if VPD missing or non-extended
          - remove references to color_lineart and ht units
          - rework init_model to support more known models
-         - dont send paper size data if using flatbed
+         - don't send paper size data if using flatbed
       v31 2006-06-13, MAN
          - add 5220C usb id
-         - dont show ink level buttons if no imprinter
+         - don't show ink level buttons if no imprinter
          - run ghs/rs every second instead of every other
       v32 2006-06-14, MAN
          - add 4220C2 usb id
@@ -299,7 +297,7 @@
          - proper async sane_cancel support
          - re-enable JPEG support
          - replace s->img_count with s->side
-         - sane_get_parameters(): dont round up larger than current paper size
+         - sane_get_parameters(): don't round up larger than current paper size
          - sane_start() rewritten, shorter, more clear
          - return values are SANE_Status, not int
          - hide unused functions
@@ -386,7 +384,7 @@
 	 - set SANE_CAP_INACTIVE on all disabled options
          - fix bug in mode_select page for sleep timer
       v78 2008-08-26, MAN
-	 - recent model names (fi-6xxx) dont end in 'C'
+	 - recent model names (fi-6xxx) don't end in 'C'
          - simplify flatbed area overrides
          - call scanner_control to change source during sane_start
       v79 2008-10-01, MAN
@@ -423,7 +421,7 @@
          - track frontend reading sensor/button values to reload
          - deactivate double feed options if df-action == default
       v88 2009-01-21, MAN
-         - dont export private symbols
+         - don't export private symbols
       v89 2009-02-20, MAN
          - fi-4750 returns random garbage to serial number queries
       v90 2009-02-23, MAN
@@ -482,7 +480,7 @@
          - cache software crop/deskew parameters for use on backside of duplex
          - fi-6110 does not support bgcolor or prepick
       v106 2011-01-30, MAN (SANE 1.0.22)
-         - dont call mode_select with a page code the scanner does not support
+         - don't call mode_select with a page code the scanner does not support
       v107 2011-11-03, MAN
          - M3091 does not support scanner_control(adf)
          - Correct buffer overflow in read_from_3091duplex()
@@ -603,8 +601,23 @@
       v134 2019-02-23, MAN
          - rewrite init_vpd for scanners which fail to report
            overscan correctly
-      v135 2019-11-10, MAN
+      v135 2019-11-10, MAN (SANE 1.0.29)
          - set has_MS_lamp=0 for fi-72x0, bug #134
+      v136 2020-02-07, MAN
+         - add support for fi-800R
+         - add support for card scanning slot (Return Path)
+         - fix bug with reading hardware sensors on first invocation
+      v137 2020-09-23, MAN
+         - fix JPEG duplex memory corruption
+         - change window_gamma init (fixes bright/contrast for iX1500)
+         - only call send_lut after set_window (remove late_lut)
+      v138 2022-06-01, MAN
+         - minor updates to company name (FCPA -> PFU)
+      v139 2022-11-15, MAN
+         - move updated window_gamma logic to set_window
+         - use internal gamma table if possible (fixes #618)
+      v140 2023-03-27, MAN
+         - add initial support for Ricoh scanners
 
    SANE FLOW DIAGRAM
 
@@ -654,7 +667,7 @@
 #include "fujitsu.h"
 
 #define DEBUG 1
-#define BUILD 134
+#define BUILD 140
 
 /* values for SANE_DEBUG_FUJITSU env var:
  - errors           5
@@ -678,6 +691,9 @@
 #define STRING_ADFFRONT SANE_I18N("ADF Front")
 #define STRING_ADFBACK SANE_I18N("ADF Back")
 #define STRING_ADFDUPLEX SANE_I18N("ADF Duplex")
+#define STRING_CARDFRONT SANE_I18N("Card Front")
+#define STRING_CARDBACK SANE_I18N("Card Back")
+#define STRING_CARDDUPLEX SANE_I18N("Card Duplex")
 
 #define STRING_LINEART SANE_VALUE_SCAN_MODE_LINEART
 #define STRING_HALFTONE SANE_VALUE_SCAN_MODE_HALFTONE
@@ -755,16 +771,16 @@ static struct fujitsu *fujitsu_devList = NULL;
 SANE_Status
 sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 {
-  authorize = authorize;        /* get rid of compiler warning */
+  (void) authorize;             /* get rid of compiler warning */
 
   DBG_INIT ();
   DBG (10, "sane_init: start\n");
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   DBG (5, "sane_init: fujitsu backend %d.%d.%d, from %s\n",
-    SANE_CURRENT_MAJOR, V_MINOR, BUILD, PACKAGE_STRING);
+    SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   sanei_magic_init();
 
@@ -810,7 +826,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   int num_devices=0;
   int i=0;
 
-  local_only = local_only;        /* get rid of compiler warning */
+  (void) local_only;            /* get rid of compiler warning */
 
   DBG (10, "sane_get_devices: start\n");
 
@@ -1140,7 +1156,7 @@ connect_fd (struct fujitsu *s)
 }
 
 /*
- * This routine will check if a certain device is a Fujitsu scanner
+ * This routine will check if a certain device is a Fujitsu/Ricoh scanner
  * It also copies interesting data from INQUIRY into the handle structure
  */
 static SANE_Status
@@ -1195,9 +1211,9 @@ init_inquire (struct fujitsu *s)
   for (i = 3; s->version_name[i] == ' ' && i >= 0; i--)
     s->version_name[i] = 0;
 
-  if (strcmp ("FUJITSU", s->vendor_name)) {
+  if (strcmp ("FUJITSU", s->vendor_name) && strcmp ("RICOH", s->vendor_name)) {
     DBG (5, "The device at '%s' is reported to be made by '%s'\n", s->device_name, s->vendor_name);
-    DBG (5, "This backend only supports Fujitsu products.\n");
+    DBG (5, "This backend only supports Fujitsu and Ricoh products.\n");
     return SANE_STATUS_INVAL;
   }
 
@@ -1210,7 +1226,7 @@ init_inquire (struct fujitsu *s)
   s->color_raster_offset = get_IN_color_offset(in);
   DBG (15, "  color offset: %d lines\n",s->color_raster_offset);
 
-  /* FIXME: we dont store all of these? */
+  /* FIXME: we don't store all of these? */
   DBG (15, "  long gray scan: %d\n",get_IN_long_gray(in));
   DBG (15, "  long color scan: %d\n",get_IN_long_color(in));
 
@@ -1694,7 +1710,7 @@ init_vpd (struct fujitsu *s)
   s->has_comp_JPG3 = get_IN_compression_JPG_INDEP (in);
   DBG (15, "  compression JPG3: %d\n", s->has_comp_JPG3);
 
-  /* FIXME: we dont store these? */
+  /* FIXME: we don't store these? */
   DBG (15, "  back endorser mech: %d\n", get_IN_endorser_b_mech(in));
   DBG (15, "  back endorser stamp: %d\n", get_IN_endorser_b_stamp(in));
   DBG (15, "  back endorser elec: %d\n", get_IN_endorser_b_elec(in));
@@ -1819,6 +1835,12 @@ init_vpd (struct fujitsu *s)
   if (payload_off >= 0x7a) {
     s->has_op_halt = get_IN_op_halt(in);
     DBG (15, "  object position halt: %d\n", s->has_op_halt);
+  }
+
+  if (payload_off >= 0x7c) {
+    s->has_return_path = get_IN_return_path(in);
+    DBG (15, "  return path (card) scanning: %d\n", s->has_return_path);
+    DBG (15, "  energy star 3: %d\n", get_IN_energy_star3(in));
   }
 
   DBG (10, "init_vpd: finish\n");
@@ -2092,14 +2114,6 @@ init_model (struct fujitsu *s)
   s->ppl_mod_by_mode[MODE_GRAYSCALE] = 1;
   s->ppl_mod_by_mode[MODE_COLOR] = 1;
 
-  /* if scanner has built-in gamma tables, we use the first one (0) */
-  /* otherwise, we use the first downloaded one (0x80) */
-  /* note that you may NOT need to send the table to use it, */
-  /* the scanner will fall back to the brightness/contrast LUT */
-  if (!s->num_internal_gamma && s->num_download_gamma){
-    s->window_gamma = 0x80;
-  }
-
   /* endorser type tells string length (among other things) */
   if(s->has_endorser_b){
     /*old-style is 40 bytes*/
@@ -2193,7 +2207,10 @@ init_model (struct fujitsu *s)
     s->color_interlace = COLOR_INTERLACE_3091;
     s->duplex_interlace = DUPLEX_INTERLACE_3091;
     s->ghs_in_rs = 1;
-    s->window_gamma = 0;
+
+    /* might be inaccurate */
+    s->num_internal_gamma = 1;
+    s->num_download_gamma = 0;
 
     s->reverse_by_mode[MODE_LINEART] = 1;
     s->reverse_by_mode[MODE_HALFTONE] = 1;
@@ -2352,7 +2369,6 @@ init_model (struct fujitsu *s)
 
     /* weirdness */
     s->need_q_table = 1;
-    s->late_lut = 1;
     s->need_diag_preread = 1;
     s->ppl_mod_by_mode[MODE_COLOR] = 2;
     s->hopper_before_op = 1;
@@ -2365,7 +2381,7 @@ init_model (struct fujitsu *s)
     s->can_mode[MODE_LINEART] = 2;
     s->can_mode[MODE_GRAYSCALE] = 2;
 
-    /* dont bother with this one */
+    /* don't bother with this one */
     s->can_mode[MODE_HALFTONE] = 0;
   }
 
@@ -2376,7 +2392,6 @@ init_model (struct fujitsu *s)
 
     /* weirdness */
     s->need_q_table = 1;
-    s->late_lut = 1;
     s->need_diag_preread = 1;
     s->ppl_mod_by_mode[MODE_COLOR] = 2;
     s->hopper_before_op = 1;
@@ -2385,7 +2400,7 @@ init_model (struct fujitsu *s)
     /* lies */
     s->adbits = 8;
 
-    /* dont bother with this one */
+    /* don't bother with this one */
     s->can_mode[MODE_HALFTONE] = 0;
   }
 
@@ -2498,6 +2513,8 @@ init_user (struct fujitsu *s)
     s->source = SOURCE_FLATBED;
   else if(s->has_adf)
     s->source = SOURCE_ADF_FRONT;
+  else if(s->has_return_path)
+    s->source = SOURCE_CARD_FRONT;
 
   /* scan mode */
   if(s->can_mode[MODE_LINEART])
@@ -2875,6 +2892,16 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
         s->source_list[i++]=STRING_ADFDUPLEX;
       }
     }
+    if(s->has_return_path){
+      s->source_list[i++]=STRING_CARDFRONT;
+
+      if(s->has_back){
+        s->source_list[i++]=STRING_CARDBACK;
+      }
+      if(s->has_duplex){
+        s->source_list[i++]=STRING_CARDDUPLEX;
+      }
+    }
     s->source_list[i]=NULL;
 
     opt->name = SANE_NAME_SCAN_SOURCE;
@@ -3049,7 +3076,7 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
     opt->constraint_type = SANE_CONSTRAINT_RANGE;
     opt->constraint.range = &s->paper_x_range;
 
-    if(s->has_adf){
+    if(s->has_adf || s->has_return_path){
       opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT;
       if(s->source == SOURCE_FLATBED){
         opt->cap |= SANE_CAP_INACTIVE;
@@ -3076,7 +3103,7 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
     opt->constraint_type = SANE_CONSTRAINT_RANGE;
     opt->constraint.range = &s->paper_y_range;
 
-    if(s->has_adf){
+    if(s->has_adf || s->has_return_path){
       opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT;
       if(s->source == SOURCE_FLATBED){
         opt->cap |= SANE_CAP_INACTIVE;
@@ -4177,7 +4204,7 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
     opt->unit = SANE_UNIT_NONE;
     opt->size = sizeof(SANE_Word);
 
-    /*old type cant do this?*/
+    /*old type can't do this?*/
     if ((s->has_endorser_f && s->endorser_type_f != ET_OLD)
      || (s->has_endorser_b && s->endorser_type_b != ET_OLD)){
       opt->cap=SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
@@ -4474,6 +4501,18 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
       opt->cap = SANE_CAP_INACTIVE;
   }
 
+  if(option==OPT_CARD_LOADED){
+    opt->name = "card-loaded";
+    opt->title = SANE_I18N ("Card loaded");
+    opt->desc = SANE_I18N ("Card slot contains paper");
+    opt->type = SANE_TYPE_BOOL;
+    opt->unit = SANE_UNIT_NONE;
+    if (s->has_cmd_hw_status && s->has_return_path)
+      opt->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_HARD_SELECT | SANE_CAP_ADVANCED;
+    else
+      opt->cap = SANE_CAP_INACTIVE;
+  }
+
   if(option==OPT_SLEEP){
     opt->name = "power-save";
     opt->title = SANE_I18N ("Power saving");
@@ -4696,6 +4735,15 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           }
           else if(s->source == SOURCE_ADF_DUPLEX){
             strcpy (val, STRING_ADFDUPLEX);
+          }
+          else if(s->source == SOURCE_CARD_FRONT){
+            strcpy (val, STRING_CARDFRONT);
+          }
+          else if(s->source == SOURCE_CARD_BACK){
+            strcpy (val, STRING_CARDBACK);
+          }
+          else if(s->source == SOURCE_CARD_DUPLEX){
+            strcpy (val, STRING_CARDDUPLEX);
           }
           return SANE_STATUS_GOOD;
 
@@ -5215,6 +5263,11 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           *val_p = s->hw_adf_open;
           return ret;
 
+        case OPT_CARD_LOADED:
+          ret = get_hardware_status(s,option);
+          *val_p = s->hw_card_loaded;
+          return ret;
+
         case OPT_SLEEP:
           ret = get_hardware_status(s,option);
           *val_p = s->hw_sleep;
@@ -5285,7 +5338,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
       DBG (20, "sane_control_option: set value for '%s' (%d)\n", s->opt[option].name,option);
 
       if ( s->started ) {
-        DBG (5, "sane_control_option: cant set, device busy\n");
+        DBG (5, "sane_control_option: can't set, device busy\n");
         return SANE_STATUS_DEVICE_BUSY;
       }
 
@@ -5300,7 +5353,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
         return status;
       }
 
-      /* may have been changed by constrain, so dont copy until now */
+      /* may have been changed by constrain, so don't copy until now */
       val_c = *(SANE_Word *)val;
 
       /*
@@ -5322,6 +5375,15 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           }
           else if (!strcmp (val, STRING_ADFDUPLEX)) {
             tmp = SOURCE_ADF_DUPLEX;
+          }
+	  else if (!strcmp (val, STRING_CARDFRONT)) {
+            tmp = SOURCE_CARD_FRONT;
+          }
+          else if (!strcmp (val, STRING_CARDBACK)) {
+            tmp = SOURCE_CARD_BACK;
+          }
+          else if (!strcmp (val, STRING_CARDDUPLEX)) {
+            tmp = SOURCE_CARD_DUPLEX;
           }
           else{
             tmp = SOURCE_FLATBED;
@@ -5912,12 +5974,12 @@ get_hardware_status (struct fujitsu *s, SANE_Int option)
 
   /* only run this if frontend has already read the last time we got it */
   /* or if we don't care for such bookkeeping (private use) */
-  if (!option || s->hw_read[option-OPT_TOP]) {
+  if (!option || !s->hw_data_avail[option-OPT_TOP]) {
 
       DBG (15, "get_hardware_status: running\n");
 
-      /* mark all values as unread */
-      memset(s->hw_read,0,sizeof(s->hw_read));
+      /* mark all values as available */
+      memset(s->hw_data_avail,1,sizeof(s->hw_data_avail));
 
       if (s->has_cmd_hw_status){
           unsigned char cmd[GET_HW_STATUS_len];
@@ -5950,6 +6012,7 @@ get_hardware_status (struct fujitsu *s, SANE_Int option)
               s->hw_hopper = get_GHS_hopper(in);
               s->hw_omr = get_GHS_omr(in);
               s->hw_adf_open = get_GHS_adf_open(in);
+              s->hw_card_loaded = get_GHS_exit(in);
 
               s->hw_sleep = get_GHS_sleep(in);
               s->hw_send_sw = get_GHS_send_sw(in);
@@ -6015,7 +6078,7 @@ get_hardware_status (struct fujitsu *s, SANE_Int option)
   }
 
   if(option)
-    s->hw_read[option-OPT_TOP] = 1;
+    s->hw_data_avail[option-OPT_TOP] = 0;
 
   DBG (10, "get_hardware_status: finish\n");
 
@@ -6368,7 +6431,7 @@ diag_preread (struct fujitsu *s)
   set_SD_preread_yres(out,s->resolution_y);
   /* call helper function, scanner wants lies about paper width */
   set_SD_preread_paper_width(out, get_page_width(s));
-  /* dont call helper function, scanner wants actual length?  */
+  /* don't call helper function, scanner wants actual length?  */
   set_SD_preread_paper_length(out, s->page_height);
   set_SD_preread_composition(out, s->s_mode);
 
@@ -6728,7 +6791,7 @@ sane_get_parameters (SANE_Handle handle, SANE_Parameters * params)
   params->pixels_per_line = s->u_params.pixels_per_line;
   params->bytes_per_line = s->u_params.bytes_per_line;
 
-  /* we wont know the end until we get to it */
+  /* we won't know the end until we get to it */
   if(s->ald && !must_fully_buffer(s)){
     DBG (15, "sane_get_parameters: hand-scanner mode\n");
     params->lines = -1;
@@ -6880,7 +6943,7 @@ update_u_params (struct fujitsu * s)
  *
  * this will be called between sides of a duplex scan,
  * and at the start of each page of an adf batch.
- * hence, we spend alot of time playing with s->started, etc.
+ * hence, we spend a lot of time playing with s->started, etc.
  */
 SANE_Status
 sane_start (SANE_Handle handle)
@@ -6905,8 +6968,8 @@ sane_start (SANE_Handle handle)
   }
 
   /* low mem mode messes up the side marker, reset it */
-  if(s->source == SOURCE_ADF_DUPLEX && s->low_mem
-    && s->eof_tx[SIDE_FRONT] && s->eof_tx[SIDE_BACK]
+  if((s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_CARD_DUPLEX)
+    && s->low_mem && s->eof_tx[SIDE_FRONT] && s->eof_tx[SIDE_BACK]
   ){
     s->side = SIDE_BACK;
   }
@@ -6915,7 +6978,7 @@ sane_start (SANE_Handle handle)
   if(!s->started){
 
       /* load side marker */
-      if(s->source == SOURCE_ADF_BACK){
+      if(s->source == SOURCE_ADF_BACK || s->source == SOURCE_CARD_BACK){
         s->side = SIDE_BACK;
       }
       else{
@@ -6934,6 +6997,12 @@ sane_start (SANE_Handle handle)
         ret = scanner_control(s, SC_function_fb);
         if (ret != SANE_STATUS_GOOD) {
           DBG (5, "sane_start: ERROR: cannot control fb, ignoring\n");
+        }
+      }
+      else if(s->source == SOURCE_CARD_FRONT || s->source == SOURCE_CARD_BACK || s->source == SOURCE_CARD_DUPLEX){
+        ret = scanner_control(s, SC_function_rpath);
+        if (ret != SANE_STATUS_GOOD) {
+          DBG (5, "sane_start: ERROR: cannot control rp, ignoring\n");
         }
       }
       else{
@@ -6983,14 +7052,6 @@ sane_start (SANE_Handle handle)
       if (ret != SANE_STATUS_GOOD)
         DBG (5, "sane_start: WARNING: cannot send_endorser %d\n", ret);
 
-      /* send lut if scanner has no hardware brightness/contrast,
-       * or we are going to ask it to use a downloaded gamma table */
-      if (!s->late_lut && (!s->brightness_steps || !s->contrast_steps || s->window_gamma & 0x80)){
-        ret = send_lut(s);
-        if (ret != SANE_STATUS_GOOD)
-          DBG (5, "sane_start: WARNING: cannot early send_lut %d\n", ret);
-      }
-
       /* set window command */
       ret = set_window(s);
       if (ret != SANE_STATUS_GOOD) {
@@ -6998,12 +7059,11 @@ sane_start (SANE_Handle handle)
         goto errors;
       }
 
-      /* send lut if scanner has no hardware brightness/contrast,
-       * or we are going to ask it to use a downloaded gamma table */
-      if (s->late_lut && (!s->brightness_steps || !s->contrast_steps || s->window_gamma & 0x80)){
+      /* send lut if set_window said we would */
+      if ( s->window_gamma ){
         ret = send_lut(s);
         if (ret != SANE_STATUS_GOOD)
-          DBG (5, "sane_start: WARNING: cannot late send_lut %d\n", ret);
+          DBG (5, "sane_start: WARNING: cannot send_lut %d\n", ret);
       }
 
       /* some scanners need the q table sent, even when not scanning jpeg */
@@ -7038,16 +7098,16 @@ sane_start (SANE_Handle handle)
       }
   }
   /* if already running, duplex needs to switch sides */
-  else if(s->source == SOURCE_ADF_DUPLEX){
+  else if(s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_CARD_DUPLEX){
       s->side = !s->side;
   }
 
   /* set clean defaults with new sheet of paper */
-  /* dont reset the transfer vars on backside of duplex page */
+  /* don't reset the transfer vars on backside of duplex page */
   /* otherwise buffered back page will be lost */
   /* ingest paper with adf (no-op for fb) */
-  /* dont call object pos or scan on back side of duplex scan */
-  if(s->side == SIDE_FRONT || s->source == SOURCE_ADF_BACK){
+  /* don't call object pos or scan on back side of duplex scan */
+  if(s->side == SIDE_FRONT || s->source == SOURCE_ADF_BACK || s->source == SOURCE_CARD_BACK){
 
       s->bytes_rx[0]=0;
       s->bytes_rx[1]=0;
@@ -7095,7 +7155,7 @@ sane_start (SANE_Handle handle)
       }
 
       /* store the number of front bytes */
-      if ( s->source != SOURCE_ADF_BACK ){
+      if ( s->source != SOURCE_ADF_BACK && s->source != SOURCE_CARD_BACK ){
         s->bytes_tot[SIDE_FRONT] = s->s_params.bytes_per_line * s->s_params.lines;
         s->buff_tot[SIDE_FRONT] = s->buffer_size;
 
@@ -7114,13 +7174,14 @@ sane_start (SANE_Handle handle)
       }
 
       /* store the number of back bytes */
-      if ( s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_ADF_BACK ){
+      if ( s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_ADF_BACK
+	|| s->source == SOURCE_CARD_DUPLEX || s->source == SOURCE_CARD_BACK ){
         s->bytes_tot[SIDE_BACK] = s->s_params.bytes_per_line * s->s_params.lines;
         s->buff_tot[SIDE_BACK] = s->bytes_tot[SIDE_BACK];
 
         /* the back buffer is normally very large, but some scanners or
-         * option combinations dont need it, so we make a small one */
-        if(s->low_mem || s->source == SOURCE_ADF_BACK
+         * option combinations don't need it, so we make a small one */
+        if(s->low_mem || s->source == SOURCE_ADF_BACK || s->source == SOURCE_CARD_BACK
          || s->duplex_interlace == DUPLEX_INTERLACE_NONE)
           s->buff_tot[SIDE_BACK] = s->buffer_size;
       }
@@ -7308,13 +7369,14 @@ scanner_control (struct fujitsu *s, int function)
 
     memset(cmd,0,cmdLen);
     set_SCSI_opcode(cmd, SCANNER_CONTROL_code);
-    set_SC_function (cmd, function);
+    set_SC_function_1 (cmd, function);
+    set_SC_function_2 (cmd, function);
 
     DBG (15, "scanner_control: function %d\n",function);
 
     /* don't really need to ask for adf if that's the only option */
     /* doing so causes the 3091 to complain */
-    if(function == SC_function_adf && !s->has_flatbed){
+    if(function == SC_function_adf && !s->has_flatbed && !s->has_return_path){
       DBG (10, "scanner_control: adf function not required\n");
       return ret;
     }
@@ -7486,7 +7548,7 @@ set_window (struct fujitsu *s)
   set_WPDB_wdblen(header, SW_desc_len);
 
   /* init the window block */
-  if (s->source == SOURCE_ADF_BACK) {
+  if (s->source == SOURCE_ADF_BACK || s->source == SOURCE_CARD_BACK) {
     set_WD_wid (desc1, WD_wid_back);
   }
   else{
@@ -7554,6 +7616,23 @@ set_window (struct fujitsu *s)
 
   /* the remainder of the block varies based on model and mode,
    * except for gamma and paper size, those are in the same place */
+
+  /* determine if we need to send gamma LUT.
+   * send lut if scanner supports it and any of:
+   * has no hardware brightness but user changed it
+   * has no hardware contrast but user changed it
+   * has no internal gamma table */
+  if ( s->num_download_gamma && (
+       (!s->brightness_steps && s->brightness != 0)
+    || (!s->contrast_steps && s->contrast != 0 )
+    || !s->num_internal_gamma
+  ) ){
+    s->window_gamma = 0x80;
+  }
+  /* otherwise, use the internal table */
+  else{
+    s->window_gamma = 0;
+  }
 
   /*vuid c0*/
   if(s->has_vuid_3091){
@@ -7670,12 +7749,12 @@ set_window (struct fujitsu *s)
     /* call helper function, scanner wants lies about paper width */
     set_WD_paper_width_X (desc1, get_page_width(s));
 
-    /* dont call helper function, scanner wants actual length?  */
+    /* don't call helper function, scanner wants actual length?  */
     set_WD_paper_length_Y (desc1, s->page_height);
   }
 
   /* when in duplex mode, copy first desc block into second */
-  if (s->source == SOURCE_ADF_DUPLEX) {
+  if (s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_CARD_DUPLEX) {
       memcpy (desc2, desc1, SW_desc_len);
 
       set_WD_wid (desc2, WD_wid_back);
@@ -7823,7 +7902,7 @@ get_pixelsize(struct fujitsu *s, int actual)
 }
 
 /*
- * Issues the SCSI OBJECT POSITION command if an ADF is in use.
+ * Issues the SCSI OBJECT POSITION command if an ADF or card scanner is in use.
  */
 static SANE_Status
 object_position (struct fujitsu *s, int action)
@@ -7880,9 +7959,9 @@ start_scan (struct fujitsu *s)
 
   DBG (10, "start_scan: start\n");
 
-  if (s->source != SOURCE_ADF_DUPLEX) {
+  if (s->source != SOURCE_ADF_DUPLEX && s->source != SOURCE_CARD_DUPLEX) {
     outLen--;
-    if(s->source == SOURCE_ADF_BACK) {
+    if(s->source == SOURCE_ADF_BACK || s->source == SOURCE_CARD_BACK) {
       out[0] = WD_wid_back;
     }
   }
@@ -7905,7 +7984,7 @@ start_scan (struct fujitsu *s)
 
 /* checks started and cancelled flags in scanner struct,
  * sends cancel command to scanner if required. don't call
- * this function asyncronously, wait for pending operation */
+ * this function asynchronously, wait for pending operation */
 static SANE_Status
 check_for_cancel(struct fujitsu *s)
 {
@@ -7983,7 +8062,8 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len, SANE_Int * len
 
     /* swap sides if user asked for low-mem mode, we are duplexing,
      * and there is data waiting on the other side */
-    if(s->low_mem && s->source == SOURCE_ADF_DUPLEX
+    if(s->low_mem
+      && (s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_CARD_DUPLEX)
       && (s->bytes_rx[!s->side] > s->bytes_tx[!s->side]
         || (s->eof_rx[!s->side] && !s->eof_tx[!s->side])
       )
@@ -8013,7 +8093,7 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len, SANE_Int * len
   } /* end 3091 */
 
   /* alternating jpeg duplex interlacing */
-  else if(s->source == SOURCE_ADF_DUPLEX
+  else if((s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_CARD_DUPLEX)
     && s->s_params.format == SANE_FRAME_JPEG
     && s->jpeg_interlace == JPEG_INTERLACE_ALT
   ){
@@ -8025,7 +8105,7 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len, SANE_Int * len
   } /* end alt jpeg */
 
   /* alternating pnm duplex interlacing */
-  else if(s->source == SOURCE_ADF_DUPLEX
+  else if((s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_CARD_DUPLEX)
     && s->s_params.format != SANE_FRAME_JPEG
     && s->duplex_interlace == DUPLEX_INTERLACE_ALT
   ){
@@ -8080,7 +8160,8 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len, SANE_Int * len
 
   /* swap sides if user asked for low-mem mode, we are duplexing,
    * and there is data waiting on the other side */
-  if(s->low_mem && s->source == SOURCE_ADF_DUPLEX
+  if(s->low_mem
+    && (s->source == SOURCE_ADF_DUPLEX || s->source == SOURCE_CARD_DUPLEX)
     && (s->bytes_rx[!s->side] > s->bytes_tx[!s->side]
       || (s->eof_rx[!s->side] && !s->eof_tx[!s->side])
     )
@@ -8095,7 +8176,7 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len, SANE_Int * len
   return ret;
 }
 
-/* bare jpeg images dont contain resolution, but JFIF APP0 does, so we add */
+/* bare jpeg images don't contain resolution, but JFIF APP0 does, so we add */
 static SANE_Status
 inject_jfif_header(struct fujitsu *s, int side)
 {
@@ -8149,19 +8230,19 @@ read_from_JPEGduplex(struct fujitsu *s)
       int avail = s->buff_tot[SIDE_FRONT] - s->buff_rx[SIDE_FRONT];
       if(bytes > avail){
         bytes = avail;
-        /* leave space for JFIF header at start of image */
-        if(s->bytes_rx[SIDE_FRONT] < 2)
-          bytes -= JFIF_APP0_LENGTH;
       }
     }
     if(!s->eof_rx[SIDE_BACK]){
       int avail = s->buff_tot[SIDE_BACK] - s->buff_rx[SIDE_BACK];
       if(bytes > avail){
         bytes = avail;
-        /* leave space for JFIF header at start of image */
-        if(s->bytes_rx[SIDE_BACK] < 2)
-          bytes -= JFIF_APP0_LENGTH;
       }
+    }
+
+    /* leave space for JFIF header in the small front side buffer,
+     * if we are at the beginning of the image */
+    if(s->bytes_rx[SIDE_FRONT] < 3){
+      bytes -= JFIF_APP0_LENGTH;
     }
 
     DBG(15, "read_from_JPEGduplex: fto:%d frx:%d bto:%d brx:%d pa:%d\n",
@@ -8307,7 +8388,7 @@ read_from_JPEGduplex(struct fujitsu *s)
             }
 
             /* unknown, warn */
-            else if(in[i] != 0xff){
+            else if(in[i] != 0x00){
                 DBG(15, "read_from_JPEGduplex: unknown %02x\n", in[i]);
             }
         }
@@ -8344,7 +8425,7 @@ read_from_JPEGduplex(struct fujitsu *s)
             s->bytes_rx[SIDE_FRONT]++;
 	  }
 
-	  /* image is interlaced afterall, continue */
+	  /* image is interlaced after all, continue */
 	  else{
             DBG(15, "read_from_JPEGduplex: wrong width, req:%d got:%d\n",
 	      s->s_params.pixels_per_line,width);
@@ -8413,7 +8494,7 @@ read_from_JPEGduplex(struct fujitsu *s)
 
     free(in);
 
-    /* jpeg uses in-band EOI marker, so this is ususally redundant */
+    /* jpeg uses in-band EOI marker, so this is usually redundant */
     if(ret == SANE_STATUS_EOF){
       DBG(15, "read_from_JPEGduplex: got EOF, finishing\n");
       s->eof_rx[SIDE_FRONT] = 1;
@@ -9086,7 +9167,7 @@ downsample_from_buffer(struct fujitsu *s, SANE_Byte * buf,
  * handle h is a valid handle) but usually affects long-running
  * operations only (such as image is acquisition). It is safe to call
  * this function asynchronously (e.g., from within a signal handler).
- * It is important to note that completion of this operaton does not
+ * It is important to note that completion of this operation does not
  * imply that the currently pending operation has been cancelled. It
  * only guarantees that cancellation has been initiated. Cancellation
  * completes only when the cancelled call returns (typically with a
@@ -9209,7 +9290,7 @@ sense_handler (int fd, unsigned char * sensed_data, void *arg)
   DBG (5, "sense_handler: start\n");
 
   /* kill compiler warning */
-  fd = fd;
+  (void) fd;
 
   /* copy the rs return data into the scanner struct
      so that the caller can use it if he wants */
@@ -9289,6 +9370,10 @@ sense_handler (int fd, unsigned char * sensed_data, void *arg)
       }
       if (0x09 == ascq) {
         DBG  (5, "Medium error: Carrier sheet\n");
+        return SANE_STATUS_JAMMED;
+      }
+      if (0x0c == ascq) {
+        DBG  (5, "Medium error: ADF blocked by card\n");
         return SANE_STATUS_JAMMED;
       }
       if (0x10 == ascq) {
@@ -9540,8 +9625,8 @@ do_scsi_cmd(struct fujitsu *s, int runRS, int shortTime,
   int ret;
 
   /*shut up compiler*/
-  runRS=runRS;
-  shortTime=shortTime;
+  (void) runRS;
+  (void) shortTime;
 
   DBG(10, "do_scsi_cmd: start\n");
 
@@ -9888,7 +9973,7 @@ get_page_width(struct fujitsu *s)
       return s->page_width;
   }
 
-  /* cant overscan larger than scanner max */
+  /* can't overscan larger than scanner max */
   if(width > s->max_x){
       return s->max_x;
   }
@@ -9917,7 +10002,7 @@ get_page_height(struct fujitsu *s)
       return s->page_height;
   }
 
-  /* cant overscan larger than scanner max */
+  /* can't overscan larger than scanner max */
   if(height > s->max_y){
       return s->max_y;
   }
@@ -10092,7 +10177,9 @@ buffer_deskew(struct fujitsu *s, int side)
   DBG (10, "buffer_deskew: start\n");
 
   /*only find skew on first image from a page, or if first image had error */
-  if(s->side == SIDE_FRONT || s->source == SOURCE_ADF_BACK || s->deskew_stat){
+  if(s->side == SIDE_FRONT
+    || s->source == SOURCE_ADF_BACK || s->source == SOURCE_CARD_BACK
+    || s->deskew_stat){
 
     s->deskew_stat = sanei_magic_findSkew(
       &s->s_params,s->buffers[side],s->resolution_x,s->resolution_y,

@@ -12,8 +12,7 @@
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 /* Developers:
@@ -513,7 +512,7 @@ read_available_data (HP4200_Scanner * s, SANE_Byte * buffer,
       buffer += really_read;
       to_read -= really_read;
 #ifdef DEBUG
-      fprintf (stderr, "read %d bytes\n", really_read);
+      fprintf (stderr, "read %zu bytes\n", really_read);
 #endif
     }
   return SANE_STATUS_GOOD;
@@ -942,7 +941,6 @@ compute_dpd (HP4200_Scanner * s, int step_size, int line_end)
 static SANE_Status
 read_required_bytes (HP4200_Scanner * s, int required, SANE_Byte * buffer)
 {
-  int read_count = 0;
   unsigned char scankb1;
   unsigned char scankb2;
   size_t to_read;
@@ -988,7 +986,6 @@ read_required_bytes (HP4200_Scanner * s, int required, SANE_Byte * buffer)
 	  buffer += really_read;
 	  required -= really_read;
 	  to_read -= really_read;
-	  read_count += really_read;
 	}
     }
 
@@ -1498,7 +1495,7 @@ do_fine_calibration (HP4200_Scanner * s, struct coarse_t *coarse)
     int i;
     for (i = 0; i < 12; i++)
       {
-        memset (registro[i], 0, 5460 * 3 * sizeof(registro[0]));
+        memset (registro[i], 0, 5460 * 3 * sizeof(int));
       }
   }
 
@@ -2370,18 +2367,18 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   char dev_name[PATH_MAX];
   FILE *fp;
 
-  authorize = authorize;	/* keep gcc quiet */
+  (void) authorize;		/* keep gcc quiet */
 
   DBG_INIT ();
 
   DBG (DBG_proc, "%s\n", me);
   DBG (DBG_error, "SANE hp4200 backend version %d.%d build %d from %s\n",
-       SANE_CURRENT_MAJOR, V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
   /* put some version_code checks here */
 
   if (NULL != version_code)
     {
-      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
     }
 
   sanei_usb_init ();
@@ -2940,7 +2937,7 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
   HP4200_Scanner *dev = handle;
   SANE_Status status;
 
-  non_blocking = non_blocking;	/* silence gcc */
+  (void) non_blocking;		/* silence gcc */
 
   if (dev->scanning == SANE_FALSE)
     {
@@ -2966,8 +2963,8 @@ sane_get_select_fd (SANE_Handle h, SANE_Int * fd)
 {
   static char me[] = "sane_get_select_fd";
 
-  h = h;			/* keep gcc quiet */
-  fd = fd;			/* keep gcc quiet */
+  (void) h;			/* keep gcc quiet */
+  (void) fd;			/* keep gcc quiet */
 
   DBG (DBG_proc, "%s\n", me);
   return SANE_STATUS_UNSUPPORTED;

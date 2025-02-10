@@ -15,30 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #define DEBUG_DECLARE_ONLY
@@ -49,7 +26,10 @@
 
 namespace genesys {
 
-TestScannerInterface::TestScannerInterface(Genesys_Device* dev) : dev_{dev}
+TestScannerInterface::TestScannerInterface(Genesys_Device* dev, std::uint16_t vendor_id,
+                                           std::uint16_t product_id, std::uint16_t bcd_device) :
+    dev_{dev},
+    usb_dev_{vendor_id, product_id, bcd_device}
 {
     // initialize status registers
     if (dev_->model->asic_type == AsicType::GL124) {
@@ -58,6 +38,7 @@ TestScannerInterface::TestScannerInterface(Genesys_Device* dev) : dev_{dev}
         write_register(0x41, 0x00);
     }
     if (dev_->model->asic_type == AsicType::GL841 ||
+        dev_->model->asic_type == AsicType::GL842 ||
         dev_->model->asic_type == AsicType::GL843 ||
         dev_->model->asic_type == AsicType::GL845 ||
         dev_->model->asic_type == AsicType::GL846 ||
@@ -137,23 +118,21 @@ void TestScannerInterface::bulk_write_data(std::uint8_t addr, std::uint8_t* data
 }
 
 void TestScannerInterface::write_buffer(std::uint8_t type, std::uint32_t addr, std::uint8_t* data,
-                                        std::size_t size, Flags flags)
+                                        std::size_t size)
 {
     (void) type;
     (void) addr;
     (void) data;
     (void) size;
-    (void) flags;
 }
 
 void TestScannerInterface::write_gamma(std::uint8_t type, std::uint32_t addr, std::uint8_t* data,
-                                       std::size_t size, Flags flags)
+                                       std::size_t size)
 {
     (void) type;
     (void) addr;
     (void) data;
     (void) size;
-    (void) flags;
 }
 
 void TestScannerInterface::write_ahb(std::uint32_t addr, std::uint32_t size, std::uint8_t* data)

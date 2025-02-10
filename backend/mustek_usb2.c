@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -635,7 +633,7 @@ Author: Jack            Date: 2005/05/13
 Routine Description:
 	set scan parameters
 Parameters:
-	pSetParameters: the information of scaning
+	pSetParameters: the information of scanning
 Return value:
 	if the operation success
 	return TRUE
@@ -1167,12 +1165,12 @@ IsTAConnected ()
 
   DBG (DBG_FUNC, "StopScan: start\n");
 
-  if (Asic_Open (&g_chip, g_pDeviceFile) != STATUS_GOOD)
+  if (Asic_Open (&g_chip, g_pDeviceFile) != SANE_STATUS_GOOD)
     {
       return FALSE;
     }
 
-  if (Asic_IsTAConnected (&g_chip, &hasTA) != STATUS_GOOD)
+  if (Asic_IsTAConnected (&g_chip, &hasTA) != SANE_STATUS_GOOD)
     {
       Asic_Close (&g_chip);
       return FALSE;
@@ -1201,16 +1199,16 @@ static SANE_Bool
 GetKeyStatus (SANE_Byte * pKey)
 {
   SANE_Byte pKeyTemp = 0x00;
-  STATUS status = Asic_CheckFunctionKey (&g_chip, &pKeyTemp);
+  SANE_Status status = Asic_CheckFunctionKey (&g_chip, &pKeyTemp);
   DBG (DBG_FUNC, "GetKeyStatus: start\n");
 
-  if (STATUS_GOOD != Asic_Open (&g_chip, g_pDeviceFile))
+  if (SANE_STATUS_GOOD != Asic_Open (&g_chip, g_pDeviceFile))
     {
       DBG (DBG_ERR, "GetKeyStatus: Asic_Open is fail\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != status)
+  if (SANE_STATUS_GOOD != status)
     {
       DBG (DBG_ERR, "GetKeyStatus: Asic_CheckFunctionKey is fail\n");
       return FALSE;
@@ -1238,7 +1236,7 @@ GetKeyStatus (SANE_Byte * pKey)
       *pKey = 0x05;		/*Panel key pressed */
     }
 
-  if (STATUS_GOOD != Asic_Close (&g_chip))
+  if (SANE_STATUS_GOOD != Asic_Close (&g_chip))
     {
       DBG (DBG_ERR, "GetKeyStatus: Asic_Close is fail\n");
       return FALSE;
@@ -2010,12 +2008,12 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG_INIT ();
   DBG (DBG_FUNC, "sane_init: start\n");
   DBG (DBG_ERR, "SANE Mustek USB2 backend version %d.%d build %d from %s\n",
-       SANE_CURRENT_MAJOR, V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   num_devices = 1;		/* HOLD: only one device in this backend */
 
   if (version_code != NULL)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   DBG (DBG_INFO, "sane_init: authorize %s null\n", authorize ? "!=" : "==");
 

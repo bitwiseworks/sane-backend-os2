@@ -11,9 +11,9 @@
 
 :backend "canon_dr"              ; name of backend
 :url "http://www.thebility.com/canon/"
-:version "57"                    ; version of backend
+:version "60"                    ; version of backend
 :manpage "sane-canon_dr"         ; name of manpage (if it exists)
-:comment "Backend updated for SANE release 1.0.28, see sane-canon_dr manpage"
+:comment "Backend updated for SANE release 1.0.32, see sane-canon_dr manpage"
 :devicetype :scanner             ; start of a list of devices....
                                  ; other types:  :stillcam, :vidcam,
                                  ;               :meta, :api
@@ -268,7 +268,8 @@
 :model "DR-C120"
 :interface "USB"
 :usbid "0x1083" "0x1651"
-:status :untested
+:status :basic
+:comment "Gray and color work, may always scan in duplex, lower edge may be cropped"
 
 :model "DR-C125"
 :interface "USB"
@@ -279,12 +280,13 @@
 :interface "USB"
 :usbid "0x1083" "0x164a"
 :status :untested
+:comment "May be compatible with DR-C120"
 
 :model "DR-C225"
 :interface "USB"
 :usbid "0x1083" "0x1658"
-:status :untested
-:comment ""
+:status :basic
+:comment "Calibration is poor, grayscale mode may crash. DR-C225ii is the same device."
 
 :model "DR-F120"
 :interface "USB"
@@ -333,6 +335,12 @@
 :usbid "0x1083" "0x162c"
 :status :good
 
+:model "P-150"
+:interface "USB"
+:usbid "0x1083" "0x162d"
+:status :unsupported
+:comment "This is the same device as the 0x162c P-150, but the mode switch on the scanner is in the wrong position, you must move the switch."
+
 :model "P-201"
 :interface "USB"
 :usbid "0x1083" "0x1652"
@@ -353,7 +361,7 @@
 :model "P-208"
 :interface "USB"
 :usbid "0x1083" "0x164e"
-:status :basic
+:status :unsupported
 :comment "This is the same device as the 0x164c P-208, but the mode switch on the scanner is in the wrong position, you must move the switch."
 
 :model "DR-P208II"
@@ -364,7 +372,14 @@
 :model "P-208II"
 :interface "USB"
 :usbid "0x1083" "0x165f"
-:status :untested
+:status :basic
+:comment "Simplex+duplex, all resolutions <= 600, gray/color, calibration poor."
+
+:model "P-208II"
+:interface "USB"
+:usbid "0x1083" "0x1660"
+:status :unsupported
+:comment "This is the same device as the 0x165f P-208II, but the mode switch on the scanner is in the wrong position, you must move the switch."
 
 :model "DR-P215"
 :interface "USB"
@@ -381,7 +396,7 @@
 :model "P-215"
 :interface "USB"
 :usbid "0x1083" "0x1647"
-:status :basic
+:status :unsupported
 :comment "This is the same device as the 0x1646 P-215, but the mode switch on the scanner is in the wrong position, you must move the switch."
 
 :model "DR-P215II"
@@ -398,3 +413,9 @@
 :interface "USB"
 :usbid "0x1083" "0x1648"
 :status :untested
+
+:model "R40"
+:interface "USB"
+:usbid "0x1083" "0x1679"
+:status :basic
+:comment "Letter-size ADF. Hardware provides: Gray/Color, Simplex/Duplex, Full-width, 300/600dpi horizontal, with front mirrored horizontally. Driver provides: Binary, Despeckle, Deskew, Cropping, Calibration, other resolutions. Multistream unsupported."

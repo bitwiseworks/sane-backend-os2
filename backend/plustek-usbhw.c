@@ -71,9 +71,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -1451,6 +1449,14 @@ usb_ResetRegisters( Plustek_Device *dev )
 			 * CanoScan devices to work properly after power-up
 			 */
 			sanei_lm983x_write_byte( dev->fd, 0x5b, regs[0x5b] );
+
+			/* At least CanoScan N650U can have a problem with writing
+			 * to register 0x59 due XHCI USB controller is too
+			 * fast for him. Simulate EHCI USB controller's
+			 * behavior here - wait 1ms.
+			 */
+			usleep(1000);
+
 			sanei_lm983x_write_byte( dev->fd, 0x59, regs[0x59] );
 			sanei_lm983x_write_byte( dev->fd, 0x5a, regs[0x5a] );
 		} else {

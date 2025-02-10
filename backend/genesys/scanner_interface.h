@@ -15,30 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
-
-   As a special exception, the authors of SANE give permission for
-   additional uses of the libraries contained in this release of SANE.
-
-   The exception is that, if you link a SANE library with other files
-   to produce an executable, this does not by itself cause the
-   resulting executable to be covered by the GNU General Public
-   License.  Your use of that executable is in no way restricted on
-   account of linking the SANE library code into it.
-
-   This exception does not, however, invalidate any other reasons why
-   the executable file might be covered by the GNU General Public
-   License.
-
-   If you submit changes to SANE to the maintainers to be included in
-   a subsequent release, you agree by submitting the changes that
-   those changes may be distributed with this exception intact.
-
-   If you write modifications of your own for SANE, it is your choice
-   whether to permit this exception to apply to your modifications.
-   If you do not wish that, delete this exception notice.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef BACKEND_GENESYS_SCANNER_INTERFACE_H
@@ -56,11 +33,6 @@ namespace genesys {
 class ScannerInterface
 {
 public:
-    enum Flags {
-        FLAG_NONE = 0,
-        FLAG_SWAP_REGISTERS = 1 << 0,
-        FLAG_SMALL_ADDRESS = 1 << 1
-    };
 
     virtual ~ScannerInterface();
 
@@ -75,12 +47,11 @@ public:
     virtual void bulk_write_data(std::uint8_t addr, std::uint8_t* data, std::size_t size) = 0;
 
     // GL646, GL841, GL843 have different ways to write to RAM and to gamma tables
-    // FIXME: remove flags when updating tests
     virtual void write_buffer(std::uint8_t type, std::uint32_t addr, std::uint8_t* data,
-                              std::size_t size, Flags flags = FLAG_NONE) = 0;
+                              std::size_t size) = 0;
 
     virtual void write_gamma(std::uint8_t type, std::uint32_t addr, std::uint8_t* data,
-                             std::size_t size, Flags flags = FLAG_NONE) = 0;
+                             std::size_t size) = 0;
 
     // GL845, GL846, GL847 and GL124 have a uniform way to write to RAM tables
     virtual void write_ahb(std::uint32_t addr, std::uint32_t size, std::uint8_t* data) = 0;

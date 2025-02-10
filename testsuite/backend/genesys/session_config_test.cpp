@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #define DEBUG_DECLARE_ONLY
@@ -30,7 +28,7 @@
 #include "../../../backend/genesys/test_settings.h"
 #include "../../../backend/genesys/test_scanner_interface.h"
 #include "../../../backend/genesys/utilities.h"
-#include "../../include/sane/saneopts.h"
+#include "../../../include/sane/saneopts.h"
 #include "sys/stat.h"
 #include <cstdio>
 #include <cstring>
@@ -47,6 +45,7 @@ struct TestConfig
 {
     std::uint16_t vendor_id = 0;
     std::uint16_t product_id = 0;
+    std::uint16_t bcd_device = 0;
     std::string model_name;
     genesys::ScanMethod method = genesys::ScanMethod::FLATBED;
     genesys::ScanColorMode color_mode = genesys::ScanColorMode::COLOR_SINGLE_PASS;
@@ -143,7 +142,7 @@ public:
         auto i = find_option(name, SANE_TYPE_FIXED);
         int value = 0;
         TIE(sane_control_option(handle_, i, SANE_ACTION_GET_VALUE, &value, nullptr));
-        return static_cast<float>(SANE_UNFIX(value));
+        return genesys::fixed_to_float(value);
     }
 
     void set_value_float(const std::string& name, float value)
@@ -198,7 +197,19 @@ private:
 };
 
 
-void build_checkpoint(const genesys::Genesys_Device& dev,
+void print_params(const SANE_Parameters& params, std::stringstream& out)
+{
+    out << "\n\n================\n"
+        << "Scan params:\n"
+        << "format: " << params.format << "\n"
+        << "last_frame: " << params.last_frame << "\n"
+        << "bytes_per_line: " << params.bytes_per_line << "\n"
+        << "pixels_per_line: " << params.pixels_per_line << "\n"
+        << "lines: " << params.lines << "\n"
+        << "depth: " << params.depth << "\n";
+}
+
+void print_checkpoint(const genesys::Genesys_Device& dev,
                       genesys::TestScannerInterface& iface,
                       const std::string& checkpoint_name,
                       std::stringstream& out)
@@ -239,14 +250,15 @@ void build_checkpoint(const genesys::Genesys_Device& dev,
 
 void run_single_test_scan(const TestConfig& config, std::stringstream& out)
 {
-    auto build_checkpoint_wrapper = [&](const genesys::Genesys_Device& dev,
+    auto print_checkpoint_wrapper = [&](const genesys::Genesys_Device& dev,
                                         genesys::TestScannerInterface& iface,
                                         const std::string& checkpoint_name)
     {
-        build_checkpoint(dev, iface, checkpoint_name, out);
+        print_checkpoint(dev, iface, checkpoint_name, out);
     };
 
-    genesys::enable_testing_mode(config.vendor_id, config.product_id, build_checkpoint_wrapper);
+    genesys::enable_testing_mode(config.vendor_id, config.product_id, config.bcd_device,
+                                 print_checkpoint_wrapper);
 
     SANE_Handle handle;
 
@@ -271,6 +283,8 @@ void run_single_test_scan(const TestConfig& config, std::stringstream& out)
 
     SANE_Parameters params;
     TIE(sane_get_parameters(handle, &params));
+
+    print_params(params, out);
 
     int buffer_size = 1024 * 1024;
     std::vector<std::uint8_t> buffer;
@@ -389,35 +403,41 @@ TestResult perform_single_test(const TestConfig& config, const std::string& chec
 std::vector<TestConfig> get_all_test_configs()
 {
     genesys::genesys_init_usb_device_tables();
+    genesys::genesys_init_sensor_tables();
+    genesys::verify_usb_device_tables();
+    genesys::verify_sensor_tables();
 
     std::vector<TestConfig> configs;
     std::unordered_set<std::string> model_names;
 
     for (const auto& usb_dev : *genesys::s_usb_devices) {
-        if (usb_dev.model.flags & GENESYS_FLAG_UNTESTED) {
-            continue;
-        }
-        if (model_names.find(usb_dev.model.name) != model_names.end()) {
-            continue;
-        }
-        model_names.insert(usb_dev.model.name);
 
-        for (auto scan_mode : { genesys::ScanColorMode::LINEART,
-                                genesys::ScanColorMode::GRAY,
+        const auto& model = usb_dev.model();
+
+        if (genesys::has_flag(model.flags, genesys::ModelFlag::UNTESTED)) {
+            continue;
+        }
+        if (model_names.find(model.name) != model_names.end()) {
+            continue;
+        }
+        model_names.insert(model.name);
+
+        for (auto scan_mode : { genesys::ScanColorMode::GRAY,
                                 genesys::ScanColorMode::COLOR_SINGLE_PASS }) {
 
-            auto depth_values = usb_dev.model.bpp_gray_values;
+            auto depth_values = model.bpp_gray_values;
             if (scan_mode == genesys::ScanColorMode::COLOR_SINGLE_PASS) {
-                depth_values = usb_dev.model.bpp_color_values;
+                depth_values = model.bpp_color_values;
             }
             for (unsigned depth : depth_values) {
-                for (auto method_resolutions : usb_dev.model.resolutions) {
+                for (auto method_resolutions : model.resolutions) {
                     for (auto method : method_resolutions.methods) {
                         for (unsigned resolution : method_resolutions.get_resolutions()) {
                             TestConfig config;
-                            config.vendor_id = usb_dev.vendor;
-                            config.product_id = usb_dev.product;
-                            config.model_name = usb_dev.model.name;
+                            config.vendor_id = usb_dev.vendor_id();
+                            config.product_id = usb_dev.product_id();
+                            config.bcd_device = usb_dev.bcd_device();
+                            config.model_name = model.name;
                             config.method = method;
                             config.depth = depth;
                             config.resolution = resolution;

@@ -49,9 +49,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -687,7 +685,7 @@ static u_char usb_GetNewGain( Plustek_Device *dev, u_short wMax, int channel )
 		dwInc = (u_long)((0.93 + ceil (dRatio) * 0.067) * wMax / dAmp);
 		dwDec = (u_long)((0.93 + floor (dRatio) * 0.067) * wMax / dAmp);
 		if((dwInc >= 0xff00) ||
-		   (labs (dwInc - m_dwIdealGain) > labs(dwDec - m_dwIdealGain))) {
+		   (dwInc - m_dwIdealGain > m_dwIdealGain - dwDec)) {
 			bGain = (u_char)floor(dRatio);
 		} else {
 			bGain = (u_char)ceil(dRatio);
@@ -882,7 +880,7 @@ TOGAIN:
 		if( m_ScanParam.bDataType == SCANDATATYPE_Color ) {
 
 			RGBULongDef rgb, rgbSum;
-			u_long      dwLoop = len / 20 * 20;
+			u_long      dwLoop = (len - start) / 20 * 20;
 			u_long      dw10, dwGray, dwGrayMax;
 
 			rgb.Red = rgb.Green = rgb.Blue = dwGrayMax = 0;
@@ -923,7 +921,7 @@ TOGAIN:
 		} else {
 
 			u_long dwMax  = 0, dwSum;
-			u_long dwLoop = len / 20 * 20;
+			u_long dwLoop = (len - start) / 20 * 20;
 			u_long dw10;
 
 			for( dw = start; dwLoop; dwLoop-- ) {
@@ -951,7 +949,7 @@ TOGAIN:
 			RGBUShortDef max_rgb, min_rgb, tmp_rgb;
 			u_long       dwR, dwG, dwB;
 			u_long       dwDiv   = 10;
-			u_long       dwLoop1 = len / dwDiv, dwLoop2;
+			u_long       dwLoop1 = (len - start) / dwDiv, dwLoop2;
 
 			max_rgb.Red = max_rgb.Green = max_rgb.Blue = 0;
 			min_rgb.Red = min_rgb.Green = min_rgb.Blue = 0xffff;
