@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -57,7 +55,7 @@
    - change some #include <> to ""
    Version 0.10
    - First release!
-   - suppoted scanner
+   - supported scanner
      PC-IN500/4C                    available
      MultiReder 300U/300S series    not available
      MultiReder 600U/600S series    not available
@@ -292,7 +290,7 @@ sense_handler(int fd, u_char *sense_buffer, void *ss)
   int sense_key;
   NEC_Sense_Data *sdat = (NEC_Sense_Data *) ss;
 
-  fd = fd; /* silence compilation warnings */
+  (void) fd; /* silence compilation warnings */
 
   #define add_sense_code sense_buffer[12]
   #define add_sense_qual sense_buffer[13]
@@ -349,6 +347,9 @@ sense_handler(int fd, u_char *sense_buffer, void *ss)
                             DBG(5, "Scanner not ready: undocumented reason\n");
                             return SANE_STATUS_IO_ERROR;
                         }
+                    default:
+                      DBG(5, "Scanner not ready: unknown sense code\n");
+                      return SANE_STATUS_IO_ERROR;
                   }
               case 0x03: /* medium error */
 		DBG(5, "medium error: undocumented reason\n");
@@ -1314,7 +1315,7 @@ set_gamma_caps(NEC_Scanner *s)
 
 /* The next function is a slightly modified version of sanei_constrain_value
    Instead of returning status information like STATUS_INVAL, it adjusts
-   an invaild value to the nearest allowed one.
+   an invalid value to the nearest allowed one.
 */
 static void
 clip_value (const SANE_Option_Descriptor * opt, void * value)
@@ -1664,7 +1665,7 @@ init_options (NEC_Scanner * s)
 
 #ifdef USE_COLOR_THRESHOLD
   s->opt[OPT_THRESHOLD_R].name = SANE_NAME_THRESHOLD "-red";
-  /* xxx the titles and decriptions are confusing:
+  /* xxx the titles and descriptions are confusing:
      "set white point (red)"
      Any idea? maybe "threshold to get the red component on"
   */
@@ -1889,7 +1890,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   NEC_New_Device *np;
   int i;
 
-  authorize = authorize; /* silence compilation warnings */
+  (void) authorize; /* silence compilation warnings */
 
   DBG_INIT ();
   DBG (10, "<< sane_init ");
@@ -1897,7 +1898,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG (1, "sane_init: NEC (Ver %d.%d)\n", NEC_MAJOR, NEC_MINOR);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (NEC_CONFIG_FILE);
   if (!fp)
@@ -2078,7 +2079,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   int i;
   DBG (10, "<< sane_get_devices ");
 
-  local_only = local_only; /* silence compilation warnings */
+  (void) local_only; /* silence compilation warnings */
 
   if (devlist)
     free (devlist);
@@ -2306,6 +2307,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	case OPT_BR_Y:
 	  if (info && s->val[option].w != *(SANE_Word *) val)
 	    *info |= SANE_INFO_RELOAD_PARAMS;
+          // fall through
 	case OPT_NUM_OPTS:
 	case OPT_THRESHOLD:
 	  /* xxx theoretically, we could use OPT_THRESHOLD in
@@ -2712,7 +2714,7 @@ send_binary_g_table(NEC_Scanner *s, SANE_Word *a, int dtq)
   SANE_Status status;
   unsigned int i, j;
 
-  dtq = dtq; /* silence compilation warnings */
+  (void) dtq; /* silence compilation warnings */
 
   DBG(11, "<< send_binary_g_table\n");
 
@@ -3694,8 +3696,8 @@ sane_cancel (SANE_Handle handle)
 SANE_Status
 sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 {
-  handle = handle;
-  non_blocking = non_blocking; /* silence compilation warnings */
+  (void) handle;
+  (void) non_blocking; /* silence compilation warnings */
 
   DBG (10, "<< sane_set_io_mode");
   DBG (10, ">>\n");
@@ -3706,8 +3708,8 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
 {
-  handle = handle;
-  fd = fd; /* silence compilation warnings */
+  (void) handle;
+  (void) fd; /* silence compilation warnings */
 
   DBG (10, "<< sane_get_select_fd");
   DBG (10, ">>\n");

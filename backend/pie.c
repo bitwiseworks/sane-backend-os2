@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -60,7 +58,7 @@
  * 11-11-2000 eliminated some warnings about signed/unsigned comparisons
  *            removed #undef NDEBUG and C++ style comments
  *
- * 1-10-2000 force gamma table to one to one mappping if lineart or halftone selected
+ * 1-10-2000 force gamma table to one to one mapping if lineart or halftone selected
  *
  * 30-9-2000 added ADLIB devices to scanner_str[]
  *
@@ -746,11 +744,8 @@ pie_get_inquiry_values (Pie_Device * dev, unsigned char *buffer)
   dev->inquiry_len = get_inquiry_additional_length (buffer) + 5;
 
   get_inquiry_vendor ((char *) buffer, dev->vendor);
-  dev->vendor[8] = '\0';
   get_inquiry_product ((char *) buffer, dev->product);
-  dev->product[16] = '\0';
   get_inquiry_version ((char *) buffer, dev->version);
-  dev->version[4] = '\0';
 
   dev->inquiry_x_res = get_inquiry_max_x_res (buffer);
   dev->inquiry_y_res = get_inquiry_max_y_res (buffer);
@@ -1689,7 +1684,7 @@ pie_perform_cal (Pie_Scanner * scanner, int cal_index)
 
   send_length += 4;		/* space for header at start of data */
 
-  /* alllocate buffers for the receive data, the result buffers, and for the send data */
+  /* allocate buffers for the receive data, the result buffers, and for the send data */
   rcv_buffer = (unsigned char *) malloc (rcv_length);
 
   red_result = (long *) calloc (pixels_per_line, sizeof (long));
@@ -2942,7 +2937,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
   DBG (DBG_sane_init, "sane_init() build %d\n", BUILD);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   fp = sanei_config_open (PIE_CONFIG_FILE);
   if (!fp)

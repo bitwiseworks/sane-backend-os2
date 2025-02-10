@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -112,6 +110,8 @@ extern void write_tiff_rgbi_header (FILE *fptr, int width, int height, int depth
 /* device flags */
 
 #define FLAG_SLIDE_TRANSPORT 0x01
+/* Some scanners do understand SLIDE_TRANSPORT but not CMD_17 - introducing a new flag */
+#define FLAG_CMD_17_NOSUPPORT 0x02
 
 /* --------------------------------------------------------------------------
  *
@@ -165,7 +165,6 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
     DBG (DBG_info_sane, "sane_init() build %d\n", BUILD);
 
     /* Set version code to current major, minor and build number */
-    /* TODO: use V_MINOR instead or SANE_CURRENT_MINOR? If so, why?  */
     if (version_code)
         *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
@@ -853,7 +852,7 @@ sane_get_parameters (SANE_Handle handle, SANE_Parameters * params)
 }
 
 /**
- * Initiates aquisition of an image from the scanner.
+ * Initiates acquisition of an image from the scanner.
  * SCAN Phase 1: initialization and calibration
  * (SCAN Phase 2: line-by-line scan & read is not implemented)
  * SCAN Phase 3: get CCD-mask
@@ -1006,10 +1005,12 @@ sane_start (SANE_Handle handle)
     /* ----------------------------------------------------------------------
      *
      * Function 17
+     * This function is not supported by all scanners which are capable of
+     *  slide transport, therefore FLAG_CMD_17_NOSUPPORT was introduced.
      *
      * ---------------------------------------------------------------------- */
 
-    if (scanner->device->flags & FLAG_SLIDE_TRANSPORT) {
+    if ( (scanner->device->flags & FLAG_SLIDE_TRANSPORT) & !(scanner->device->flags & FLAG_CMD_17_NOSUPPORT) )     {
         sanei_pieusb_cmd_17 (scanner->device_number, 1, &status);
         if (status.pieusb_status != PIEUSB_STATUS_GOOD) {
           DBG (DBG_error, "sane_start(): sanei_pieusb_cmd_17 failed: %d\n", status.pieusb_status);
@@ -1435,7 +1436,7 @@ SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
 {
     DBG(DBG_info_sane,"sane_get_select_fd(): not supported (only for non-blocking IO)\n");
-    handle = handle;
-    fd = fd;
+    (void) handle;
+    (void) fd;
     return SANE_STATUS_UNSUPPORTED;
 }

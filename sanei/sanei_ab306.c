@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -49,33 +47,7 @@
 
 #include <sys/types.h>
 
-#ifdef HAVE_SYS_IO_H
-# include <sys/io.h>	/* use where available (glibc 2.x, for example) */
-# ifndef SANE_HAVE_SYS_IO_H_WITH_INB_OUTB
-#  define IO_SUPPORT_MISSING
-# endif
-#elif HAVE_ASM_IO_H
-# include <asm/io.h>	/* ugly, but backwards compatible */
-#elif defined (__i386__)  && defined (__GNUC__)
-
-static __inline__ void
-outb (u_char value, u_long port)
-{
-  __asm__ __volatile__ ("outb %0,%1" : : "a" (value), "d" ((u_short) port));
-}
-
-static __inline__ u_char
-inb (u_long port)
-{
-  u_char value;
-
-  __asm__ __volatile__ ("inb %1,%0" : "=a" (value) : "d" ((u_short)port));
-  return value;
-}
-
-#else
-# define IO_SUPPORT_MISSING
-#endif
+#include "../include/sane/sanei_directio.h"
 
 #include "../include/sane/sane.h"
 #include "../include/sane/sanei.h"
@@ -151,7 +123,7 @@ ab306_outb (Port *p, u_long addr, u_char val)
 	return;
     }
   else
-    outb (val, addr);
+    sanei_outb (addr, val);
 }
 
 static int
@@ -168,7 +140,7 @@ ab306_inb (Port *p, u_long addr)
       return ch;
     }
   else
-    return inb (addr);
+    return sanei_inb (addr);
 }
 
 /* Send a single command-byte over the AB306N-interface.  */
@@ -301,11 +273,11 @@ sanei_ab306_open (const char *dev, int *fdp)
       byte = wakeup[j];
       if (j == NELEMS(wakeup) - 1)
 	byte |= i;
-      outb (byte, AB306_CIO);
+      sanei_outb (AB306_CIO, byte);
     }
 
 #else /* !defined(__FreeBSD__) */
-  if (ioperm (AB306_CIO, 1, 1) != 0)
+  if (sanei_ioperm (AB306_CIO, 1, 1) != 0)
     {
       DBG(1, "sanei_ab306_ioport: using /dev/port access\n");
       if (port[i].port_fd < 0)
@@ -331,7 +303,7 @@ sanei_ab306_open (const char *dev, int *fdp)
 	  byte = wakeup[j];
 	  if (j == NELEMS(wakeup) - 1)
 	    byte |= i;
-	  outb (byte, AB306_CIO);
+	  sanei_outb (AB306_CIO, byte);
 	}
       status = sanei_ab306_get_io_privilege (i);
       if (status != SANE_STATUS_GOOD)
@@ -375,7 +347,7 @@ sanei_ab306_get_io_privilege (int fd)
       if (dev_io_fd < 0)
         return SANE_STATUS_IO_ERROR;
 #else /* !defined(__FreeBSD__) */
-      if (ioperm (port[fd].base, 3, 1) != 0)
+      if (sanei_ioperm (port[fd].base, 3, 1) != 0)
 	return SANE_STATUS_IO_ERROR;
 #endif /* !defined(__FreeBSD__) */
     }
@@ -495,7 +467,7 @@ sanei_ab306_rdata (int fd, int planes, SANE_Byte * buf, int lines, int bpl)
 	      /* the pixel-loop: */
 	      for (bcnt = 0; bcnt < xmax; bcnt++)
 		{
-		  *(u_char *) buf = inb (p->base);
+		  *(u_char *) buf = sanei_inb (p->base);
 		  ++buf;
 		}
 	    }

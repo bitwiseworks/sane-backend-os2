@@ -32,9 +32,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -94,7 +92,7 @@ static u_short a_wDarkShading[_SHADING_BUF]  = {0};
 
 /** function to read a text file and returns the string which starts which
  *  'id' string.
- *  no duplicate entries where detected, always the first occurance will be
+ *  no duplicate entries where detected, always the first occurrence will be
  *  red.
  * @param fp  - file pointer of file to read
  * @param id  - what to search for

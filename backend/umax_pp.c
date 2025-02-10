@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -101,10 +99,6 @@
  *              4       for debug information
  *              5       for code flow protocol (there isn't any)
  *              129     if you want to know which parameters are unused
- */
-
-/* history:
- *  see Changelog
  */
 
 #define UMAX_PP_BUILD   2301
@@ -206,33 +200,27 @@ umax_pp_attach (SANEI_Config * config, const char *devname)
   SANE_Status status = SANE_STATUS_GOOD;
   int ret, prt = 0, mdl;
   char model[32];
-  char name[64];
-  char *val;
+  const char *name = NULL;
+  const char *val;
 
-  memset (name, 0, 64);
-
-  if ((strlen (devname) < 3))
+  if (!devname || (strlen (devname) < 3))
     return SANE_STATUS_INVAL;
 
   sanei_umax_pp_setastra (atoi((SANE_Char *) config->values[CFG_ASTRA]));
 
   /* if the name begins with a slash, it's a device, else it's an addr */
-  if (devname != NULL)
+  if ((devname[0] == '/'))
     {
-      if ((devname[0] == '/'))
-        {
-          strncpy (name, devname, 64);
-        }
-      else
-        {
-          if ((devname[0] == '0')
-              && ((devname[1] == 'x') || (devname[1] == 'X')))
-            prt = strtol (devname + 2, NULL, 16);
-          else
-            prt = atoi (devname);
-        }
+      name = devname;
     }
-
+  else
+    {
+      if ((devname[0] == '0')
+          && ((devname[1] == 'x') || (devname[1] == 'X')))
+        prt = strtol (devname + 2, NULL, 16);
+      else
+        prt = atoi (devname);
+    }
 
   for (i = 0; i < num_devices; i++)
     {
@@ -295,7 +283,7 @@ umax_pp_attach (SANEI_Config * config, const char *devname)
            devname);
       return SANE_STATUS_IO_ERROR;
     }
-  sprintf (model, "Astra %dP", mdl);
+  snprintf (model, sizeof(model), "Astra %dP", mdl);
 
 
   dev = malloc (sizeof (Umax_PP_Descriptor) * (num_devices + 1));
@@ -319,12 +307,12 @@ umax_pp_attach (SANEI_Config * config, const char *devname)
   num_devices++;
 
   /* if there are user provided values, use them */
-  val=(SANE_Char *) config->values[CFG_NAME];
+  val=(const SANE_Char *) config->values[CFG_NAME];
   if(strlen(val)==0)
         dev->sane.name = strdup (devname);
   else
         dev->sane.name = strdup (val);
-  val=(SANE_Char *) config->values[CFG_VENDOR];
+  val=(const SANE_Char *) config->values[CFG_VENDOR];
   if(strlen(val)==0)
         dev->sane.vendor = strdup ("UMAX");
   else
@@ -351,11 +339,11 @@ umax_pp_attach (SANEI_Config * config, const char *devname)
       dev->max_h_size = 2550;
       dev->max_v_size = 3500;
     }
-  val=(SANE_Char *) config->values[CFG_MODEL];
+  val=(const SANE_Char *) config->values[CFG_MODEL];
   if(strlen(val)==0)
-  dev->sane.model = strdup (model);
+    dev->sane.model = strdup (model);
   else
-  dev->sane.model = strdup (val);
+    dev->sane.model = strdup (val);
 
 
   DBG (3, "umax_pp_attach: device %s attached\n", devname);
@@ -429,7 +417,8 @@ umax_pp_auto_attach (SANEI_Config * config, SANE_Int safe)
  * device name to use for attach try.
  */
 static SANE_Status
-umax_pp_configure_attach (SANEI_Config * config, const char *devname)
+umax_pp_configure_attach (SANEI_Config * config, const char *devname,
+                          void __sane_unused__ *data)
 {
   const char *lp;
   SANE_Char *token;
@@ -844,9 +833,9 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
     }
 
   if (version_code != NULL)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, UMAX_PP_BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, UMAX_PP_BUILD);
 
-  DBG (3, "init: SANE v%s, backend v%d.%d.%d-%s\n", VERSION, SANE_CURRENT_MAJOR, V_MINOR,
+  DBG (3, "init: SANE v%s, backend v%d.%d.%d-%s\n", VERSION, SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR,
        UMAX_PP_BUILD, UMAX_PP_STATE);
 
   /* set up configuration options to parse */
@@ -971,7 +960,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 
   /* generic configure and attach function */
   status = sanei_configure_attach (UMAX_PP_CONFIG_FILE, &config,
-                                   umax_pp_configure_attach);
+                                   umax_pp_configure_attach, NULL);
 
   /* free option descriptors */
   for (i = 0; i < NUM_CFG_OPTIONS; i++)
@@ -1462,6 +1451,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           if (info)
             *info |= SANE_INFO_RELOAD_PARAMS;
 
+          // fall through
         case OPT_GRAY_GAIN:
         case OPT_GREEN_GAIN:
         case OPT_RED_GAIN:
@@ -2092,7 +2082,7 @@ sane_start (SANE_Handle handle)
                                 &(dev->th));
       /* we enlarged the scanning zone   */
       /* to allow reordering, we must    */
-      /* substract it from real scanning */
+      /* subtract it from real scanning */
       /* zone                            */
       dev->th -= points;
       DBG (64, "sane_start: bpp=%d,tw=%d,th=%d\n", dev->bpp, dev->tw,

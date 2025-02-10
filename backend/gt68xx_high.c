@@ -19,9 +19,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -97,7 +95,7 @@ gt68xx_calibrator_new (SANE_Int width,
   cal->white_line = (double *) malloc (width * sizeof (double));
   cal->black_line = (double *) malloc (width * sizeof (double));
 
-  if (!cal->k_white || !cal->k_black | !cal->white_line || !cal->black_line)
+  if (!cal->k_white || !cal->k_black || !cal->white_line || !cal->black_line)
     {
       DBG (5, "gt68xx_calibrator_new: no memory for calibration data\n");
       gt68xx_calibrator_free (cal);
@@ -979,9 +977,11 @@ gt68xx_scanner_read_line (GT68xx_Scanner * scanner,
 SANE_Status
 gt68xx_scanner_stop_scan (GT68xx_Scanner * scanner)
 {
-  gt68xx_line_reader_free (scanner->reader);
-  scanner->reader = NULL;
-
+  if (scanner->reader)
+    {
+      gt68xx_line_reader_free (scanner->reader);
+      scanner->reader = NULL;
+    }
   return gt68xx_device_stop_scan (scanner->dev);
 }
 
@@ -1015,7 +1015,7 @@ struct GT68xx_Afe_Values
 
 /** Calculate average black and maximum white
  *
- * This function is used for CCD scanners. The black mark to the left ist used
+ * This function is used for CCD scanners. The black mark to the left is used
  * for the calculation of average black. The remaining calibration strip
  * is used for searching the segment whose white average is the highest.
  *
@@ -2668,7 +2668,7 @@ gt68xx_read_calibration (GT68xx_Scanner * scanner)
       return SANE_STATUS_IO_ERROR;
     }
 
-  /* TODO we should check endiannes and word alignment in case of a home
+  /* TODO we should check endianness and word alignment in case of a home
    * directory used trough different archs */
 
   /* TODO check for errors */

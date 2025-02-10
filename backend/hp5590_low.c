@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -798,8 +796,9 @@ hp5590_bulk_read (SANE_Int dn,
           DBG (DBG_err,
                "%s: USB-in-USB: attempted to access over the end of buffer "
                "(in_ptr: %p, end_ptr: %p, ptr: %p, buffer size: %u\n",
-               __func__, bulk_read_state->buffer_in_ptr,
-               bulk_read_state->buffer_end_ptr, bulk_read_state->buffer,
+               __func__, (void *) bulk_read_state->buffer_in_ptr,
+               (void *) bulk_read_state->buffer_end_ptr,
+               (void *) bulk_read_state->buffer,
                bulk_read_state->buffer_size);
           return SANE_STATUS_NO_MEM;
         }

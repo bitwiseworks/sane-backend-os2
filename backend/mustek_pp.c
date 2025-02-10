@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -160,8 +158,6 @@ free_cfg_options(int *numoptions, Mustek_pp_config_option** options)
 /* do_eof:
  * 	closes the pipeline
  *
- * ChangeLog:
- *
  * Description:
  * 	closes the pipe (read-only end)
  */
@@ -179,8 +175,6 @@ do_eof (Mustek_pp_Handle *hndl)
 
 /* do_stop:
  * 	ends the reader_process and stops the scanner
- *
- * ChangeLog:
  *
  * Description:
  * 	kills the reader process with a SIGTERM and cancels the scanner
@@ -218,8 +212,6 @@ do_stop(Mustek_pp_Handle *hndl)
 /* sigterm_handler:
  * 	cancel scanner when receiving a SIGTERM
  *
- * ChangeLog:
- *
  * Description:
  *	just exit... reader_process takes care that nothing bad will happen
  *
@@ -246,8 +238,6 @@ sigterm_handler (int signal __UNUSED__)
 
 /* reader_process:
  * 	receives data from the scanner and stuff it into the pipeline
- *
- * ChangeLog:
  *
  * Description:
  * 	The signal handle for SIGTERM is initialized.
@@ -322,8 +312,6 @@ reader_process (Mustek_pp_Handle * hndl, int pipe)
 /* sane_attach:
  * 	adds a new entry to the Mustek_pp_Device *devlist list
  *
- * ChangeLog:
- *
  * Description:
  * 	After memory for a new device entry is allocated, the
  * 	parameters for the device are determined by a call to
@@ -385,8 +373,6 @@ sane_attach (SANE_String_Const port, SANE_String_Const name, SANE_Int driver, SA
 
 /* init_options:
  * 	Sets up the option descriptors for a device
- *
- * ChangeLog:
  *
  * Description:
  */
@@ -630,8 +616,6 @@ init_options(Mustek_pp_Handle *hndl)
  * 	Attempts to attach a device to the list after parsing of a section
  *      of the configuration file.
  *
- * ChangeLog:
- *
  * Description:
  *      After parsing a scanner section of the config file, this function
  *      is called to look for a driver with a matching name. When found,
@@ -687,15 +671,13 @@ attach_device(SANE_String *driver, SANE_String *name,
   *name = *port = *driver = *option_ta = 0;
 
   /* In case of a successful initialization, the configuration options
-     should have been transfered to the device, but this function can
+     should have been transferred to the device, but this function can
      deal with that. */
   free_cfg_options(&numcfgoptions, &cfgoptions);
 }
 
 /* sane_init:
  *	Reads configuration file and registers hardware driver
- *
- * ChangeLog:
  *
  * Description:
  * 	in *version_code the SANE version this backend was compiled with and the
@@ -714,7 +696,7 @@ attach_device(SANE_String *driver, SANE_String *name,
  *            <driver> is the name of the driver to use
  *
  *      if the optional argument "option_ta" is present the driver uses special
- *      parameters fitting for a trasparency adapter.
+ *      parameters fitting for a transparency adapter.
  */
 
 SANE_Status
@@ -732,7 +714,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG (3, "backend by Jochen Eisinger <jochen.eisinger@gmx.net>\n");
 
   if (version_code != NULL)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, MUSTEK_PP_BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, MUSTEK_PP_BUILD);
 
   sane_auth = authorize;
 
@@ -1005,8 +987,6 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 /* sane_exit:
  *	Unloads all drivers and frees allocated memory
  *
- * ChangeLog:
- *
  * Description:
  * 	All open devices are closed first. Then all registered devices
  * 	are removed.
@@ -1055,8 +1035,6 @@ sane_exit (void)
 /* sane_get_devices:
  * 	Returns a list of registered devices
  *
- * ChangeLog:
- *
  * Description:
  * 	A possible present old device_list is removed first. A new
  * 	devarray is allocated and filled with pointers to the
@@ -1097,8 +1075,6 @@ sane_get_devices (const SANE_Device *** device_list,
 /* sane_open:
  * 	opens a device and prepares it for operation
  *
- * ChangeLog:
- *
  * Description:
  * 	The device identified by ``devicename'' is looked
  * 	up in the list, or if devicename is zero, the
@@ -1106,7 +1082,7 @@ sane_get_devices (const SANE_Device *** device_list,
  *
  * 	open is called for the selected device.
  *
- * 	The handel is set up with default values, and the
+ * 	The handle is set up with default values, and the
  * 	option descriptors are initialized
  */
 
@@ -1205,8 +1181,6 @@ sane_open (SANE_String_Const devicename, SANE_Handle * handle)
 /* sane_close:
  * 	closes a given device and frees all resources
  *
- * ChangeLog:
- *
  * Description:
  * 	The handle is searched in the list of active handles.
  * 	If it's found, the handle is removed.
@@ -1217,7 +1191,7 @@ sane_open (SANE_String_Const devicename, SANE_Handle * handle)
  * 	Then the backend makes sure, the lamp was at least
  * 	2 seconds on.
  *
- * 	Afterwards the selected handel is closed
+ * 	Afterwards the selected handle is closed
  */
 void
 sane_close (SANE_Handle handle)
@@ -1265,8 +1239,6 @@ sane_close (SANE_Handle handle)
 /* sane_get_option_descriptor:
  * 	does what it says
  *
- * ChangeLog:
- *
  * Description:
  *
  */
@@ -1289,9 +1261,7 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
 /* sane_control_option:
  * 	Reads or writes an option
  *
- * ChangeLog:
- *
- * Desription:
+ * Description:
  * 	If a pointer to info is given, the value is initialized to zero
  *	while scanning options cannot be read or written. next a basic
  *	check whether the request is valid is done.
@@ -1527,8 +1497,6 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 /* sane_get_parameters:
  * 	returns the set of parameters, that is used for the next scan
  *
- * ChangeLog:
- *
  * Description:
  *
  * 	First of all it is impossible to change the parameter set
@@ -1536,7 +1504,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
  *
  * 	sane_get_parameters not only returns the parameters for
  * 	the next scan, it also sets them, i.e. converts the
- * 	options in actuall parameters.
+ * 	options in actually parameters.
  *
  * 	The following parameters are set:
  *
@@ -1718,9 +1686,7 @@ sane_get_parameters (SANE_Handle handle, SANE_Parameters * params)
 
 
 /* sane_start:
- * 	starts the scan. data aquisition will start immedially
- *
- * ChangeLog:
+ * 	starts the scan. data acquisition will start immediately
  *
  * Description:
  *
@@ -1778,8 +1744,6 @@ sane_start (SANE_Handle handle)
 
 /* sane_read:
  * 	receives data from pipeline and passes it to the caller
- *
- * ChangeLog:
  *
  * Description:
  * 	ditto
@@ -1881,8 +1845,6 @@ sane_read (SANE_Handle handle, SANE_Byte * buf, SANE_Int max_len,
 /* sane_cancel:
  * 	stops a scan and ends the reader process
  *
- * ChangeLog:
- *
  * Description:
  *
  */
@@ -1903,8 +1865,6 @@ sane_cancel (SANE_Handle handle)
 
 /* sane_set_io_mode:
  * 	toggles between blocking and non-blocking reading
- *
- * ChangeLog:
  *
  * Description:
  *
@@ -1933,8 +1893,6 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 
 /* sane_get_select_fd:
  * 	returns the pipeline fd for direct reading
- *
- * ChangeLog:
  *
  * Description:
  * 	to allow the frontend to receive the data directly it

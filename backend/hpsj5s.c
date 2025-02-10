@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -106,7 +104,7 @@ static SANE_Option_Descriptor sod[] = {
    {NULL}			/*No constraints required */
    }
   ,
-  {				/*Width of scaned area */
+  {				/*Width of scanned area */
    "width",
    "Width",
    "Width of area to scan",
@@ -115,7 +113,7 @@ static SANE_Option_Descriptor sod[] = {
    sizeof (SANE_Word),
    SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT,
    SANE_CONSTRAINT_RANGE,
-   {NULL}			/*Range constrain setted in sane_init */
+   {NULL}			/*Range constraint set in sane_init */
    }
   ,
   {				/*Resolution for scan */
@@ -127,13 +125,13 @@ static SANE_Option_Descriptor sod[] = {
    sizeof (SANE_Word),
    SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT,
    SANE_CONSTRAINT_WORD_LIST,
-   {NULL}			/*Word list constrain setted in sane_init */
+   {NULL}			/*Word list constraint set in sane_init */
    }
 };
 
 static SANE_Parameters parms;
 
-/*Recalculate Lenght in dependace of resolution*/
+/*Recalculate Length in dependence of resolution*/
 static SANE_Word
 LengthForRes (SANE_Word Resolution, SANE_Word Length)
 {
@@ -168,11 +166,11 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG (2, "sane_init: version_code %s 0, authorize %s 0\n",
        version_code == 0 ? "=" : "!=", authorize == 0 ? "=" : "!=");
   DBG (1, "sane_init: SANE hpsj5s backend version %d.%d.%d\n",
-       SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   /*Inform about supported version */
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   /*Open configuration file for this backend */
   config_file = sanei_config_open (HPSJ5S_CONFIG_FILE);
@@ -223,7 +221,7 @@ sane_exit (void)
       scanner_d = -1;
     }
 
-  /*Free alocated ports information: */
+  /*Free allocated ports information: */
   ieee1284_free_ports (&pl);
 
   DBG (2, "sane_exit\n");
@@ -386,7 +384,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	case SANE_ACTION_GET_VALUE:
 	  *((SANE_Word *) value) = wWidth;
 	  return SANE_STATUS_GOOD;
-	case SANE_ACTION_SET_VALUE:	/*info should be setted */
+	case SANE_ACTION_SET_VALUE:	/*info should be set */
 	  wWidth = *((SANE_Word *) value);
 	  if (info != NULL)
 	    *info = SANE_INFO_RELOAD_PARAMS;
@@ -400,7 +398,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	case SANE_ACTION_GET_VALUE:
 	  *((SANE_Word *) value) = wResolution;
 	  return SANE_STATUS_GOOD;
-	case SANE_ACTION_SET_VALUE:	/*info should be setted */
+	case SANE_ACTION_SET_VALUE:	/*info should be set */
 	  wResolution = *((SANE_Word *) value);
 	  if (info != NULL)
 	    *info = 0;
@@ -455,7 +453,7 @@ sane_start (SANE_Handle handle)
   bCalibration = GetCalibration ();
 
   if (bLastCalibration - bCalibration > 16)
-    {				/*Lamp is not warm enouth */
+    {				/*Lamp is not warm enough */
       DBG (1, "sane_start: warming lamp for 30 sec.\n");
       for (i = 0; i < 30; i++)
 	sleep (1);
@@ -472,7 +470,7 @@ sane_start (SANE_Handle handle)
   /*Turn on indicator and prepare engine. */
   SwitchHardwareState (FLAGS_HW_INDICATOR_OFF | FLAGS_HW_MOTOR_READY, 1);
   /*Feed paper */
-  if (PaperFeed (LINES_TO_FEED) == 0)	/*Feed only for fixel lenght. Change it */
+  if (PaperFeed (LINES_TO_FEED) == 0)	/*Feed only for fixel length. Change it */
     {
       DBG (1, "sane_start: paper feed failed.");
       SwitchHardwareState (FLAGS_HW_INDICATOR_OFF | FLAGS_HW_MOTOR_READY, 0);
@@ -512,7 +510,7 @@ sane_read (SANE_Handle handle, SANE_Byte * data,
     }
 
   /*While end of paper sheet was not reached */
-  /*Wait for scaned line ready */
+  /*Wait for scanned line ready */
   timeout = 0;
   while (((bFuncResult = CallFunctionWithRetVal (0xB2)) & 0x20) == 0)
     {
@@ -794,7 +792,7 @@ TransferScanParameters (enumColorDepth enColor, SANE_Word wResolution,
       break;
     case GrayScale:
     case TrueColor:
-      CallFunctionWithParameter (0x90, 0);	/*Not suppoted correctly. FIX ME!!! */
+      CallFunctionWithParameter (0x90, 0);	/*Not supported correctly. FIX ME!!! */
       break;
     };
   CallFunctionWithParameter (0xA1, 2);
@@ -882,7 +880,7 @@ TurnOffPaperPulling ()
 }
 
 /*
-        Returns avarage value of scaned row.
+        Returns average value of scanned row.
         While paper not loaded this is base "white point".
 */
 static SANE_Byte
@@ -961,8 +959,7 @@ GetCalibration ()
 	{			/*WARNING!!! Deadlock possible! */
 	  bTest = CallFunctionWithRetVal (0xB5);
 	}
-      while ((((bTest & 0x80) == 1) && ((bTest & 0x3F) <= 2)) ||
-	     (((bTest & 0x80) == 0) && ((bTest & 0x3F) >= 5)));
+      while ((bTest & 0x80) ? (bTest & 0x3F) <= 2 : (bTest & 0x3F) >= 5);
 
       CallFunctionWithParameter (0xCD, 0);
       /*Skip this line for ECP: */
@@ -1141,7 +1138,7 @@ CalibrateScanElements ()
 
       CallFunctionWithParameter (0x91, arSpeeds[Index]);
 
-      /*waiting for scaned line... */
+      /*waiting for scanned line... */
       timeout = 0;
       do
 	{
@@ -1150,8 +1147,7 @@ CalibrateScanElements ()
 	  usleep (1);
 	}
       while ((timeout < 1000) &&
-	     ((((bTest & 0x80) == 1) && ((bTest & 0x3F) <= 2)) ||
-	      (((bTest & 0x80) == 0) && ((bTest & 0x3F) >= 5))));
+             ((bTest & 0x80) ? (bTest & 0x3F) <= 2 : (bTest & 0x3F) >= 5));
 
       /*Let's read it... */
       if(timeout < 1000)
@@ -1207,7 +1203,7 @@ CalibrateScanElements ()
 	    CallFunctionWithParameter (0x91, CurrentSpeed2);
 	    usleep(10);
 
-    	    /*waiting for scaned line... */
+    	    /*waiting for scanned line... */
 	    for(j = 0; j < 5; j++)
 	    {
     		timeout = 0;
@@ -1218,8 +1214,7 @@ CalibrateScanElements ()
 		    usleep (1);
 		}
     		while ((timeout < 1000) &&
-	    	((((bTest & 0x80) == 1) && ((bTest & 0x3F) <= 2)) ||
-	        (((bTest & 0x80) == 0) && ((bTest & 0x3F) >= 5))));
+    	               ((bTest & 0x80) ? (bTest & 0x3F) <= 2 : (bTest & 0x3F) >= 5));
 
     		/*Let's read it... */
     		if(timeout < 1000)

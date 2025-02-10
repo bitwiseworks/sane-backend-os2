@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -43,7 +41,6 @@
    Written by Randolph Bentson <bentson@holmsjoen.com> */
 
 /*
- * $Log$
  * Revision 1.17  2008/11/26 21:21:30  kitno-guest
  * * backend/ *.[ch]: nearly every backend used V_MAJOR
  * instead of SANE_CURRENT_MAJOR in sane_init()
@@ -192,10 +189,10 @@
    . - sane_open() : open a particular scanner-device
    . . - sane_set_io_mode : set blocking-mode
    . . - sane_get_select_fd : get scanner-fd
-   . . - sane_get_option_descriptor() : get option informations
+   . . - sane_get_option_descriptor() : get option information
    . . - sane_control_option() : change option values
    . .
-   . . - sane_start() : start image aquisition
+   . . - sane_start() : start image acquisition
    . .   - sane_get_parameters() : returns actual scan-parameters
    . .   - sane_read() : read image-data (from pipe)
    . .
@@ -276,7 +273,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   char dev_name[PATH_MAX];
   size_t len;
   FILE *fp;
-  authorize = authorize; /* silence compilation warnings */
+  (void) authorize; /* silence compilation warnings */
 
   DBG_INIT ();
   DBG (10, "sane_init\n");
@@ -284,7 +281,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   sanei_thread_init ();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
   fp = sanei_config_open (SP15C_CONFIG_FILE);
   if (!fp)
     {
@@ -313,7 +310,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   struct sp15c *dev;
   int i;
 
-  local_only = local_only; /* silence compilation warnings */
+  (void) local_only; /* silence compilation warnings */
 
   DBG (10, "sane_get_devices\n");
 
@@ -338,7 +335,7 @@ sane_open (SANE_String_Const name, SANE_Handle * handle)
 {
   struct sp15c *dev = first_dev;
 
-  name = name; /* silence compilation warnings */
+  (void) name; /* silence compilation warnings */
   /* Strange, name is not used? */
 
   DBG (10, "sane_open\n");
@@ -391,8 +388,8 @@ sane_open (SANE_String_Const name, SANE_Handle * handle)
 SANE_Status
 sane_set_io_mode (SANE_Handle h, SANE_Bool non_blocking)
 {
-  h = h;
-  non_blocking = non_blocking; /* silence compilation warnings */
+  (void) h;
+  (void) non_blocking; /* silence compilation warnings */
 
   DBG (10, "sane_set_io_mode\n");
   return SANE_STATUS_UNSUPPORTED;
@@ -402,8 +399,8 @@ sane_set_io_mode (SANE_Handle h, SANE_Bool non_blocking)
 SANE_Status
 sane_get_select_fd (SANE_Handle h, SANE_Int * fdp)
 {
-  h = h;
-  fdp = fdp; /* silence compilation warnings */
+  (void) h;
+  (void) fdp; /* silence compilation warnings */
 
   DBG (10, "sane_get_select_fd\n");
   return SANE_STATUS_UNSUPPORTED;
@@ -1083,8 +1080,8 @@ attach_one (const char *name)
 static SANE_Status
 sense_handler (int scsi_fd, u_char * result, void *arg)
 {
-  scsi_fd = scsi_fd;
-  arg = arg; /* silence compilation warnings */
+  (void) scsi_fd;
+  (void) arg; /* silence compilation warnings */
 
   return request_sense_parse (result);
 }                               /* sense_handler */
@@ -1786,7 +1783,7 @@ do_cancel (struct sp15c *scanner)
 static void
 swap_res (struct sp15c *s)
 {
-  s = s; /* silence compilation warnings */
+  (void) s; /* silence compilation warnings */
 
   /* for the time being, do nothing */
 }                               /* swap_res */
@@ -1818,7 +1815,7 @@ sp15c_set_window_param (struct sp15c *s, int prescan)
   int ret;
   int active_buffer_size;
 
-  prescan = prescan;   /* silence compilation warnings */
+  (void) prescan; /* silence compilation warnings */
 
   wait_scanner (s);
   DBG (10, "set_window_param\n");
@@ -1953,7 +1950,7 @@ sp15c_start_scan (struct sp15c *s)
 static void
 sigterm_handler (int signal)
 {
-  signal = signal; /* silence compilation warnings */
+  (void) signal; /* silence compilation warnings */
 
   sanei_scsi_req_flush_all ();  /* flush SCSI queue */
   _exit (SANE_STATUS_GOOD);

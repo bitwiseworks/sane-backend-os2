@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -116,6 +114,12 @@ static SANE_Range int_constraint_range = {
   2
 };
 
+static SANE_Range gamma_range = {
+  0,
+  255,
+  1
+};
+
 static SANE_Range fixed_constraint_range = {
   SANE_FIX (-42.17),
   SANE_FIX (32767.9999),
@@ -184,6 +188,42 @@ static SANE_Int int_array_constraint_range[] = {
   48, 6, 4, 92, 190, 16
 };
 
+#define GAMMA_RED_SIZE 256
+#define GAMMA_GREEN_SIZE 256
+#define GAMMA_BLUE_SIZE 256
+#define GAMMA_ALL_SIZE 4096
+static SANE_Int gamma_red[GAMMA_RED_SIZE]; // initialized in init_options()
+static SANE_Int gamma_green[GAMMA_GREEN_SIZE];
+static SANE_Int gamma_blue[GAMMA_BLUE_SIZE];
+static SANE_Int gamma_all[GAMMA_ALL_SIZE];
+
+static void
+init_gamma_table(SANE_Int *tablePtr, SANE_Int count, SANE_Int max)
+{
+  for (int i=0; i<count; ++i) {
+    tablePtr[i] = (SANE_Int)(((double)i * max)/(double)count);
+  }
+}
+
+static void
+print_gamma_table(SANE_Int *tablePtr, SANE_Int count)
+{
+  char str[200];
+  str[0] = '\0';
+  DBG (5, "Gamma Table Size: %d\n", count);
+  for (int i=0; i<count; ++i) {
+    if (i%16 == 0 && strlen(str) > 0) {
+      DBG (5, "%s\n", str);
+      str[0] = '\0';
+    }
+    sprintf (str + strlen(str), " %04X", tablePtr[i]);
+  }
+  if (strlen(str) > 0) {
+    DBG (5, "%s\n", str);
+  }
+}
+
+
 static SANE_Int int_array_constraint_word_list[] = {
   -42, 0, -8, 17, 42, 42
 };
@@ -195,35 +235,34 @@ static SANE_String_Const source_list[] = {
 
 static double random_factor;	/* use for fuzzyness of parameters */
 
-/* initial values */
+/* initial values. Initial string values are set in sane_init() */
 static SANE_Word init_number_of_devices = 2;
 static SANE_Fixed init_tl_x = SANE_FIX (0.0);
 static SANE_Fixed init_tl_y = SANE_FIX (0.0);
 static SANE_Fixed init_br_x = SANE_FIX (80.0);
 static SANE_Fixed init_br_y = SANE_FIX (100.0);
 static SANE_Word init_resolution = 50;
-static SANE_String init_mode =SANE_VALUE_SCAN_MODE_GRAY;
+static SANE_String init_mode = NULL;
 static SANE_Word init_depth = 8;
 static SANE_Bool init_hand_scanner = SANE_FALSE;
 static SANE_Bool init_three_pass = SANE_FALSE;
-static SANE_String init_three_pass_order = "RGB";
-static SANE_String init_scan_source = "Flatbed";
-static SANE_String init_test_picture = "Solid black";
+static SANE_String init_three_pass_order = NULL;
+static SANE_String init_scan_source = NULL;
+static SANE_String init_test_picture = NULL;
 static SANE_Bool init_invert_endianess = SANE_FALSE;
 static SANE_Bool init_read_limit = SANE_FALSE;
 static SANE_Word init_read_limit_size = 1;
 static SANE_Bool init_read_delay = SANE_FALSE;
 static SANE_Word init_read_delay_duration = 1000;
-static SANE_String init_read_status_code = "Default";
+static SANE_String init_read_status_code = NULL;
 static SANE_Bool init_fuzzy_parameters = SANE_FALSE;
 static SANE_Word init_ppl_loss = 0;
 static SANE_Bool init_non_blocking = SANE_FALSE;
 static SANE_Bool init_select_fd = SANE_FALSE;
 static SANE_Bool init_enable_test_options = SANE_FALSE;
-static SANE_String init_string = "This is the contents of the string option. "
-  "Fill some more words to see how the frontend behaves.";
-static SANE_String init_string_constraint_string_list = "First entry";
-static SANE_String init_string_constraint_long_string_list = "First entry";
+static SANE_String init_string = NULL;
+static SANE_String init_string_constraint_string_list = NULL;
+static SANE_String init_string_constraint_long_string_list = NULL;
 
 /* Test if this machine is little endian (from coolscan.c) */
 static SANE_Bool
@@ -278,6 +317,38 @@ check_handle (SANE_Handle handle)
   return SANE_FALSE;
 }
 
+static void
+cleanup_options (Test_Device * test_device)
+{
+  DBG (2, "cleanup_options: test_device=%p\n", (void *) test_device);
+
+  free(test_device->val[opt_mode].s);
+  test_device->val[opt_mode].s = NULL;
+
+  free(test_device->val[opt_three_pass_order].s);
+  test_device->val[opt_three_pass_order].s = NULL;
+
+  free(test_device->val[opt_scan_source].s);
+  test_device->val[opt_scan_source].s = NULL;
+
+  free(test_device->val[opt_test_picture].s);
+  test_device->val[opt_test_picture].s = NULL;
+
+  free(test_device->val[opt_read_status_code].s);
+  test_device->val[opt_read_status_code].s = NULL;
+
+  free(test_device->val[opt_string].s);
+  test_device->val[opt_string].s = NULL;
+
+  free(test_device->val[opt_string_constraint_string_list].s);
+  test_device->val[opt_string_constraint_string_list].s = NULL;
+
+  free(test_device->val[opt_string_constraint_long_string_list].s);
+  test_device->val[opt_string_constraint_long_string_list].s = NULL;
+
+  test_device->options_initialized = SANE_FALSE;
+}
+
 static SANE_Status
 init_options (Test_Device * test_device)
 {
@@ -320,13 +391,13 @@ init_options (Test_Device * test_device)
   od->desc = SANE_DESC_SCAN_MODE;
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = max_string_size (mode_list);
+  od->size = (SANE_Int) max_string_size (mode_list);
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   od->constraint_type = SANE_CONSTRAINT_STRING_LIST;
   od->constraint.string_list = mode_list;
-  test_device->val[opt_mode].s = malloc (od->size);
+  test_device->val[opt_mode].s = malloc ((size_t) od->size);
   if (!test_device->val[opt_mode].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_mode].s, init_mode);
 
   /* opt_depth */
@@ -383,7 +454,7 @@ init_options (Test_Device * test_device)
   od->desc = SANE_I18N ("Set the order of frames in three-pass color mode.");
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = max_string_size (order_list);
+  od->size = (SANE_Int) max_string_size (order_list);
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   if (strcmp (init_mode, SANE_VALUE_SCAN_MODE_COLOR) != 0)
     od->cap |= SANE_CAP_INACTIVE;
@@ -391,9 +462,9 @@ init_options (Test_Device * test_device)
     od->cap |= SANE_CAP_INACTIVE;
   od->constraint_type = SANE_CONSTRAINT_STRING_LIST;
   od->constraint.string_list = order_list;
-  test_device->val[opt_three_pass_order].s = malloc (od->size);
+  test_device->val[opt_three_pass_order].s = malloc ((size_t) od->size);
   if (!test_device->val[opt_three_pass_order].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_three_pass_order].s, init_three_pass_order);
 
   /* opt_resolution */
@@ -416,13 +487,13 @@ init_options (Test_Device * test_device)
   od->desc = SANE_I18N("If Automatic Document Feeder is selected, the feeder will be 'empty' after 10 scans.");
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = max_string_size (source_list);
+  od->size = (SANE_Int) max_string_size (source_list);
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   od->constraint_type = SANE_CONSTRAINT_STRING_LIST;
   od->constraint.string_list = source_list;
-  test_device->val[opt_scan_source].s = malloc (od->size);
+  test_device->val[opt_scan_source].s = malloc ((size_t) od->size);
   if (!test_device->val[opt_scan_source].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_scan_source].s, init_scan_source);
 
   /* opt_special_group */
@@ -452,13 +523,13 @@ init_options (Test_Device * test_device)
 	       "height of 10 mm per square.");
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = max_string_size (test_picture_list);
+  od->size = (SANE_Int) max_string_size (test_picture_list);
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   od->constraint_type = SANE_CONSTRAINT_STRING_LIST;
   od->constraint.string_list = test_picture_list;
-  test_device->val[opt_test_picture].s = malloc (od->size);
+  test_device->val[opt_test_picture].s = malloc ((size_t) od->size);
   if (!test_device->val[opt_test_picture].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_test_picture].s, init_test_picture);
 
   /* opt_invert_endianness */
@@ -547,13 +618,13 @@ init_options (Test_Device * test_device)
 	       "codes are for testing how the frontend handles them.");
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = max_string_size (read_status_code_list);
+  od->size = (SANE_Int) max_string_size (read_status_code_list);
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   od->constraint_type = SANE_CONSTRAINT_STRING_LIST;
   od->constraint.string_list = read_status_code_list;
-  test_device->val[opt_read_status_code].s = malloc (od->size);
+  test_device->val[opt_read_status_code].s = malloc ((size_t) od->size);
   if (!test_device->val[opt_read_status_code].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_read_status_code].s, init_read_status_code);
 
   /* opt_ppl_loss */
@@ -843,8 +914,8 @@ init_options (Test_Device * test_device)
   /* opt_int */
   od = &test_device->opt[opt_int];
   od->name = "int";
-  od->title = SANE_I18N ("(1/6) Int");
-  od->desc = SANE_I18N ("(1/6) Int test option with no unit and no "
+  od->title = SANE_I18N ("(1/7) Int");
+  od->desc = SANE_I18N ("(1/7) Int test option with no unit and no "
 			"constraint set.");
   od->type = SANE_TYPE_INT;
   od->unit = SANE_UNIT_NONE;
@@ -859,8 +930,8 @@ init_options (Test_Device * test_device)
   /* opt_int_constraint_range */
   od = &test_device->opt[opt_int_constraint_range];
   od->name = "int-constraint-range";
-  od->title = SANE_I18N ("(2/6) Int constraint range");
-  od->desc = SANE_I18N ("(2/6) Int test option with unit pixel and "
+  od->title = SANE_I18N ("(2/7) Int constraint range");
+  od->desc = SANE_I18N ("(2/7) Int test option with unit pixel and "
 			"constraint range set. Minimum is 4, maximum 192, and "
 			"quant is 2.");
   od->type = SANE_TYPE_INT;
@@ -876,8 +947,8 @@ init_options (Test_Device * test_device)
   /* opt_int_constraint_word_list */
   od = &test_device->opt[opt_int_constraint_word_list];
   od->name = "int-constraint-word-list";
-  od->title = SANE_I18N ("(3/6) Int constraint word list");
-  od->desc = SANE_I18N ("(3/6) Int test option with unit bits and "
+  od->title = SANE_I18N ("(3/7) Int constraint word list");
+  od->desc = SANE_I18N ("(3/7) Int test option with unit bits and "
 			"constraint word list set.");
   od->type = SANE_TYPE_INT;
   od->unit = SANE_UNIT_BIT;
@@ -892,8 +963,8 @@ init_options (Test_Device * test_device)
   /* opt_int_array */
   od = &test_device->opt[opt_int_array];
   od->name = "int-constraint-array";
-  od->title = SANE_I18N ("(4/6) Int array");
-  od->desc = SANE_I18N ("(4/6) Int test option with unit mm and using "
+  od->title = SANE_I18N ("(4/7) Int array");
+  od->desc = SANE_I18N ("(4/7) Int test option with unit mm and using "
 			"an array without constraints.");
   od->type = SANE_TYPE_INT;
   od->unit = SANE_UNIT_MM;
@@ -908,8 +979,8 @@ init_options (Test_Device * test_device)
   /* opt_int_array_constraint_range */
   od = &test_device->opt[opt_int_array_constraint_range];
   od->name = "int-constraint-array-constraint-range";
-  od->title = SANE_I18N ("(5/6) Int array constraint range");
-  od->desc = SANE_I18N ("(5/6) Int test option with unit dpi and using "
+  od->title = SANE_I18N ("(5/7) Int array constraint range");
+  od->desc = SANE_I18N ("(5/7) Int test option with unit dpi and using "
 			"an array with a range constraint. Minimum is 4, "
 			"maximum 192, and quant is 2.");
   od->type = SANE_TYPE_INT;
@@ -923,11 +994,11 @@ init_options (Test_Device * test_device)
   test_device->val[opt_int_array_constraint_range].wa =
     &int_array_constraint_range[0];
 
-  /* opt_int_array_constraint_word_list */
+ /* opt_int_array_constraint_word_list */
   od = &test_device->opt[opt_int_array_constraint_word_list];
   od->name = "int-constraint-array-constraint-word-list";
-  od->title = SANE_I18N ("(6/6) Int array constraint word list");
-  od->desc = SANE_I18N ("(6/6) Int test option with unit percent and using "
+  od->title = SANE_I18N ("(6/7) Int array constraint word list");
+  od->desc = SANE_I18N ("(6/7) Int test option with unit percent and using "
 			"an array with a word list constraint.");
   od->type = SANE_TYPE_INT;
   od->unit = SANE_UNIT_PERCENT;
@@ -939,6 +1010,80 @@ init_options (Test_Device * test_device)
   od->constraint.word_list = int_constraint_word_list;
   test_device->val[opt_int_array_constraint_word_list].wa =
     &int_array_constraint_word_list[0];
+
+  /* opt_int_inexact */
+  od = &test_device->opt[opt_int_inexact];
+  od->name = "int-inexact";
+  od->title = SANE_I18N ("(7/7) Int inexact");
+  od->desc = SANE_I18N ("(7/7) Int test option that modifies the value "
+			"and returns SANE_INFO_INEXACT.");
+  od->type = SANE_TYPE_INT;
+  od->unit = SANE_UNIT_NONE;
+  od->size = sizeof (SANE_Word);
+  od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT | SANE_CAP_ADVANCED;
+  if (init_enable_test_options == SANE_FALSE)
+    od->cap |= SANE_CAP_INACTIVE;
+  od->constraint_type = SANE_CONSTRAINT_NONE;
+  od->constraint.range = 0;
+  test_device->val[opt_int_inexact].w = 67;
+
+
+  /* opt_gamma_red */
+  init_gamma_table(gamma_red, GAMMA_RED_SIZE, gamma_range.max);
+  od = &test_device->opt[opt_gamma_red];
+  od->name = SANE_NAME_GAMMA_VECTOR_R;
+  od->title = SANE_TITLE_GAMMA_VECTOR_R;
+  od->desc = SANE_DESC_GAMMA_VECTOR_R;
+  od->type = SANE_TYPE_INT;
+  od->unit = SANE_UNIT_NONE;
+  od->size = 256 * sizeof (SANE_Word);
+  od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT | SANE_CAP_ADVANCED;
+  od->constraint_type = SANE_CONSTRAINT_RANGE;
+  od->constraint.range = &gamma_range;
+  test_device->val[opt_gamma_red].wa = &gamma_red[0];
+
+  /* opt_gamma_green */
+  init_gamma_table(gamma_green, GAMMA_GREEN_SIZE, gamma_range.max);
+  od = &test_device->opt[opt_gamma_green];
+  od->name = SANE_NAME_GAMMA_VECTOR_G;
+  od->title = SANE_TITLE_GAMMA_VECTOR_G;
+  od->desc = SANE_DESC_GAMMA_VECTOR_G;
+  od->type = SANE_TYPE_INT;
+  od->unit = SANE_UNIT_NONE;
+  od->size = 256 * sizeof (SANE_Word);
+  od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT | SANE_CAP_ADVANCED;
+  od->constraint_type = SANE_CONSTRAINT_RANGE;
+  od->constraint.range = &gamma_range;
+  test_device->val[opt_gamma_green].wa = &gamma_green[0];
+
+  /* opt_gamma_blue */
+  init_gamma_table(gamma_blue, GAMMA_BLUE_SIZE, gamma_range.max);
+  od = &test_device->opt[opt_gamma_blue];
+  od->name = SANE_NAME_GAMMA_VECTOR_B;
+  od->title = SANE_TITLE_GAMMA_VECTOR_B;
+  od->desc = SANE_DESC_GAMMA_VECTOR_B;
+  od->type = SANE_TYPE_INT;
+  od->unit = SANE_UNIT_NONE;
+  od->size = 256 * sizeof (SANE_Word);
+  od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT | SANE_CAP_ADVANCED;
+  od->constraint_type = SANE_CONSTRAINT_RANGE;
+  od->constraint.range = &gamma_range;
+  test_device->val[opt_gamma_blue].wa = &gamma_blue[0];
+
+  /* opt_gamma_all */
+  init_gamma_table(gamma_all, GAMMA_ALL_SIZE, gamma_range.max);
+  print_gamma_table(gamma_all, GAMMA_ALL_SIZE);
+  od = &test_device->opt[opt_gamma_all];
+  od->name = SANE_NAME_GAMMA_VECTOR;
+  od->title = SANE_TITLE_GAMMA_VECTOR;
+  od->desc = SANE_DESC_GAMMA_VECTOR;
+  od->type = SANE_TYPE_INT;
+  od->unit = SANE_UNIT_NONE;
+  od->size = GAMMA_ALL_SIZE * sizeof (SANE_Word);
+  od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT | SANE_CAP_ADVANCED;
+  od->constraint_type = SANE_CONSTRAINT_RANGE;
+  od->constraint.range = &gamma_range;
+  test_device->val[opt_gamma_all].wa = &gamma_all[0];
 
   /* opt_fixed_group */
   od = &test_device->opt[opt_fixed_group];
@@ -1022,15 +1167,15 @@ init_options (Test_Device * test_device)
   od->desc = SANE_I18N ("(1/3) String test option without constraint.");
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = strlen (init_string) + 1;
+  od->size = (SANE_Int) strlen (init_string) + 1;
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   if (init_enable_test_options == SANE_FALSE)
     od->cap |= SANE_CAP_INACTIVE;
   od->constraint_type = SANE_CONSTRAINT_NONE;
   od->constraint.string_list = 0;
-  test_device->val[opt_string].s = malloc (od->size);
+  test_device->val[opt_string].s = malloc ((size_t) od->size);
   if (!test_device->val[opt_string].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_string].s, init_string);
 
   /* opt_string_constraint_string_list */
@@ -1041,15 +1186,15 @@ init_options (Test_Device * test_device)
 			"constraint.");
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = max_string_size (string_constraint_string_list);
+  od->size = (SANE_Int) max_string_size (string_constraint_string_list);
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   if (init_enable_test_options == SANE_FALSE)
     od->cap |= SANE_CAP_INACTIVE;
   od->constraint_type = SANE_CONSTRAINT_STRING_LIST;
   od->constraint.string_list = string_constraint_string_list;
-  test_device->val[opt_string_constraint_string_list].s = malloc (od->size);
+  test_device->val[opt_string_constraint_string_list].s = malloc ((size_t) od->size);
   if (!test_device->val[opt_string_constraint_string_list].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_string_constraint_string_list].s,
 	  init_string_constraint_string_list);
 
@@ -1061,16 +1206,16 @@ init_options (Test_Device * test_device)
 			"constraint. Contains some more entries...");
   od->type = SANE_TYPE_STRING;
   od->unit = SANE_UNIT_NONE;
-  od->size = max_string_size (string_constraint_long_string_list);
+  od->size = (SANE_Int) max_string_size (string_constraint_long_string_list);
   od->cap = SANE_CAP_SOFT_DETECT | SANE_CAP_SOFT_SELECT;
   if (init_enable_test_options == SANE_FALSE)
     od->cap |= SANE_CAP_INACTIVE;
   od->constraint_type = SANE_CONSTRAINT_STRING_LIST;
   od->constraint.string_list = string_constraint_long_string_list;
   test_device->val[opt_string_constraint_long_string_list].s =
-    malloc (od->size);
+    malloc ((size_t) od->size);
   if (!test_device->val[opt_string_constraint_long_string_list].s)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   strcpy (test_device->val[opt_string_constraint_long_string_list].s,
 	  init_string_constraint_long_string_list);
 
@@ -1103,6 +1248,43 @@ init_options (Test_Device * test_device)
   test_device->val[opt_button].w = 0;
 
   return SANE_STATUS_GOOD;
+
+fail:
+  cleanup_options (test_device);
+  return SANE_STATUS_NO_MEM;
+}
+
+static void
+cleanup_initial_string_values ()
+{
+  // Cleanup backing memory for initial values of string options.
+  free (init_mode);
+  init_mode = NULL;
+  free (init_three_pass_order);
+  init_three_pass_order = NULL;
+  free (init_scan_source);
+  init_scan_source = NULL;
+  free (init_test_picture);
+  init_test_picture = NULL;
+  free (init_read_status_code);
+  init_read_status_code = NULL;
+  free (init_string);
+  init_string = NULL;
+  free (init_string_constraint_string_list);
+  init_string_constraint_string_list = NULL;
+  free (init_string_constraint_long_string_list);
+  init_string_constraint_long_string_list = NULL;
+}
+
+static void
+cleanup_test_device (Test_Device * test_device)
+{
+  DBG (2, "cleanup_test_device: test_device=%p\n", (void *) test_device);
+  if (test_device->options_initialized)
+    cleanup_options (test_device);
+  if (test_device->name)
+    free (test_device->name);
+  free (test_device);
 }
 
 static SANE_Status
@@ -1232,7 +1414,11 @@ read_option (SANE_String line, SANE_String option_string,
 	  {
 	    DBG (3, "read_option: set option `%s' to `%s'\n", option_string,
 		 word);
+	    if (*(SANE_String *) value)
+	      free (*(SANE_String *) value);
 	    *(SANE_String *) value = strdup (word);
+	    if (!*(SANE_String *) value)
+	      return SANE_STATUS_NO_MEM;
 	  }
 	break;
       }
@@ -1246,11 +1432,49 @@ read_option (SANE_String line, SANE_String option_string,
   return SANE_STATUS_GOOD;
 }
 
+
+static SANE_Status
+read_option_str_list (SANE_String line, SANE_String option_string,
+                      parameter_type p_type, void *value,
+                      SANE_String_Const *string_list)
+{
+  SANE_String new_value = NULL;
+
+  SANE_Status ret = read_option (line, option_string, p_type, &new_value);
+  if (ret != SANE_STATUS_GOOD)
+    {
+      if (new_value)
+        {
+          free(new_value);
+        }
+      return ret;
+    }
+
+  for (SANE_String_Const *option = string_list; *option; option++)
+    {
+      if (strcmp (*option, new_value) == 0)
+        {
+
+          if (*(SANE_String*) value)
+            {
+              free (*(SANE_String*) value);
+            }
+          *(SANE_String*) value = new_value;
+
+          return SANE_STATUS_GOOD;
+        }
+    }
+
+  return SANE_STATUS_INVAL;
+}
+
+
 static SANE_Status
 reader_process (Test_Device * test_device, SANE_Int fd)
 {
   SANE_Status status;
-  SANE_Word byte_count = 0, bytes_total;
+  size_t byte_count = 0;
+  size_t bytes_total;
   SANE_Byte *buffer = 0;
   ssize_t bytes_written = 0;
   size_t buffer_size = 0, write_count = 0;
@@ -1258,24 +1482,24 @@ reader_process (Test_Device * test_device, SANE_Int fd)
   DBG (2, "(child) reader_process: test_device=%p, fd=%d\n",
        (void *) test_device, fd);
 
-  bytes_total = test_device->lines * test_device->bytes_per_line;
+  bytes_total = (size_t) test_device->lines * (size_t) test_device->bytes_per_line;
   status = init_picture_buffer (test_device, &buffer, &buffer_size);
   if (status != SANE_STATUS_GOOD)
     return status;
 
   DBG (2, "(child) reader_process: buffer=%p, buffersize=%lu\n",
-       buffer, (u_long) buffer_size);
+       (void *) buffer, (u_long) buffer_size);
 
   while (byte_count < bytes_total)
     {
       if (write_count == 0)
 	{
 	  write_count = buffer_size;
-	  if (byte_count + (SANE_Word) write_count > bytes_total)
-	    write_count = bytes_total - byte_count;
+	  if (byte_count + (size_t) write_count > bytes_total)
+	    write_count = (size_t) bytes_total - (size_t) byte_count;
 
 	  if (test_device->val[opt_read_delay].w == SANE_TRUE)
-	    usleep (test_device->val[opt_read_delay_duration].w);
+	    usleep ((useconds_t) test_device->val[opt_read_delay_duration].w);
 	}
       bytes_written = write (fd, buffer, write_count);
       if (bytes_written < 0)
@@ -1284,17 +1508,17 @@ reader_process (Test_Device * test_device, SANE_Int fd)
 	       strerror (errno));
 	  return SANE_STATUS_IO_ERROR;
 	}
-      byte_count += bytes_written;
-      DBG (4, "(child) reader_process: wrote %ld bytes of %lu (%d total)\n",
-	   (long) bytes_written, (u_long) write_count, byte_count);
-      write_count -= bytes_written;
+      byte_count += (size_t) bytes_written;
+      DBG (4, "(child) reader_process: wrote %ld bytes of %lu (%zu total)\n",
+	   bytes_written, write_count, byte_count);
+      write_count -= (size_t) bytes_written;
     }
 
   free (buffer);
 
   if (sanei_thread_is_forked ())
     {
-	  DBG (4, "(child) reader_process: finished,  wrote %d bytes, expected %d "
+	  DBG (4, "(child) reader_process: finished,  wrote %zu bytes, expected %zu "
        "bytes, now waiting\n", byte_count, bytes_total);
 	  while (SANE_TRUE)
 	    sleep (10);
@@ -1303,7 +1527,7 @@ reader_process (Test_Device * test_device, SANE_Int fd)
     }
   else
     {
-	  DBG (4, "(child) reader_process: finished,  wrote %d bytes, expected %d "
+	  DBG (4, "(child) reader_process: finished,  wrote %zu bytes, expected %zu "
        "bytes\n", byte_count, bytes_total);
     }
   return SANE_STATUS_GOOD;
@@ -1449,7 +1673,6 @@ print_options (Test_Device * test_device)
 
 /***************************** SANE API ****************************/
 
-
 SANE_Status
 sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_unused__ authorize)
 {
@@ -1468,13 +1691,56 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
   previous_device = 0;
 
   DBG (1, "sane_init: SANE test backend version %d.%d.%d from %s\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   if (inited)
     DBG (3, "sane_init: warning: already inited\n");
+
+  // Setup initial values of string options. Call free initially in case we've
+  // already called sane_init and these values are already non-null.
+  free (init_mode);
+  init_mode = strdup (SANE_VALUE_SCAN_MODE_GRAY);
+  if (!init_mode)
+    goto fail;
+
+  free (init_three_pass_order);
+  init_three_pass_order = strdup ("RGB");
+  if (!init_three_pass_order)
+    goto fail;
+
+  free (init_scan_source);
+  init_scan_source = strdup ("Flatbed");
+  if (!init_scan_source)
+    goto fail;
+
+  free (init_test_picture);
+  init_test_picture = strdup ("Solid black");
+  if (!init_test_picture)
+    goto fail;
+
+  free (init_read_status_code);
+  init_read_status_code = strdup ("Default");
+  if (!init_read_status_code)
+    goto fail;
+
+  free (init_string);
+  init_string = strdup ("This is the contents of the string option. "
+    "Fill some more words to see how the frontend behaves.");
+  if (!init_string)
+    goto fail;
+
+  free (init_string_constraint_string_list);
+  init_string_constraint_string_list = strdup ("First entry");
+  if (!init_string_constraint_string_list)
+    goto fail;
+
+  free (init_string_constraint_long_string_list);
+  init_string_constraint_long_string_list = strdup ("First entry");
+  if (!init_string_constraint_long_string_list)
+    goto fail;
 
   fp = sanei_config_open (TEST_CONFIG_FILE);
   if (fp)
@@ -1506,20 +1772,23 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
 
 	  DBG (5, "sane_init: config file line %3d: `%s'\n",
 	       linenumber, line);
+
 	  if (read_option (line, "number_of_devices", param_int,
 			   &init_number_of_devices) == SANE_STATUS_GOOD)
 	    continue;
-	  if (read_option (line, "mode", param_string,
-			   &init_mode) == SANE_STATUS_GOOD)
-	    continue;
+
+          if (read_option_str_list (line, "mode", param_string,
+                                    &init_mode, mode_list) == SANE_STATUS_GOOD)
+              continue;
+
 	  if (read_option (line, "hand-scanner", param_bool,
 			   &init_hand_scanner) == SANE_STATUS_GOOD)
 	    continue;
 	  if (read_option (line, "three-pass", param_bool,
 			   &init_three_pass) == SANE_STATUS_GOOD)
 	    continue;
-	  if (read_option (line, "three-pass-order", param_string,
-			   &init_three_pass_order) == SANE_STATUS_GOOD)
+	  if (read_option_str_list (line, "three-pass-order", param_string,
+	                            &init_three_pass_order, order_list) == SANE_STATUS_GOOD)
 	    continue;
 	  if (read_option (line, "resolution_min", param_fixed,
 			   &resolution_range.min) == SANE_STATUS_GOOD)
@@ -1536,11 +1805,11 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
 	  if (read_option (line, "depth", param_int,
 			   &init_depth) == SANE_STATUS_GOOD)
 	    continue;
-	  if (read_option (line, "scan-source", param_string,
-			   &init_scan_source) == SANE_STATUS_GOOD)
+	  if (read_option_str_list (line, "scan-source", param_string,
+	                            &init_scan_source, source_list) == SANE_STATUS_GOOD)
 	    continue;
-	  if (read_option (line, "test-picture", param_string,
-			   &init_test_picture) == SANE_STATUS_GOOD)
+	  if (read_option_str_list (line, "test-picture", param_string,
+	                               &init_test_picture, test_picture_list) == SANE_STATUS_GOOD)
 	    continue;
 	  if (read_option (line, "invert-endianess", param_bool,
 			   &init_invert_endianess) == SANE_STATUS_GOOD)
@@ -1557,8 +1826,8 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
 	  if (read_option (line, "read-delay-duration", param_int,
 			   &init_read_delay_duration) == SANE_STATUS_GOOD)
 	    continue;
-	  if (read_option (line, "read-status-code", param_string,
-			   &init_read_status_code) == SANE_STATUS_GOOD)
+	  if (read_option_str_list (line, "read-status-code", param_string,
+	                            &init_read_status_code, read_status_code_list) == SANE_STATUS_GOOD)
 	    continue;
 	  if (read_option (line, "ppl-loss", param_int,
 			   &init_ppl_loss) == SANE_STATUS_GOOD)
@@ -1612,16 +1881,16 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
 
   /* create devices */
   sane_device_list =
-    malloc ((init_number_of_devices + 1) * sizeof (sane_device));
+    malloc ((size_t) (init_number_of_devices + 1) * sizeof (sane_device));
   if (!sane_device_list)
-    return SANE_STATUS_NO_MEM;
+    goto fail;
   for (num = 0; num < init_number_of_devices; num++)
     {
       SANE_Char number_string[PATH_MAX];
 
-      test_device = malloc (sizeof (*test_device));
+      test_device = calloc (sizeof (*test_device), 1);
       if (!test_device)
-	return SANE_STATUS_NO_MEM;
+	goto fail_device;
       test_device->sane.vendor = "Noname";
       test_device->sane.type = "virtual device";
       test_device->sane.model = "frontend-tester";
@@ -1629,7 +1898,7 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
       number_string[sizeof (number_string) - 1] = '\0';
       test_device->name = strdup (number_string);
       if (!test_device->name)
-	return SANE_STATUS_NO_MEM;
+	goto fail_name;
       test_device->sane.name = test_device->name;
       if (previous_device)
 	previous_device->next = test_device;
@@ -1641,6 +1910,7 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
       test_device->eof = SANE_FALSE;
       test_device->scanning = SANE_FALSE;
       test_device->cancelled = SANE_FALSE;
+      test_device->options_initialized = SANE_FALSE;
       sanei_thread_initialize (test_device->reader_pid);
       test_device->pipe = -1;
       DBG (4, "sane_init: new device: `%s' is a %s %s %s\n",
@@ -1649,10 +1919,29 @@ sane_init (SANE_Int * __sane_unused__ version_code, SANE_Auth_Callback __sane_un
     }
   test_device->next = 0;
   sane_device_list[num] = 0;
-  srand (time (NULL));
+  srand ((unsigned int) time (NULL));
   random_factor = ((double) rand ()) / RAND_MAX + 0.5;
   inited = SANE_TRUE;
   return SANE_STATUS_GOOD;
+
+fail_name:
+  // test_device refers to the last device we were creating, which has not
+  // yet been added to the linked list of devices.
+  free (test_device);
+fail_device:
+  // Now, iterate through the linked list of devices to clean up any successful
+  // devices.
+  test_device = first_test_device;
+  while (test_device)
+    {
+      previous_device = test_device;
+      test_device = test_device->next;
+      cleanup_test_device (previous_device);
+    }
+  free (sane_device_list);
+fail:
+  cleanup_initial_string_values ();
+  return SANE_STATUS_NO_MEM;
 }
 
 void
@@ -1673,15 +1962,15 @@ sane_exit (void)
       DBG (4, "sane_exit: freeing device %s\n", test_device->name);
       previous_device = test_device;
       test_device = test_device->next;
-      if (previous_device->name)
-	free (previous_device->name);
-      free (previous_device);
+      cleanup_test_device (previous_device);
     }
   DBG (4, "sane_exit: freeing device list\n");
   if (sane_device_list)
     free (sane_device_list);
   sane_device_list = NULL;
   first_test_device = NULL;
+
+  cleanup_initial_string_values ();
   inited = SANE_FALSE;
   return;
 }
@@ -1756,9 +2045,12 @@ sane_open (SANE_String_Const devicename, SANE_Handle * handle)
   test_device->open = SANE_TRUE;
   *handle = test_device;
 
-  status = init_options (test_device);
-  if (status != SANE_STATUS_GOOD)
-    return status;
+  if (!test_device->options_initialized) {
+    status = init_options (test_device);
+    if (status != SANE_STATUS_GOOD)
+      return status;
+    test_device->options_initialized = SANE_TRUE;
+  }
 
   test_device->open = SANE_TRUE;
   test_device->scanning = SANE_FALSE;
@@ -1981,6 +2273,19 @@ sane_control_option (SANE_Handle handle, SANE_Int option, SANE_Action action,
 	  DBG (4, "sane_control_option: set option %d (%s) to %d\n",
 	       option, test_device->opt[option].name, *(SANE_Int *) value);
 	  break;
+	case opt_int_inexact:
+	  if (test_device->val[option].w == *(SANE_Int *) value)
+	    {
+	      DBG (4, "sane_control_option: option %d (%s) not changed\n",
+		   option, test_device->opt[option].name);
+	      break;
+	    }
+          *(SANE_Int *) value += 1;
+	  test_device->val[option].w = *(SANE_Int *) value;
+          myinfo |= SANE_INFO_INEXACT;
+	  DBG (4, "sane_control_option: set option %d (%s) to %d\n",
+	       option, test_device->opt[option].name, *(SANE_Int *) value);
+	  break;
 	case opt_fuzzy_parameters:	/* Bool with parameter reloading */
 	  if (test_device->val[option].w == *(SANE_Bool *) value)
 	    {
@@ -2071,11 +2376,21 @@ sane_control_option (SANE_Handle handle, SANE_Int option, SANE_Action action,
 	  break;
 	case opt_int_array:	/* Word array */
 	case opt_int_array_constraint_range:
+	case opt_gamma_red:
+	case opt_gamma_green:
+	case opt_gamma_blue:
+	case opt_gamma_all:
 	case opt_int_array_constraint_word_list:
 	  memcpy (test_device->val[option].wa, value,
-		  test_device->opt[option].size);
+		  (size_t) test_device->opt[option].size);
 	  DBG (4, "sane_control_option: set option %d (%s) to %p\n",
 	       option, test_device->opt[option].name, (void *) value);
+	  if (option == opt_gamma_all) {
+	      print_gamma_table(gamma_all, GAMMA_ALL_SIZE);
+	  }
+	  if (option == opt_gamma_red) {
+	      print_gamma_table(gamma_red, GAMMA_RED_SIZE);
+	  }
 	  break;
 	  /* options with side-effects */
 	case opt_print_options:
@@ -2290,6 +2605,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option, SANE_Action action,
 	case opt_ppl_loss:
 	case opt_read_delay_duration:
 	case opt_int:
+        case opt_int_inexact:
 	case opt_int_constraint_range:
 	case opt_int_constraint_word_list:
 	  *(SANE_Int *) value = test_device->val[option].w;
@@ -2298,9 +2614,13 @@ sane_control_option (SANE_Handle handle, SANE_Int option, SANE_Action action,
 	  break;
 	case opt_int_array:	/* Int array */
 	case opt_int_array_constraint_range:
+	case opt_gamma_red:
+	case opt_gamma_green:
+	case opt_gamma_blue:
+	case opt_gamma_all:
 	case opt_int_array_constraint_word_list:
 	  memcpy (value, test_device->val[option].wa,
-		  test_device->opt[option].size);
+		  (size_t) test_device->opt[option].size);
 	  DBG (4, "sane_control_option: get option %d (%s), value=%p\n",
 	       option, test_device->opt[option].name, (void *) value);
 	  break;
@@ -2390,7 +2710,7 @@ sane_get_parameters (SANE_Handle handle, SANE_Parameters * params)
       p->lines = test_device->lines;
       if (test_device->val[opt_fuzzy_parameters].w == SANE_TRUE
 	  && test_device->scanning == SANE_FALSE)
-	p->lines *= random_factor;
+	p->lines *= (SANE_Int) random_factor;
     }
 
   if (strcmp (mode, SANE_VALUE_SCAN_MODE_GRAY) == 0)
@@ -2425,7 +2745,7 @@ sane_get_parameters (SANE_Handle handle, SANE_Parameters * params)
   p->pixels_per_line = (SANE_Int) (res * (br_x - tl_x) / MM_PER_INCH);
   if (test_device->val[opt_fuzzy_parameters].w == SANE_TRUE
       && test_device->scanning == SANE_FALSE)
-    p->pixels_per_line *= random_factor;
+    p->pixels_per_line *= (SANE_Int) random_factor;
   if (p->pixels_per_line < 1)
     p->pixels_per_line = 1;
 
@@ -2593,11 +2913,11 @@ sane_read (SANE_Handle handle, SANE_Byte * data,
   SANE_Int max_scan_length;
   ssize_t bytes_read;
   size_t read_count;
-  SANE_Int bytes_total = test_device->lines * test_device->bytes_per_line;
+  size_t bytes_total = (size_t) test_device->lines * (size_t) test_device->bytes_per_line;
 
 
   DBG (4, "sane_read: handle=%p, data=%p, max_length = %d, length=%p\n",
-       handle, data, max_length, (void *) length);
+       handle, (void *) data, max_length, (void *) length);
   if (!inited)
     {
       DBG (1, "sane_read: not inited, call sane_init() first\n");
@@ -2678,11 +2998,11 @@ sane_read (SANE_Handle handle, SANE_Byte * data,
       DBG (1, "sane_read: not scanning (call sane_start first)\n");
       return SANE_STATUS_INVAL;
     }
-  read_count = max_scan_length;
+  read_count = (size_t) max_scan_length;
 
   bytes_read = read (test_device->pipe, data, read_count);
   if (bytes_read == 0
-      || (bytes_read + test_device->bytes_total >= bytes_total))
+      || ((size_t) bytes_read + (size_t) test_device->bytes_total >= bytes_total))
     {
       SANE_Status status;
       DBG (2, "sane_read: EOF reached\n");
@@ -2717,11 +3037,11 @@ sane_read (SANE_Handle handle, SANE_Byte * data,
 	  return SANE_STATUS_IO_ERROR;
 	}
     }
-  *length = bytes_read;
-  test_device->bytes_total += bytes_read;
+  *length = (SANE_Int) bytes_read;
+  test_device->bytes_total += (size_t) bytes_read;
 
-  DBG (2, "sane_read: read %ld bytes of %d, total %d\n", (long) bytes_read,
-       max_scan_length, test_device->bytes_total);
+  DBG (2, "sane_read: read %zu bytes of %zu, total %zu\n", (size_t) bytes_read,
+       (size_t) max_scan_length, (size_t) test_device->bytes_total);
   return SANE_STATUS_GOOD;
 }
 
@@ -2802,6 +3122,7 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
     }
   else
     {
+      DBG (1, "sane_set_io_mode: unsupported\n");
       if (non_blocking)
 	return SANE_STATUS_UNSUPPORTED;
     }
@@ -2840,5 +3161,6 @@ sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
       *fd = test_device->pipe;
       return SANE_STATUS_GOOD;
     }
+  DBG(1,"sane_get_select_fd: unsupported\n");
   return SANE_STATUS_UNSUPPORTED;
 }

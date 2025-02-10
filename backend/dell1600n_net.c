@@ -15,9 +15,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-  MA 02111-1307, USA.
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
   As a special exception, the authors of SANE give permission for
   additional uses of the libraries contained in this release of SANE.
@@ -91,7 +89,7 @@
 #define MAX_SCANNERS 32
 
 /* version number */
-#define DRIVER_VERSION SANE_VERSION_CODE( SANE_CURRENT_MAJOR, V_MINOR, 0 )
+#define DRIVER_VERSION SANE_VERSION_CODE( SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0 )
 
 /* size of buffer for socket communication */
 #define SOCK_BUF_SIZE 2048
@@ -125,7 +123,7 @@ struct ScannerState
   int m_numPages;	        /* number of complete pages (host byte order) */
   struct ComBuf m_pageInfo;	/* "array" of numPages PageInfo structs */
   int m_bFinish;		/* set non-0 to signal that we are finished */
-  int m_bCancelled;		/* set non-0 that bFinish state arose from cancelation */
+  int m_bCancelled;		/* set non-0 that bFinish state arose from cancellation */
   char m_regName[REG_NAME_SIZE];	/* name with which to register */
   unsigned short m_xres;	/* x resolution (network byte order) */
   unsigned short m_yres;	/* y resolution (network byte order) */
@@ -236,6 +234,9 @@ static void JpegDecompTermSource (j_decompress_ptr cinfo);
 /* Results of last call to sane_get_devices */
 static struct DeviceRecord *gKnownDevices[MAX_SCANNERS];
 
+/* Empty list for when network devices are not wanted */
+static const SANE_Device *gEmptyDeviceList[1];
+
 /* Array of open scanner device states.
    :NOTE: (int)SANE_Handle is an offset into this array */
 static struct ScannerState *gOpenScanners[MAX_SCANNERS];
@@ -291,8 +292,7 @@ sane_exit (void)
 /***********************************************************/
 
 SANE_Status
-sane_get_devices (const SANE_Device *** device_list,
-		  SANE_Bool __sane_unused__ local_only)
+sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
 {
 
   int ret;
@@ -310,11 +310,17 @@ sane_get_devices (const SANE_Device *** device_list,
   const char *pVal;
   int valLen;
 
+  if (local_only) {
+    *device_list = gEmptyDeviceList;
+    return SANE_STATUS_GOOD;
+  }
+
   /* init variables */
   ret = SANE_STATUS_GOOD;
   sock = 0;
   pDevice = NULL;
   optYes = 1;
+
   InitComBuf (&queryPacket);
 
   /* clear previous results */
@@ -697,7 +703,7 @@ sane_start (SANE_Handle handle)
   if (!ValidScannerNumber (iHandle))
     return SANE_STATUS_INVAL;
 
-  /* check if we still have oustanding pages of data on this handle */
+  /* check if we still have outstanding pages of data on this handle */
   if (gOpenScanners[iHandle]->m_imageData.m_used){
 
     /* remove empty page */
@@ -943,7 +949,7 @@ HexDump (int debugLevel, const unsigned char *buf, size_t bufSize)
     {
 
       if (!(i % 16))
-        sprintf (lineBuf, "%p: ", (buf + i));
+        sprintf (lineBuf, "%p: ", (void *) &buf[i]);
 
       sprintf (itemBuf, "%02x ", (const unsigned int) buf[i]);
 
@@ -1196,7 +1202,7 @@ ProcessFindResponse (unsigned char *pData, size_t size)
 
 
   DBG (10, "ProcessFindResponse: processing %lu bytes, pData=%p\n",
-       (unsigned long)size, pData);
+       (unsigned long) size, (void *) pData);
 
   /* check we have a complete packet */
   if (!MessageIsComplete (pData, size))
@@ -1352,7 +1358,7 @@ ProcessUdpResponse (unsigned char *pData, size_t size,
   HexDump (15, pData, size);
 
   DBG (10, "ProcessUdpResponse: processing %lu bytes, pData=%p\n",
-       (unsigned long)size, pData);
+       (unsigned long) size, (void *) pData);
 
   /* check we have a complete packet */
   if (!MessageIsComplete (pData, size))
@@ -1483,7 +1489,7 @@ ProcessTcpResponse (struct ScannerState *pState, struct ComBuf *pTcpBuf)
   int bProcessImage = 0;
 
   DBG (10, "ProcessTcpResponse: processing %lu bytes, pData=%p\n",
-       (unsigned long)pTcpBuf->m_used, pData);
+       (unsigned long) pTcpBuf->m_used, (void *) pData);
   HexDump (15, pData, pTcpBuf->m_used);
 
   /* if message not complete then wait for more to arrive */
@@ -1751,7 +1757,7 @@ cleanup:
 /***********************************************************/
 
 /* remove data from the front of a ComBuf struct
-   \return 0 if sucessful, >0 otherwise
+   \return 0 if successful, >0 otherwise
 */
 int
 PopFromComBuf (struct ComBuf *pBuf, size_t datSize)
@@ -1796,7 +1802,7 @@ ProcessPageData (struct ScannerState *pState)
   struct PageInfo pageInfo;
 
   JSAMPLE *pJpegLine = NULL;
-  uint32 *pTiffRgba = NULL;
+  uint32_t *pTiffRgba = NULL;
   unsigned char *pOut;
   char tiffErrBuf[1024];
 

@@ -30,15 +30,9 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
    ---------------------------------------------------------------------
 */
-
-/*
-	$Id$
-        update 20-04-2006*/
 
 /* Commands supported by the vidcam. */
 
@@ -117,7 +111,7 @@ struct vidcam_hardware
 #define COLOR_RGB_TEXT_STR              SANE_I18N("Color RGB TEXT")
 /*--------------------------------------------------------------------------*/
 
-/* Define a vidcam occurence. */
+/* Define a vidcam occurrence. */
 typedef struct Stv680_Vidcam
 {
   struct Stv680_Vidcam *next;

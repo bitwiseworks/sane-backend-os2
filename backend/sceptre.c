@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -43,7 +41,6 @@
 */
 
 /*
-   $Id$
    Sceptre S1200 SCSI scanner (sometimes also called S120)
 */
 
@@ -1318,12 +1315,12 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
   DBG (DBG_proc, "sane_init: enter\n");
 
   DBG (DBG_error, "This is sane-sceptre version %d.%d-%d\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD);
+       SANE_CURRENT_MINOR, BUILD);
   DBG (DBG_error, "(C) 2002 by Frank Zago\n");
 
   if (version_code)
     {
-      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
     }
 
   fp = sanei_config_open (SCEPTRE_CONFIG_FILE);

@@ -15,8 +15,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -52,7 +51,7 @@ static SANE_Int cfg_chipset_model_get(SANE_Int device);
 /* buttons for each scanner */
 static SANE_Int cfg_buttons_get(struct st_buttons *reg);
 
-/* area constrains for each scanner */
+/* area constraints for each scanner */
 static SANE_Int cfg_constrains_get(struct st_constrains *constrain);
 
 /* spectrum clock generator for each scanner */
@@ -989,7 +988,7 @@ static void cfg_offset_get(SANE_Int sensortype, SANE_Int resolution, SANE_Int sc
 	}
 }
 
-/** SEC: Device constrains ---------- */
+/** SEC: Device constraints ---------- */
 
 static SANE_Int cfg_constrains_get(struct st_constrains *constrain)
 {
@@ -1003,7 +1002,7 @@ static SANE_Int cfg_constrains_get(struct st_constrains *constrain)
 
 	struct st_reg reg[] =
 	{
-		/* constrains are set in milimeters */
+		/* constraints are set in millimeters */
 		/*device ,   reflective               , negative                  , transparent                   */
 		/*       , {{left, width, top, height}, {left, width, top, height}, {left, width, top, height}}}, */
 		{ BQ5550 , {{   0,   220,   0,    300}, {  88,    42,   0,     83}, {  88,    42,   0,     83}}},
@@ -1049,7 +1048,7 @@ static SANE_Byte *cfg_motor_resource_get(SANE_Byte *size)
 
 	if (rst != NULL)
 	{
-		bzero(rst, sizeof(SANE_Byte) * 32);
+		memset(rst, 0, sizeof(SANE_Byte) * 32);
 
 		switch(RTS_Debug->dev_model)
 		{
@@ -1524,19 +1523,16 @@ static SANE_Int hp3800_checkstable(SANE_Int lamp, struct st_checkstable *check)
 
 	SANE_Int rst = ERROR;
 
-	if (reg != NULL)
-	{
-		SANE_Int a;
-		SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
+	SANE_Int a;
+	SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
 
-		for (a = 0; a < count; a++)
+	for (a = 0; a < count; a++)
+	{
+		if (reg[a].lamp == lamp)
 		{
-			if (reg[a].lamp == lamp)
-			{
-				memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
-				rst = OK;
-				break;
-			}
+			memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
+			rst = OK;
+			break;
 		}
 	}
 
@@ -1561,19 +1557,16 @@ static SANE_Int hp3970_checkstable(SANE_Int lamp, struct st_checkstable *check)
 
 	SANE_Int rst = ERROR;
 
-	if (reg != NULL)
-	{
-		SANE_Int a;
-		SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
+	SANE_Int a;
+	SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
 
-		for (a = 0; a < count; a++)
+	for (a = 0; a < count; a++)
+	{
+		if (reg[a].lamp == lamp)
 		{
-			if (reg[a].lamp == lamp)
-			{
-				memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
-				rst = OK;
-				break;
-			}
+			memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
+			rst = OK;
+			break;
 		}
 	}
 
@@ -1598,19 +1591,16 @@ static SANE_Int hp4370_checkstable(SANE_Int lamp, struct st_checkstable *check)
 
 	SANE_Int rst = ERROR;
 
-	if (reg != NULL)
-	{
-		SANE_Int a;
-		SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
+	SANE_Int a;
+	SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
 
-		for (a = 0; a < count; a++)
+	for (a = 0; a < count; a++)
+	{
+		if (reg[a].lamp == lamp)
 		{
-			if (reg[a].lamp == lamp)
-			{
-				memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
-				rst = OK;
-				break;
-			}
+			memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
+			rst = OK;
+			break;
 		}
 	}
 
@@ -1635,19 +1625,16 @@ static SANE_Int ua4900_checkstable(SANE_Int lamp, struct st_checkstable *check)
 
 	SANE_Int rst = ERROR;
 
-	if (reg != NULL)
-	{
-		SANE_Int a;
-		SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
+	SANE_Int a;
+	SANE_Int count = sizeof(reg) / sizeof(struct st_reg);
 
-		for (a = 0; a < count; a++)
+	for (a = 0; a < count; a++)
+	{
+		if (reg[a].lamp == lamp)
 		{
-			if (reg[a].lamp == lamp)
-			{
-				memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
-				rst = OK;
-				break;
-			}
+			memcpy(check, &reg[a].values, sizeof(struct st_checkstable));
+			rst = OK;
+			break;
 		}
 	}
 
@@ -2720,7 +2707,7 @@ static SANE_Int bq5550_scanmodes(SANE_Int usb, SANE_Int sm, struct st_scanmode *
 	SANE_Int rst = ERROR;
 
 	/* silence compiler */
-	usb = usb;
+	(void) usb;
 
 	if (mymode != NULL)
 	{

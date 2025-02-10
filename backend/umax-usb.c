@@ -19,9 +19,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -231,7 +229,7 @@ static SANE_Status pv8630_init_umaxusb_scanner(int fd)
  * sanei_umaxusb_req_wait() and sanei_umaxusb_req_enter()
  *
  * I don't know if it is possible to queue the reads to the
- * scanner. So The queing is disabled. The performance does not seems
+ * scanner. So The queueing is disabled. The performance does not seems
  * to be bad anyway.
  */
 
@@ -263,8 +261,8 @@ sanei_umaxusb_open (const char *dev, int *fdp,
 {
 	SANE_Status status;
 
-	handler = handler;			/* silence gcc */
-	handler_arg = handler_arg;	/* silence gcc */
+	(void) handler;			/* silence gcc */
+	(void) handler_arg;		/* silence gcc */
 
 	status = sanei_usb_open (dev, fdp);
 	if (status != SANE_STATUS_GOOD) {
@@ -275,7 +273,7 @@ sanei_umaxusb_open (const char *dev, int *fdp,
 		SANE_Word vendor;
 		SANE_Word product;
 
-		/* We have openned the device. Check that it is a USB scanner. */
+		/* We have opened the device. Check that it is a USB scanner. */
 		if (sanei_usb_get_vendor_product (*fdp, &vendor, &product) != SANE_STATUS_GOOD) {
 			/* This is not a USB scanner, or SANE or the OS doesn't support it. */
 			sanei_usb_close(*fdp);
@@ -308,7 +306,7 @@ static SANE_Status
 sanei_umaxusb_open_extended (const char *dev, int *fdp,
 					SANEI_SCSI_Sense_Handler handler, void *handler_arg, int *buffersize)
 {
-	buffersize = buffersize;
+	(void) buffersize;
 	return(sanei_umaxusb_open(dev, fdp, handler, handler_arg));
 }
 

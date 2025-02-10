@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -42,8 +40,6 @@
 
    This file is part of the canon_pp backend, supporting Canon CanoScan
    Parallel scanners and also distributed as part of the stand-alone driver.
-
-   canon_pp-dev.c: $Revision$
 
    Misc constants for Canon CanoScan Parallel scanners and high-level scan
    functions.
@@ -83,11 +79,6 @@ static void DBG(int level, const char *format, ...)
 	va_end(args);
 }
 #else
-
-/* Definitions which only apply to SANE compiles */
-#ifndef VERSION
-#define VERSION "$Revision$"
-#endif
 
 #define DEBUG_DECLARE_ONLY
 #include "canon_pp.h"
@@ -774,7 +765,7 @@ static void convdata(unsigned char *srcbuffer, unsigned char *dstbuffer,
 
 	for (count = 0; count < width; count++)
 	{
-		/* The scanner stores data in a bizzare butchered 10-bit
+		/* The scanner stores data in a bizarre butchered 10-bit
 		   format.  I'll try to explain it in 100 words or less:
 
 		   Scanlines are made up of groups of 4 pixels. Each group of

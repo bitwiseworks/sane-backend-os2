@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -59,11 +57,11 @@ sanei_w_space (Wire * w, size_t howmuch)
   int fd = w->io.fd;
   ssize_t nread, nwritten;
 
-  DBG (3, "sanei_w_space: %lu bytes for wire %d\n", (u_long) howmuch, fd);
+  DBG (3, "sanei_w_space: %zu bytes for wire %d\n", howmuch, fd);
 
   if (howmuch > w->buffer.size)
-    DBG (2, "sanei_w_space: bigger than buffer (%lu bytes), "
-	 "may be flush()\n", (u_long) w->buffer.size);
+    DBG (2, "sanei_w_space: bigger than buffer (%zu bytes), "
+	 "may be flush()\n", w->buffer.size);
 
   if (w->status != 0)
     {
@@ -74,15 +72,15 @@ sanei_w_space (Wire * w, size_t howmuch)
 
   if (w->buffer.curr + howmuch > w->buffer.end)
     {
-      DBG (4, "sanei_w_space: free buffer size is %lu\n",
-	   (u_long) (w->buffer.end - w->buffer.curr));
+      DBG (4, "sanei_w_space: free buffer size is %zu\n",
+	   (w->buffer.end - w->buffer.curr));
       switch (w->direction)
 	{
 	case WIRE_ENCODE:
 	  nbytes = w->buffer.curr - w->buffer.start;
 	  w->buffer.curr = w->buffer.start;
-	  DBG (4, "sanei_w_space: ENCODE: sending %lu bytes\n",
-	       (u_long) nbytes);
+	  DBG (4, "sanei_w_space: ENCODE: sending %zu bytes\n",
+	       nbytes);
 	  while (nbytes > 0)
 	    {
 	      nwritten = (*w->io.write) (fd, w->buffer.curr, nbytes);
@@ -97,8 +95,8 @@ sanei_w_space (Wire * w, size_t howmuch)
 	    }
 	  w->buffer.curr = w->buffer.start;
 	  w->buffer.end = w->buffer.start + w->buffer.size;
-	  DBG (4, "sanei_w_space: ENCODE: free buffer is now %lu\n",
-	       (u_long) w->buffer.size);
+	  DBG (4, "sanei_w_space: ENCODE: free buffer is now %zu\n",
+	       w->buffer.size);
 	  break;
 
 	case WIRE_DECODE:
@@ -112,8 +110,8 @@ sanei_w_space (Wire * w, size_t howmuch)
 
 	  if (left_over)
 	    {
-	      DBG (4, "sanei_w_space: DECODE: %lu bytes left in buffer\n",
-		   (u_long) left_over);
+	      DBG (4, "sanei_w_space: DECODE: %zu bytes left in buffer\n",
+		   left_over);
 	      memmove (w->buffer.start, w->buffer.curr, left_over);
 	    }
 	  w->buffer.curr = w->buffer.start;
@@ -137,8 +135,8 @@ sanei_w_space (Wire * w, size_t howmuch)
 	      w->buffer.end += nread;
 	    }
 	  while (left_over < howmuch);
-	  DBG (4, "sanei_w_space: DECODE: %lu bytes read\n",
-	       (u_long) (w->buffer.end - w->buffer.start));
+	  DBG (4, "sanei_w_space: DECODE: %zu bytes read\n",
+	       (size_t)(w->buffer.end - w->buffer.start));
 	  break;
 
 	case WIRE_FREE:
@@ -150,7 +148,7 @@ sanei_w_space (Wire * w, size_t howmuch)
 }
 
 void
-sanei_w_void (Wire * w)
+sanei_w_void (Wire * w, void __sane_unused__ * v)
 {
   DBG (3, "sanei_w_void: wire %d (void debug output)\n", w->io.fd);
 }
@@ -163,8 +161,8 @@ sanei_w_array (Wire * w, SANE_Word * len_ptr, void **v,
   char *val;
   int i;
 
-  DBG (3, "sanei_w_array: wire %d, elements of size %lu\n", w->io.fd,
-       (u_long) element_size);
+  DBG (3, "sanei_w_array: wire %d, elements of size %zu\n", w->io.fd,
+       element_size);
 
   if (w->direction == WIRE_FREE)
     {
@@ -252,8 +250,8 @@ sanei_w_ptr (Wire * w, void **v, WireCodecFunc w_value, size_t value_size)
 {
   SANE_Word is_null;
 
-  DBG (3, "sanei_w_ptr: wire %d, value pointer at is %lu bytes\n", w->io.fd,
-       (u_long) value_size);
+  DBG (3, "sanei_w_ptr: wire %d, value pointer at is %zu bytes\n", w->io.fd,
+       value_size);
 
   if (w->direction == WIRE_FREE)
     {
@@ -585,8 +583,8 @@ sanei_w_set_dir (Wire * w, WireDirection dir)
        w->direction == WIRE_ENCODE ? "ENCODE" :
        (w->direction == WIRE_DECODE ? "DECODE" : "FREE"));
   if (w->direction == WIRE_DECODE && w->buffer.curr != w->buffer.end)
-    DBG (1, "sanei_w_set_dir: WARNING: will delete %lu bytes from buffer\n",
-	 (u_long) (w->buffer.end - w->buffer.curr));
+    DBG (1, "sanei_w_set_dir: WARNING: will delete %zu bytes from buffer\n",
+	 (size_t) (w->buffer.end - w->buffer.curr));
   flush (w);
   w->direction = dir;
   DBG (4, "sanei_w_set_dir: direction changed\n");

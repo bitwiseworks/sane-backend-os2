@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #define BUILD 19				/* 2013-03-29 */
@@ -46,10 +44,10 @@
 static struct option basic_options[] = {
 	{"device-name", required_argument, NULL, 'd'},
 	{"level", required_argument, NULL, 'l'},
-	{"scan", NULL, NULL, 's'},
+	{"scan", no_argument, NULL, 's'},
 	{"recursion", required_argument, NULL, 'r'},
 	{"get-devices", required_argument, NULL, 'g'},
-	{"help", 0, NULL, 'h'}
+	{"help", no_argument, NULL, 'h'}
 };
 
 static void

@@ -15,8 +15,8 @@
    License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with sane; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   along with sane; see the file COPYING.
+   If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -65,9 +65,7 @@
  * This documentation is far from complete. Any help is appreciated.
  *
  * @section additional Additional documentation
- * - The SANE standard can be found at <a
- *   href="http://www.sane-project.org/html/">the SANE webserver</a>,
- *   though the PostScript version produced from the source may be more recent.
+ * - The <a href="https://sane-project.gitlab.io/standard/">SANE Standard</a>.
  * - Information on how to write a backend: <a
  *   href="../backend-writing.txt">backend-writing.txt</a>.
  * - General SANE documentation is on <a
@@ -120,7 +118,7 @@ extern "C" {
  * @return
  * - SANE_STATUS_GOOD     - on success
  * - SANE_STATUS_INVAL    - if the value doesn't fit inside the constraint
- *   or any other error occured
+ *   or any other error occurred
  * @sa sanei_constrain_value()
  */
 
@@ -137,7 +135,7 @@ extern "C" {
  * @return
  * - SANE_STATUS_GOOD     - on success
  * - SANE_STATUS_INVAL    - if the function wasn't able to fit value into the
- *   constraint or any other error occured
+ *   constraint or any other error occurred
  * @sa sanei_check_value()
  */
 

@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -515,10 +513,10 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG (2, "sane_init: version_code %s 0, authorize %s 0\n",
        version_code == 0 ? "=" : "!=", authorize == 0 ? "=" : "!=");
   DBG (1, "sane_init: SANE pnm backend version %d.%d.%d from %s\n",
-       SANE_CURRENT_MAJOR, V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
   return SANE_STATUS_GOOD;
 }
 

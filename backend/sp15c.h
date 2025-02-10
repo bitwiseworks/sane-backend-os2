@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -47,7 +45,6 @@
 
 /* ------------------------------------------------------------------------- */
 /*
- * $Log$
  * Revision 1.8  2008/05/15 12:50:24  ellert-guest
  * Fix for bug #306751: sanei-thread with pthreads on 64 bit
  *

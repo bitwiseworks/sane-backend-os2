@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -72,7 +70,6 @@
 #include "../include/sane/saneopts.h"
 
 #include <sys/ioctl.h>
-#include <asm/types.h>		/* XXX glibc */
 
 #define BACKEND_NAME v4l
 #include "../include/sane/sanei_backend.h"
@@ -437,14 +434,14 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   size_t len;
   FILE *fp;
 
-  authorize = authorize;	/* stop gcc from complaining */
+  (void) authorize;		/* stop gcc from complaining */
   DBG_INIT ();
 
   DBG (2, "SANE v4l backend version %d.%d build %d from %s\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   fp = sanei_config_open (V4L_CONFIG_FILE);
   if (!fp)
@@ -732,7 +729,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
        action == SANE_ACTION_GET_VALUE ? "get" :
        action == SANE_ACTION_SET_VALUE ? "set" :
        action == SANE_ACTION_SET_AUTO ? "auto set" :
-       "(unknow action with)", option,
+       "(unknown action with)", option,
        s->opt[option].name ? s->opt[option].name : s->opt[option].title);
 
   cap = s->opt[option].cap;
@@ -1010,7 +1007,7 @@ sane_start (SANE_Handle handle)
 	  buffer = NULL;
 	  return SANE_STATUS_IO_ERROR;
 	}
-      DBG (3, "sane_start: mmapped frame, capture 1 pict into %p\n", buffer);
+      DBG (3, "sane_start: mmapped frame, capture 1 pict into %p\n", (void *) buffer);
       s->mmap.frame = 0;
       s->mmap.width = s->window.width;
       /*   s->mmap.width = parms.pixels_per_line;  ??? huh? */
@@ -1046,7 +1043,7 @@ sane_start (SANE_Handle handle)
   /* v4l1 actually returns BGR when we ask for RGB, so convert it */
   if (s->pict.palette == VIDEO_PALETTE_RGB24)
     {
-      __u32 loop;
+      uint32_t loop;
       DBG (3, "sane_start: converting from BGR to RGB\n");
       for (loop = 0; loop < (s->window.width * s->window.height * 3); loop += 3)
         {

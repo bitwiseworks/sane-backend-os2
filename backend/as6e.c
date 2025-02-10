@@ -14,9 +14,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -628,7 +626,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   DBG_INIT ();
   DBG (2, "sane_init (authorize %s null)\n", (authorize) ? "!=" : "==");
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 /*  fp = sanei_config_open (AS6E_CONFIG_FILE);*/
   if (!fp)
     {
@@ -797,7 +795,6 @@ check_for_driver (const char *devname)
   struct stat statbuf;
   mode_t modes;
   char *path;
-  char fullname[NAMESIZE];
   char dir[NAMESIZE];
   int count = 0, offset = 0, valid;
 
@@ -806,7 +803,6 @@ check_for_driver (const char *devname)
     return 0;
   while (path[count] != '\0')
     {
-      memset (fullname, '\0', sizeof (fullname));
       memset (dir, '\0', sizeof (dir));
       valid = 1;
       while ((path[count] != ':') && (path[count] != '\0'))
@@ -819,19 +815,19 @@ check_for_driver (const char *devname)
 	  count++;
 	}
 	if (valid == 1)
-	{
-        /* use sizeof(fullname)-1 to make sure there is at least one padded null byte */
-        strncpy (fullname, dir, sizeof(fullname)-1);
-        /* take into account that fullname already contains non-null bytes */
-        strncat (fullname, "/", sizeof(fullname)-strlen(fullname)-1);
-        strncat (fullname, devname, sizeof(fullname)-strlen(fullname)-1);
-        if (!stat (fullname, &statbuf))
-	  {
-	    modes = statbuf.st_mode;
-	    if (S_ISREG (modes))
-	      return (1);		/* found as6edriver */
-	  }
-	}
+          {
+            char fullname[NAMESIZE];
+            int len = snprintf(fullname, sizeof(fullname), "%s/%s", dir, devname);
+            if ((len > 0) && (len <= (int)sizeof(fullname)))
+              {
+                if (!stat (fullname, &statbuf))
+                  {
+                    modes = statbuf.st_mode;
+                    if (S_ISREG (modes))
+                      return (1);		/* found as6edriver */
+                  }
+              }
+          }
       if (path[count] == '\0')
 	return (0);		/* end of path --no driver found */
       count++;

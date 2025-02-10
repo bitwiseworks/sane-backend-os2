@@ -19,9 +19,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -197,7 +195,7 @@ sane_exit (void)
         if ( md_first_dev->shading_table_w )
           {
             DBG(100, "free md_first_dev->shading_table_w at %p\n",
-                      md_first_dev->shading_table_w);
+                      (void *) md_first_dev->shading_table_w);
             free((void *) md_first_dev->shading_table_w);
             md_first_dev->shading_table_w = NULL;
           }
@@ -205,7 +203,7 @@ sane_exit (void)
         if ( md_first_dev->shading_table_d )
           {
             DBG(100, "free md_first_dev->shading_table_d at %p\n",
-                      md_first_dev->shading_table_d);
+                      (void *) md_first_dev->shading_table_d);
             free((void *) md_first_dev->shading_table_d);
             md_first_dev->shading_table_d = NULL;
           }
@@ -458,7 +456,7 @@ sane_init(SANE_Int *version_code, SANE_Auth_Callback __sane_unused__ authorize)
            MICROTEK2_MAJOR, MICROTEK2_MINOR, MICROTEK2_BUILD);
 
     if ( version_code )
-        *version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, V_MINOR, 0);
+        *version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
 #ifdef HAVE_AUTHORIZATION
     auth_callback = authorize;
@@ -574,8 +572,8 @@ sane_open(SANE_String_Const name, SANE_Handle *handle)
     *handle = ms;
 
 #ifdef HAVE_AUTHORIZATION
-    /* check whether the file with the passwords exists. If it doesnt */
-    /* exist, we dont use any authorization */
+    /* check whether the file with the passwords exists. If it doesn't */
+    /* exist, we don't use any authorization */
 
     rc = stat(PASSWD_FILE, &st);
     if ( rc == -1 && errno == ENOENT )
@@ -601,7 +599,8 @@ sane_read(SANE_Handle handle, SANE_Byte *buf, SANE_Int maxlen, SANE_Int *len )
     ssize_t nread;
 
 
-    DBG(30, "sane_read: handle=%p, buf=%p, maxlen=%d\n", handle, buf, maxlen);
+    DBG(30, "sane_read: handle=%p, buf=%p, maxlen=%d\n",
+             handle, (void *) buf, maxlen);
 
     *len = 0;
 
@@ -744,7 +743,7 @@ add_device_list(SANE_String_Const dev_name, Microtek2_Device **mdev)
         md->opts = md_options;
     ++md_num_devices;
     *mdev = md;
-    DBG(100, "free hdev at %p\n", hdev);
+    DBG(100, "free hdev at %p\n", (void *) hdev);
     free(hdev);
 
     return SANE_STATUS_GOOD;
@@ -1362,53 +1361,56 @@ cleanup_scanner(Microtek2_Scanner *ms)
     /* free buffers */
     if ( ms->buf.src_buffer[0] )
       {
-        DBG(100, "free ms->buf.src_buffer[0] at %p\n", ms->buf.src_buffer[0]);
+        DBG(100, "free ms->buf.src_buffer[0] at %p\n",
+                  (void *) ms->buf.src_buffer[0]);
         free((void *) ms->buf.src_buffer[0]);
         ms->buf.src_buffer[0] = NULL;
         ms->buf.src_buf = NULL;
       }
     if ( ms->buf.src_buffer[1] )
       {
-        DBG(100, "free ms->buf.src_buffer[1] at %p\n", ms->buf.src_buffer[1]);
+        DBG(100, "free ms->buf.src_buffer[1] at %p\n",
+                  (void *) ms->buf.src_buffer[1]);
         free((void *) ms->buf.src_buffer[1]);
         ms->buf.src_buffer[1] = NULL;
         ms->buf.src_buf = NULL;
       }
     if ( ms->buf.src_buf )
       {
-        DBG(100, "free ms->buf.src_buf at %p\n", ms->buf.src_buf);
+        DBG(100, "free ms->buf.src_buf at %p\n", (void *) ms->buf.src_buf);
         free((void *) ms->buf.src_buf);
         ms->buf.src_buf = NULL;
       }
     if ( ms->temporary_buffer )
       {
-        DBG(100, "free ms->temporary_buffer at %p\n", ms->temporary_buffer);
+        DBG(100, "free ms->temporary_buffer at %p\n",
+                  (void *) ms->temporary_buffer);
         free((void *) ms->temporary_buffer);
         ms->temporary_buffer = NULL;
       }
     if ( ms->gamma_table )
       {
-        DBG(100, "free ms->gamma_table at %p\n", ms->gamma_table);
+        DBG(100, "free ms->gamma_table at %p\n", (void *) ms->gamma_table);
         free((void *) ms->gamma_table);
         ms->gamma_table = NULL;
       }
     if ( ms->control_bytes )
       {
-        DBG(100, "free ms->control_bytes at %p\n", ms->control_bytes);
+        DBG(100, "free ms->control_bytes at %p\n", (void *) ms->control_bytes);
         free((void *) ms->control_bytes);
         ms->control_bytes = NULL;
       }
     if ( ms->condensed_shading_w )
       {
         DBG(100, "free ms->condensed_shading_w at %p\n",
-                  ms->condensed_shading_w);
+                  (void *) ms->condensed_shading_w);
         free((void *) ms->condensed_shading_w);
         ms->condensed_shading_w = NULL;
       }
     if ( ms->condensed_shading_d )
       {
         DBG(100, "free ms->condensed_shading_d at %p\n",
-                  ms->condensed_shading_d);
+                  (void *) ms->condensed_shading_d);
         free((void *) ms->condensed_shading_d);
         ms->condensed_shading_d = NULL;
       }
@@ -1420,15 +1422,15 @@ cleanup_scanner(Microtek2_Scanner *ms)
 /*---------- do_authorization() ----------------------------------------------*/
 
 static SANE_Status
-do_authorization(char *ressource)
+do_authorization(char *resource)
 {
     /* This function implements a simple authorization function. It looks */
     /* up an entry in the file SANE_PATH_CONFIG_DIR/auth. Such an entry */
     /* must be of the form device:user:password where password is a crypt() */
     /* encrypted password. If several users are allowed to access a device */
     /* an entry must be created for each user. If no entry exists for device */
-    /* or the file does not exist no authentication is neccessary. If the */
-    /* file exists, but cant be opened the authentication fails */
+    /* or the file does not exist no authentication is necessary. If the */
+    /* file exists, but can't be opened the authentication fails */
 
     SANE_Status status;
     FILE *fp;
@@ -1443,12 +1445,12 @@ do_authorization(char *ressource)
     char *p;
 
 
-    DBG(30, "do_authorization: ressource=%s\n", ressource);
+    DBG(30, "do_authorization: resource=%s\n", resource);
 
     if ( auth_callback == NULL )  /* frontend does not require authorization */
         return SANE_STATUS_GOOD;
 
-    /* first check if an entry exists in for this device. If not, we dont */
+    /* first check if an entry exists in for this device. If not, we don't */
     /* use authorization */
 
     fp = fopen(PASSWD_FILE, "r");
@@ -1475,7 +1477,7 @@ do_authorization(char *ressource)
           {
             *p = '\0';
             device = linep;
-            if ( strcmp(device, ressource) == 0 )
+            if ( strcmp(device, resource) == 0 )
               {
                 DBG(2, "equal\n");
                 device_found = 1;
@@ -1492,7 +1494,7 @@ do_authorization(char *ressource)
 
     fseek(fp, 0L, SEEK_SET);
 
-    (*auth_callback) (ressource, username, password);
+    (*auth_callback) (resource, username, password);
 
     status = SANE_STATUS_ACCESS_DENIED;
     do
@@ -1506,7 +1508,7 @@ do_authorization(char *ressource)
                 continue;
             *p = '\0';
             device = linep;
-            if ( strcmp( device, ressource) != 0 ) /* not a matching entry */
+            if ( strcmp( device, resource) != 0 ) /* not a matching entry */
                 continue;
 
             linep = ++p;
@@ -1517,7 +1519,7 @@ do_authorization(char *ressource)
             *p = '\0';
             user = linep;
             if ( strncmp(user, username, SANE_MAX_USERNAME_LEN) != 0 )
-                continue;                  /* username doesnt match */
+                continue;                  /* username doesn't match */
 
             linep = ++p;
             /* rest of the line is considered to be the password */
@@ -3573,7 +3575,7 @@ restore_gamma_options(SANE_Option_Descriptor *sod, Option_Value *val)
 {
 
     DBG(40, "restore_gamma_options: val=%p, sod=%p\n", (void *) val, (void *) sod);
-    /* if we dont have a gamma table return immediately */
+    /* if we don't have a gamma table return immediately */
     if ( ! val[OPT_GAMMA_MODE].s )
        return SANE_STATUS_GOOD;
 
@@ -3903,8 +3905,8 @@ get_scan_parameters(Microtek2_Scanner *ms)
     if ( y2_dots >= mi->geo_height )
         y2_dots = mi->geo_height - 1;
     ms->width_dots = x2_dots - ms->x1_dots;
-    if ( md->model_flags && MD_OFFSET_2 ) /* this firmware has problems with */
-      if ( ( ms->width_dots % 2 ) == 1 )  /* odd pixel numbers */
+    if ( md->model_flags & MD_OFFSET_2 ) /* this firmware has problems with */
+      if ( ( ms->width_dots % 2 ) == 1 ) /* odd pixel numbers */
         ms->width_dots -= 1;
     if ( ms->width_dots < 10 )
         ms->width_dots = 10;
@@ -4203,7 +4205,8 @@ scsi_send_gamma(Microtek2_Scanner *ms)
 
 
     DBG(30, "scsi_send_gamma: pos=%p, size=%d, word=%d, color=%d\n",
-             ms->gamma_table, ms->lut_size_bytes, ms->word, ms->current_color);
+             (void *) ms->gamma_table, ms->lut_size_bytes, ms->word,
+             ms->current_color);
 
     if ( ( 3 * ms->lut_size_bytes ) <= 0xffff ) /*send Gamma with one command*/
       {
@@ -4467,7 +4470,7 @@ scsi_read_control_bits(Microtek2_Scanner *ms)
     int count_1s;
 
     DBG(30, "scsi_read_control_bits: ms=%p, fd=%d\n", (void *) ms, ms->sfd);
-    DBG(30, "ms->control_bytes = %p\n", ms->control_bytes);
+    DBG(30, "ms->control_bytes = %p\n", (void *) ms->control_bytes);
 
     RCB_SET_CMD(cmd);
     RCB_SET_LENGTH(cmd, ms->n_control_bytes);
@@ -4522,7 +4525,7 @@ scsi_set_window(Microtek2_Scanner *ms, int n) {   /* n windows, not yet */
     size = SW_CMD_L + SW_HEADER_L + n * SW_BODY_L;
     setwindow = (uint8_t *) malloc(size);
     DBG(100, "scsi_set_window: setwindow= %p, malloc'd %d Bytes\n",
-              setwindow, size);
+              (void *) setwindow, size);
     if ( setwindow == NULL )
       {
         DBG(1, "scsi_set_window: malloc for setwindow failed\n");
@@ -4594,7 +4597,7 @@ scsi_set_window(Microtek2_Scanner *ms, int n) {   /* n windows, not yet */
     if ( status != SANE_STATUS_GOOD )
         DBG(1, "scsi_set_window: '%s'\n", sane_strstatus(status));
 
-    DBG(100, "scsi_set_window: free setwindow at %p\n", setwindow);
+    DBG(100, "scsi_set_window: free setwindow at %p\n", (void *) setwindow);
     free((void *) setwindow);
     return status;
 }
@@ -4667,7 +4670,8 @@ scsi_read_image(Microtek2_Scanner *ms, uint8_t *buffer, int bytes_per_pixel)
     uint8_t tmp;
 
 
-    DBG(30, "scsi_read_image:  ms=%p, buffer=%p\n", (void *) ms, buffer);
+    DBG(30, "scsi_read_image:  ms=%p, buffer=%p\n",
+             (void *) ms, (void *) buffer);
 
     ENDIAN_TYPE(endiantype)
     RI_SET_CMD(cmd);
@@ -4792,7 +4796,7 @@ scsi_read_shading(Microtek2_Scanner *ms, uint8_t *buffer, uint32_t length)
     size_t size;
 
     DBG(30, "scsi_read_shading: pos=%p, size=%d, word=%d, color=%d, dark=%d\n",
-             buffer, length, ms->word, ms->current_color, ms->dark);
+             (void *) buffer, length, ms->word, ms->current_color, ms->dark);
 
     size = length;
 
@@ -4809,7 +4813,8 @@ scsi_read_shading(Microtek2_Scanner *ms, uint8_t *buffer, uint32_t length)
 
     DBG(100, "scsi_read_shading: sfd=%d, cmd=%p, sizeofcmd=%lu,"
              "dest=%p, destsize=%lu\n",
-              ms->sfd, cmd, (u_long) sizeof(cmd), buffer, (u_long) size);
+              ms->sfd, (void *) cmd, (u_long) sizeof(cmd), (void *) buffer,
+              (u_long) size);
 
     status = sanei_scsi_cmd(ms->sfd, cmd, sizeof(cmd), buffer, &size);
     if ( status != SANE_STATUS_GOOD )
@@ -4839,12 +4844,11 @@ scsi_send_shading(Microtek2_Scanner *ms,
 
 
     DBG(30, "scsi_send_shading: pos=%p, size=%d, word=%d, color=%d, dark=%d\n",
-             shading_data, length, ms->word, ms->current_color,
-             dark);
+             (void *) shading_data, length, ms->word, ms->current_color, dark);
 
     cmd = (uint8_t *) malloc(SSI_CMD_L + length);
     DBG(100, "scsi_send_shading: cmd=%p, malloc'd %d bytes\n",
-              cmd, SSI_CMD_L + length);
+              (void *) cmd, SSI_CMD_L + length);
     if ( cmd == NULL )
       {
         DBG(1, "scsi_send_shading: Couldn't get buffer for shading table\n");
@@ -4870,7 +4874,7 @@ scsi_send_shading(Microtek2_Scanner *ms,
     if ( status != SANE_STATUS_GOOD )
         DBG(1, "scsi_send_shading: '%s'\n", sane_strstatus(status));
 
-    DBG(100, "free cmd at %p\n", cmd);
+    DBG(100, "free cmd at %p\n", (void *) cmd);
     free((void *) cmd);
 
     return status;
@@ -5072,7 +5076,8 @@ scsi_sense_handler (int fd, u_char *sense, void *arg)
     uint8_t ascq;
 
 
-    DBG(30, "scsi_sense_handler: fd=%d, sense=%p arg=%p\n",fd, sense, arg);
+    DBG(30, "scsi_sense_handler: fd=%d, sense=%p arg=%p\n",
+             fd, (void *) sense, arg);
 
     dump_area(sense, RQS_LENGTH(sense), "SenseBuffer");
 
@@ -5122,7 +5127,7 @@ scsi_sense_handler (int fd, u_char *sense, void *arg)
                     DBG(5, "scsi_sense_handler: Gain error\n");
                     break;
                   case RQS_ASCQ_POS:
-                    DBG(5, "scsi_sense_handler: Positoning error\n");
+                    DBG(5, "scsi_sense_handler: Positioning error\n");
                     break;
                   default:
                     DBG(5, "scsi_sense_handler: Unknown combination of ASC"
@@ -5266,7 +5271,7 @@ sane_start(SANE_Handle handle)
         if (ms->control_bytes) free((void *)ms->control_bytes);
         ms->control_bytes = (uint8_t *) malloc(ms->n_control_bytes);
         DBG(100, "sane_start: ms->control_bytes=%p, malloc'd %lu bytes\n",
-                             ms->control_bytes, (u_long) ms->n_control_bytes);
+                  (void *) ms->control_bytes, (u_long) ms->n_control_bytes);
         if ( ms->control_bytes == NULL )
           {
             DBG(1, "sane_start: malloc() for control bits failed\n");
@@ -5375,7 +5380,7 @@ sane_start(SANE_Handle handle)
 
         ms->gamma_table = (uint8_t *) malloc(3 * ms->lut_size_bytes );
         DBG(100, "sane_start: ms->gamma_table=%p, malloc'd %d bytes\n",
-                  ms->gamma_table, 3 * ms->lut_size_bytes);
+                  (void *) ms->gamma_table, 3 * ms->lut_size_bytes);
         if ( ms->gamma_table == NULL )
           {
             DBG(1, "sane_start: malloc for gammatable failed\n");
@@ -5545,7 +5550,7 @@ prepare_buffers(Microtek2_Scanner *ms)
 
     if ( ms->mode == MS_MODE_COLOR && mi->data_format == MI_DATAFMT_LPLSEGREG )
       {
-        /* In this case the data is not neccessarily in the order RGB */
+        /* In this case the data is not necessarily in the order RGB */
         /* and there may be different numbers of read red, green and blue */
         /* segments. We allocate a second buffer to read new lines in */
         /* and hold undelivered pixels in the other buffer */
@@ -5561,7 +5566,7 @@ prepare_buffers(Microtek2_Scanner *ms)
             ms->buf.src_buffer[i] = (uint8_t *) malloc(ms->src_buffer_size
                                     + extra_buf_size);
             DBG(100, "prepare_buffers: ms->buf.src_buffer[%d]=%p,"
-                     "malloc'd %d bytes\n", i, ms->buf.src_buffer[i],
+                     "malloc'd %d bytes\n", i, (void *) ms->buf.src_buffer[i],
                      ms->src_buffer_size + extra_buf_size);
             if ( ms->buf.src_buffer[i] == NULL )
               {
@@ -5581,7 +5586,7 @@ prepare_buffers(Microtek2_Scanner *ms)
             free((void *) ms->buf.src_buf);
         ms->buf.src_buf = malloc(ms->src_buffer_size);
         DBG(100, "sane_start: ms->buf.src_buf=%p, malloc'd %d bytes\n",
-                            ms->buf.src_buf, ms->src_buffer_size);
+                  (void *) ms->buf.src_buf, ms->src_buffer_size);
         if ( ms->buf.src_buf == NULL )
           {
             DBG(1, "sane_start: malloc for scan buffer failed\n");
@@ -5604,7 +5609,7 @@ prepare_buffers(Microtek2_Scanner *ms)
       {
         ms->temporary_buffer = (uint8_t *) malloc(ms->remaining_bytes);
         DBG(100, "sane_start: ms->temporary_buffer=%p, malloc'd %d bytes\n",
-                  ms->temporary_buffer, ms->remaining_bytes);
+                  (void *) ms->temporary_buffer, ms->remaining_bytes);
         if ( ms->temporary_buffer == NULL )
           {
             DBG(1, "sane_start: malloc() for temporary buffer failed\n");
@@ -5936,7 +5941,8 @@ condense_shading(Microtek2_Scanner *ms)
       }
     ms->condensed_shading_w = (uint8_t *)malloc(cond_length);
     DBG(100, "condense_shading: ms->condensed_shading_w=%p,"
-             "malloc'd %d bytes\n", ms->condensed_shading_w, cond_length);
+             "malloc'd %d bytes\n",
+              (void *) ms->condensed_shading_w, cond_length);
     if ( ms->condensed_shading_w == NULL )
       {
         DBG(1, "condense_shading: malloc for white table failed\n");
@@ -5956,7 +5962,8 @@ condense_shading(Microtek2_Scanner *ms)
           }
         ms->condensed_shading_d = (uint8_t *)malloc(cond_length);
         DBG(100, "condense_shading: ms->condensed_shading_d=%p,"
-                 " malloc'd %d bytes\n", ms->condensed_shading_d, cond_length);
+                 " malloc'd %d bytes\n",
+                  (void *) ms->condensed_shading_d, cond_length);
         if ( ms->condensed_shading_d == NULL )
           {
             DBG(1, "condense_shading: malloc for dark table failed\n");
@@ -6118,7 +6125,8 @@ read_shading_image(Microtek2_Scanner *ms)
         ms->shading_image = malloc(ms->bpl * ms->src_remaining_lines);
         DBG(100, "read shading image: ms->shading_image=%p,"
                  " malloc'd %d bytes\n",
-               ms->shading_image, ms->bpl * ms->src_remaining_lines);
+                  (void *) ms->shading_image,
+                  ms->bpl * ms->src_remaining_lines);
         if ( ms->shading_image == NULL )
           {
             DBG(1, "read_shading_image: malloc for buffer failed\n");
@@ -6184,7 +6192,7 @@ read_shading_image(Microtek2_Scanner *ms)
           }
 
         DBG(100, "free memory for ms->shading_image at %p\n",
-               ms->shading_image);
+                  (void *) ms->shading_image);
         free((void *) ms->shading_image);
         ms->shading_image = NULL;
       }
@@ -6259,7 +6267,7 @@ read_shading_image(Microtek2_Scanner *ms)
 
     ms->shading_image = malloc(ms->bpl * ms->src_remaining_lines);
     DBG(100, "read shading image: ms->shading_image=%p, malloc'd %d bytes\n",
-              ms->shading_image, ms->bpl * ms->src_remaining_lines);
+              (void *) ms->shading_image, ms->bpl * ms->src_remaining_lines);
     if ( ms->shading_image == NULL )
       {
         DBG(1, "read_shading_image: malloc for buffer failed\n");
@@ -6346,7 +6354,7 @@ read_shading_image(Microtek2_Scanner *ms)
         return status;
 
     DBG(100, "free memory for ms->shading_image at %p\n",
-    ms->shading_image);
+              (void *) ms->shading_image);
     free((void *) ms->shading_image);
     ms->shading_image = NULL;
 
@@ -6378,7 +6386,7 @@ prepare_shading_data(Microtek2_Scanner *ms, uint32_t lines, uint8_t **data)
 #endif
 
   DBG(30, "prepare_shading_data: ms=%p, lines=%d, *data=%p\n",
-          (void *) ms, lines, *data);
+           (void *) ms, lines, (void *) *data);
 
   md = ms->dev;
   mi = &md->info[md->scan_source];
@@ -6391,7 +6399,7 @@ prepare_shading_data(Microtek2_Scanner *ms, uint32_t lines, uint8_t **data)
     {
       *data = (uint8_t *) malloc(length);
       DBG(100, "prepare_shading_data: malloc'd %d bytes at %p\n",
-                length, *data);
+                length, (void *) *data);
       if ( *data == NULL )
         {
           DBG(1, "prepare_shading_data: malloc for shading table failed\n");
@@ -6615,7 +6623,7 @@ read_cx_shading_image(Microtek2_Scanner *ms)
       }
     ms->shading_image = malloc(shading_bytes);
     DBG(100, "read_cx_shading: ms->shading_image=%p, malloc'd %d bytes\n",
-           ms->shading_image, shading_bytes);
+              (void *) ms->shading_image, shading_bytes);
     if ( ms->shading_image == NULL )
       {
         DBG(1, "read_cx_shading: malloc for cx_shading buffer failed\n");
@@ -6660,7 +6668,7 @@ read_cx_shading_image(Microtek2_Scanner *ms)
     if ( ms->shading_image )
       {
         DBG(100, "free memory for ms->shading_image at %p\n",
-        ms->shading_image);
+                  (void *) ms->shading_image);
         free((void *) ms->shading_image);
         ms->shading_image = NULL;
       }
@@ -6712,7 +6720,7 @@ calc_cx_shading_line(Microtek2_Scanner *ms)
             free( (void *)md->shading_table_w );
         md->shading_table_w = (uint8_t *) malloc(shading_line_bytes);
         DBG(100, "calc_cx_shading: md->shading_table_w=%p, malloc'd %d bytes\n",
-               md->shading_table_w, shading_line_bytes);
+                  (void *) md->shading_table_w, shading_line_bytes);
         if ( md->shading_table_w == NULL )
           {
             DBG(100, "calc_cx_shading: malloc for white shadingtable failed\n");
@@ -6729,7 +6737,7 @@ calc_cx_shading_line(Microtek2_Scanner *ms)
             free( (void *)md->shading_table_d);
         md->shading_table_d = (uint8_t *) malloc(shading_line_bytes);
         DBG(100, "calc_cx_shading: md->shading_table_d=%p, malloc'd %d bytes\n",
-               md->shading_table_d, shading_line_bytes);
+                  (void *) md->shading_table_d, shading_line_bytes);
 
         if ( md->shading_table_d == NULL )
           {
@@ -6747,8 +6755,9 @@ calc_cx_shading_line(Microtek2_Scanner *ms)
             "shading_line_bytes=%d\n"
             "shading_line_pixels=%d\n"
             "shading_table_pointer=%p\n",
-             (void *) ms, md->shading_table_w, md->shading_table_d,
-             shading_line_bytes, shading_line_pixels, shading_table_pointer);
+             (void *) ms, (void *) md->shading_table_w,
+             (void *) md->shading_table_d, shading_line_bytes,
+             shading_line_pixels, (void *) shading_table_pointer);
 
     /*  calculating the median pixel values over the shading lines  */
     /*  and write them to the shading table                       */
@@ -6768,7 +6777,7 @@ calc_cx_shading_line(Microtek2_Scanner *ms)
                 accu = *current_byte;
 
                 /* word shading data: the lower bytes per line and color are */
-                /* transfered first in one block and then the high bytes */
+                /* transferred first in one block and then the high bytes */
                 /* in one block  */
                 /* the dark shading data is also 10 bit, but only the */
                 /* low byte is transferred (ms->word = 0) */
@@ -6880,7 +6889,7 @@ calculate_gamma(Microtek2_Scanner *ms, uint8_t *pos, int color, char *mode)
 
 
     DBG(30, "calculate_gamma: ms=%p, pos=%p, color=%d, mode=%s\n",
-             (void *) ms, pos, color, mode);
+             (void *) ms, (void *) pos, color, mode);
 
     md = ms->dev;
     mi = &md->info[md->scan_source];
@@ -6998,7 +7007,7 @@ shading_function(Microtek2_Scanner *ms, uint8_t *data)
     int i;
 
 
-    DBG(40, "shading_function: ms=%p, data=%p\n", (void *) ms, data);
+    DBG(40, "shading_function: ms=%p, data=%p\n", (void *) ms, (void *) data);
 
     md = ms->dev;
     mi = &md->info[md->scan_source];
@@ -7196,8 +7205,9 @@ reader_process(void *data)
         ms->transfer_length = ms->src_lines_to_read * ms->bpl;
 
         DBG(30, "reader_process: transferlength=%d, lines=%d, linelength=%d, "
-                "real_bpl=%d, srcbuf=%p\n", ms->transfer_length,
-                 ms->src_lines_to_read, ms->bpl, ms->real_bpl, ms->buf.src_buf);
+                "real_bpl=%d, srcbuf=%p\n",
+                 ms->transfer_length, ms->src_lines_to_read, ms->bpl,
+                 ms->real_bpl, (void *) ms->buf.src_buf);
 
         sigprocmask (SIG_BLOCK, &sigterm_set, 0);
         status = scsi_read_image(ms, ms->buf.src_buf, (ms->depth > 8) ? 2 : 1);
@@ -7355,7 +7365,7 @@ chunky_copy_pixels(Microtek2_Scanner *ms, uint8_t *from)
     int color;
 
     DBG(30, "chunky_copy_pixels: from=%p, pixels=%d, fp=%p, depth=%d\n",
-             from, ms->ppl, (void *) ms->fp, ms->depth);
+             (void *) from, ms->ppl, (void *) ms->fp, ms->depth);
 
     md = ms->dev;
     if ( ms->depth > 8 )
@@ -7534,7 +7544,7 @@ segreg_proc_data(Microtek2_Scanner *ms)
       }
 
     DBG(30, "segreg_proc_data: src_buf=%p, free_lines=%d\n",
-             ms->buf.src_buf, ms->buf.free_lines);
+             (void *) ms->buf.src_buf, ms->buf.free_lines);
 
     return SANE_STATUS_GOOD;
 }
@@ -7903,7 +7913,7 @@ wordchunky_copy_pixels(uint8_t *from, uint32_t pixels, int depth, FILE *fp)
     int color;
 
     DBG(30, "wordchunky_copy_pixels: from=%p, pixels=%d, depth=%d\n",
-             from, pixels, depth);
+             (void *) from, pixels, depth);
 
     if ( depth > 8 )
       {
@@ -8015,7 +8025,7 @@ gray_copy_pixels(Microtek2_Scanner *ms,
     float s_w, s_d, shading_factor = 0;
 
     DBG(30, "gray_copy_pixels: pixels=%d, from=%p, fp=%p, depth=%d\n",
-             ms->ppl, from, (void *) ms->fp, ms->depth);
+             ms->ppl, (void *) from, (void *) ms->fp, ms->depth);
 
     md = ms->dev;
     step = right_to_left == 1 ? -1 : 1;
@@ -8250,7 +8260,7 @@ lineartfake_copy_pixels(Microtek2_Scanner *ms,
 
 
     DBG(30, "lineartfake_copy_pixels: from=%p,pixels=%d,threshold=%d,file=%p\n",
-             from, pixels, threshold, (void *) fp);
+             (void *) from, pixels, threshold, (void *) fp);
     md = ms->dev;
     bit = 0;
     dest = 0;
@@ -8324,7 +8334,7 @@ auto_adjust_proc_data(Microtek2_Scanner *ms, uint8_t **temp_current)
 
 
     DBG(30, "auto_adjust_proc_data: ms=%p, temp_current=%p\n",
-            (void *) ms, *temp_current);
+             (void *) ms, (void *) *temp_current);
 
     md = ms->dev;
     mi = &md->info[md->scan_source];

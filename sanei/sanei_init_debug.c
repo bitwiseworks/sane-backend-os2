@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -58,6 +56,8 @@
 #include <sys/socket.h>
 #endif
 #include <sys/stat.h>
+#include <time.h>
+#include <sys/time.h>
 
 #ifdef HAVE_OS2_H
 # define INCL_DOS
@@ -116,7 +116,7 @@ is_socket (int fd)
 
 #if defined(S_ISSOCK)
   return S_ISSOCK(sbuf.st_mode);
-#elif defined (S_IFMT) && defined(S_IFMT)
+#elif defined (S_IFMT) && defined(S_IFSOCK)
   return (sbuf.st_mode & S_IFMT) == S_IFSOCK;
 #else
   return 0;
@@ -131,6 +131,7 @@ sanei_debug_msg
 
   if (max_level >= level)
     {
+#if defined(LOG_DEBUG)
       if (is_socket(fileno(stderr)))
 	{
 	  msg = (char *)malloc (sizeof(char) * (strlen(be) + strlen(fmt) + 4));
@@ -147,8 +148,15 @@ sanei_debug_msg
 	    }
 	}
       else
+#endif
 	{
-	  fprintf (stderr, "[%s] ", be);
+          struct timeval tv;
+          struct tm *t;
+
+          gettimeofday (&tv, NULL);
+          t = localtime (&tv.tv_sec);
+
+          fprintf (stderr, "[%02d:%02d:%02d.%06ld] [%s] ", t->tm_hour, t->tm_min, t->tm_sec, tv.tv_usec, be);
           vfprintf (stderr, fmt, ap);
 	}
 

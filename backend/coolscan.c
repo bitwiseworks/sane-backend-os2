@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -52,10 +50,10 @@
    . - sane_open() : open a particular scanner-device
    . . - sane_set_io_mode : set blocking-mode
    . . - sane_get_select_fd : get scanner-fd
-   . . - sane_get_option_descriptor() : get option informations
+   . . - sane_get_option_descriptor() : get option information
    . . - sane_control_option() : change option values
    . .
-   . . - sane_start() : start image aquisition
+   . . - sane_start() : start image acquisition
    . .   - sane_get_parameters() : returns actual scan-parameters
    . .   - sane_read() : read image-data (from pipe)
    . .
@@ -380,7 +378,7 @@ resValToDiv (int res_val)
     }
 }
 /*
- * use mode select to force a mesurement divisor of 2700
+ * use mode select to force a measurement divisor of 2700
  */
 static unsigned char mode_select[] =
 {
@@ -615,9 +613,9 @@ coolscan_set_window_param_LS20 (Coolscan_t * s, int prescan)
 	}
       else
 	{
-	  /* Quote spec: "It is recomended that analog gamma bits 5, 4 and 3 be
+	  /* Quote spec: "It is recommended that analog gamma bits 5, 4 and 3 be
 	   * set to 1 (OFF) when the object type of byte 48 is positive and the
-	   * gamma specificateion of byte 51 is linear, and to 0 (ON) in all
+	   * gamma specification of byte 51 is linear, and to 0 (ON) in all
 	   * other cases." */
 	  /*
 	  int foo;
@@ -771,7 +769,7 @@ coolscan_set_window_param_LS30 (Coolscan_t * s, int wid, int prescan)
       else
 	set_WD_composition (buffer_r, WD_comp_rgb_full);	/* RGB composition */
 
-      set_WD_composition (buffer_r, WD_comp_rgb_full);  /* allways RGB composition */
+      set_WD_composition (buffer_r, WD_comp_rgb_full);  /* always RGB composition */
 
       /* Bits per pixel */
       set_WD_bitsperpixel(buffer_r, s->bits_per_color);
@@ -838,7 +836,7 @@ coolscan_set_window_param (Coolscan_t * s, int prescan)
   ret=0;
   DBG (10, "set_window_param\n");
 
-  if(s->LS<2)                   /* distinquish between old and new scanners */
+  if(s->LS<2)                   /* distinguish between old and new scanners */
   { ret=coolscan_set_window_param_LS20 (s,prescan);
   }
   else
@@ -993,7 +991,7 @@ coolscan_get_window_param (Coolscan_t * s, int prescanok)
   DBG (10, "get_window_param\n");
 
   ret=0;
-  if(s->LS<2)                   /* distinquish between old and new scanners */
+  if(s->LS<2)                   /* distinguish between old and new scanners */
   { ret=coolscan_get_window_param_LS20 (s);
   }
   else
@@ -1466,7 +1464,7 @@ get_inquiery_part_LS30 (Coolscan_t * s, unsigned char part)
 {
   int size;
 
-  /* Get length of reponse */
+  /* Get length of response */
   inquiry.cmd[1]=0x01;
   inquiry.cmd[2]=part;
   size=4;
@@ -1686,7 +1684,7 @@ get_internal_info (Coolscan_t * s)
 
   DBG (10, "get_internal_info\n");
 
-  if(s->LS<2)                   /* distinquish between old and new scanners */
+  if(s->LS<2)                   /* distinguish between old and new scanners */
   { ret=get_internal_info_LS20 (s);
   }
   else
@@ -1855,8 +1853,8 @@ hexdump (int level, char *comment, unsigned char *p, int l)
 static SANE_Status
 sense_handler (int scsi_fd, unsigned char * result, void *arg)
 {
-  scsi_fd = scsi_fd;
-  arg = arg;
+  (void) scsi_fd;
+  (void) arg;
 
   if (result[0] != 0x70)
     {
@@ -2157,7 +2155,7 @@ attach_one (const char *devName)
 static void
 sigterm_handler (int signal)
 {
-  signal = signal;
+  (void) signal;
   sanei_scsi_req_flush_all ();	/* flush SCSI queue */
   _exit (SANE_STATUS_GOOD);
 }
@@ -2178,7 +2176,7 @@ typedef struct Color_correct_s
 
   function:   RGBIfix
 
-  taks:       Correct the infrared channel
+  task:       Correct the infrared channel
 
   import:     unsigned char * rgbimat - RGBI - matrix from scanner
               int size - number of pixels to correct
@@ -2265,7 +2263,7 @@ static int Calc_fix_LUT(Coolscan_t * s)
 
   function:   RGBIfix
 
-  taks:       Correct the infrared channel
+  task:       Correct the infrared channel
 
   import:     unsigned char * rgbimat - RGBI - matrix from scanner
               int size - number of pixels to correct
@@ -2332,7 +2330,7 @@ static int RGBIfix(Coolscan_t * scanner,
 
   function:   RGBIfix16
 
-  taks:       Correct the infrared channel for 16 bit images
+  task:       Correct the infrared channel for 16 bit images
               (doesn't do anything for now)
 
   import:     unsigned char * rgbimat - RGBI - matrix from scanner
@@ -2362,7 +2360,7 @@ static int RGBIfix16(Coolscan_t * scanner,
   unsigned short *opr,*opg,*opb,*opi;
   int x;
 
-  scanner = scanner; lutr = lutr; lutg = lutg; lutb = lutb; luti = luti;
+  (void) scanner; (void) lutr; (void) lutg; (void) lutb; (void) luti;
 
    for(x=0;x<size;x++)
    {
@@ -2387,7 +2385,7 @@ static int RGBIfix16(Coolscan_t * scanner,
 
   function:   rgb2g
 
-  taks:       Convert RGB data to grey
+  task:       Convert RGB data to grey
 
   import:     unsigned char * rgbimat - RGB - matrix from scanner
               int size - size of input data (num pixel)
@@ -2426,8 +2424,8 @@ static int rgb2g(unsigned char* rgbimat,unsigned char* gomat,
 
   function:   RGBIfix1
 
-  taks:       Correct the infrared channel.
-              The input image data is the output of scaning
+  task:       Correct the infrared channel.
+              The input image data is the output of scanning
 	      with LUT. To calculate the original values
 	      the lutr and luti is applied.
 	      The infrared values is corrected by:
@@ -2461,7 +2459,7 @@ static int RGBIfix1(unsigned char* rgbimat,unsigned char* orgbimat,
    int ii;
    int x;
 
-   lutg = lutg; lutb = lutb;
+   (void) lutg; (void) lutb;
 
    /* calculate regression between r and ir */
    cc.sum=0;
@@ -3243,14 +3241,14 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   size_t len;
   FILE *fp;
 
-  authorize = authorize;
+  (void) authorize;
 
   DBG_INIT ();
   sanei_thread_init ();
 
   DBG (10, "sane_init\n");
   if (version_code)
-      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (COOLSCAN_CONFIG_FILE);
   if (!fp)
@@ -3303,7 +3301,7 @@ sane_get_devices (const SANE_Device *** device_list,
   Coolscan_t *dev;
   int i;
 
-  local_only = local_only;
+  (void) local_only;
 
   DBG (10, "sane_get_devices\n");
 

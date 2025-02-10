@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -43,8 +41,6 @@
 
 Userspace scan tool for the Microtek 3600 scanner
 
-$Id$
-
 (C) Marian Eichholz 2001
 
 26.4.2001: Added an abstraction layer for TransferControlMsg.
@@ -70,7 +66,7 @@ static int TransferControlMsg(TInstance *this,
 {
   SANE_Status err;
 
-  cJiffiesTimeout = cJiffiesTimeout;
+  (void) cJiffiesTimeout;
 
   err = sanei_usb_control_msg (this->hScanner,
 			 nReqType,
@@ -99,8 +95,8 @@ static int TransferBulkRead(TInstance *this,
   int err;
   size_t sz = cchMax;
 
-  nEndPoint = nEndPoint;
-  cJiffiesTimeout = cJiffiesTimeout;
+  (void) nEndPoint;
+  (void) cJiffiesTimeout;
 
   err = sanei_usb_read_bulk(this->hScanner,
 			    pBuffer,

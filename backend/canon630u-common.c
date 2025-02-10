@@ -12,9 +12,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -727,7 +725,7 @@ wait_for_return (int fd)
 static SANE_Status compute_ogn (char *calfilename);
 
 
-/* This is the calibration rountine Win2k goes through when the scanner is
+/* This is the calibration routine Win2k goes through when the scanner is
    first plugged in.
    Original usb trace from Win2k with USBSnoopy ("usb sniffer for w2k"
    http://benoit.papillault.free.fr/speedtouch/sniff-2000.en.php3)
@@ -951,7 +949,10 @@ plugin_cal (CANON_Handle * s)
 #else
       s->fname = strdup ("/tmp/cal.XXXXXX");
 #endif
-      mktemp (s->fname);
+
+      /* FIXME: we should be using fd, not discarding it, and also checking for error! */
+      int fd = mkstemp (s->fname);
+      close(fd);
     }
   s->width = 2551;
   s->height = 75;
@@ -1572,7 +1573,7 @@ CANON_open_device (CANON_Handle * scan, const char *dev)
 static const char *
 CANON_get_device_name (CANON_Handle * scanner)
 {
-  scanner = scanner;		/* Eliminate warning about unused parameters */
+  (void) scanner;		/* Eliminate warning about unused parameters */
   return "Canoscan FB630U";
 }
 
@@ -1611,8 +1612,12 @@ CANON_start_scan (CANON_Handle * scanner)
 #else
   scanner->fname = strdup ("/tmp/scan.XXXXXX");
 #endif
-  if (!mktemp (scanner->fname))
+
+  /* FIXME: we should be using fd, not discarding it! */
+  int fd = mkstemp (scanner->fname);
+  if (fd == -1)
     return SANE_STATUS_IO_ERROR;
+  close(fd);
 
   /* calibrate if needed */
   rv = init (scanner->fd);

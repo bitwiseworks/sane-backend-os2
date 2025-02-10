@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -42,9 +40,6 @@
    HP Scanner Control Language (SCL).
 */
 
-/*
-   $Id$
-*/
 #ifndef HP_OPTION_H_INCLUDED
 #define HP_OPTION_H_INCLUDED
 #include "hp.h"
@@ -118,7 +113,7 @@
 # define SANE_NAME_MATRIX_TYPE "matrix-type"
 # define SANE_TITLE_MATRIX_TYPE SANE_I18N("Color Matrix")
 /* FIXME: better description */
-# define SANE_DESC_MATRIX_TYPE SANE_I18N("Set the scanners color matrix.")
+# define SANE_DESC_MATRIX_TYPE SANE_I18N("Set the scanner's color matrix.")
 #endif
 
 #ifndef SANE_NAME_MATRIX_RGB

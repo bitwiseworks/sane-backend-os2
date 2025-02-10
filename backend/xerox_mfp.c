@@ -99,6 +99,9 @@ const char *encTmpFileName = "/@unixroot/var/tmp/stmp_enc.tmp";
 const char *encTmpFileName = "/tmp/stmp_enc.tmp";
 #endif
 
+/*
+ * Decode jpeg from `infilename` into dev->decData of dev->decDataSize size.
+ */
 static int decompress(struct device __sane_unused__ *dev,
                       const char __sane_unused__ *infilename)
 {
@@ -135,6 +138,7 @@ static int decompress(struct device __sane_unused__ *dev,
     height = cinfo.output_height;
     pixel_size = cinfo.output_components;
     bmp_size = width * height * pixel_size;
+    assert(bmp_size <= POST_DATASIZE);
     dev->decDataSize = bmp_size;
 
     row_stride = width * pixel_size;
@@ -156,32 +160,30 @@ static int decompress(struct device __sane_unused__ *dev,
 #endif
 }
 
+/* copy from decoded jpeg image (dev->decData) into user's buffer (pDest) */
+/* returns 0 if there is no data to copy */
 static int copy_decompress_data(struct device *dev, unsigned char *pDest, int maxlen, int *destLen)
 {
     int data_size = 0;
-    size_t result = 0, retVal = 0;
 
-
-    if (0 == dev->decDataSize) {
-        *destLen = 0;
-        return retVal;
-    }
+    if (destLen)
+	*destLen = 0;
+    if (!dev->decDataSize)
+        return 0;
     data_size = dev->decDataSize - dev->currentDecDataIndex;
-    if (data_size > maxlen) {
+    if (data_size > maxlen)
         data_size = maxlen;
+    if (data_size && pDest) {
+	memcpy(pDest, dev->decData + dev->currentDecDataIndex, data_size);
+	if (destLen)
+	    *destLen = data_size;
+	dev->currentDecDataIndex += data_size;
     }
-    memcpy(pDest, dev->decData+dev->currentDecDataIndex, data_size);
-    result = data_size;
-    *destLen = result;
-    dev->currentDecDataIndex += result;
-    retVal = result;
-
     if (dev->decDataSize == dev->currentDecDataIndex) {
         dev->currentDecDataIndex = 0;
         dev->decDataSize = 0;
     }
-
-    return retVal;
+    return 1;
 }
 
 static int decompress_tempfile(struct device *dev)
@@ -215,16 +217,26 @@ static int isSupportedDevice(struct device __sane_unused__ *dev)
 #ifdef HAVE_LIBJPEG
     /* Checking device which supports JPEG Lossy compression for color scanning*/
     if (dev->compressionTypes & (1 << 6)) {
-	/* blacklist malfunctioning device(s) */
-	if (!strncmp(dev->sane.model, "SCX-4500W", 9) ||
-	    !strncmp(dev->sane.model, "M288x", 5))
-	    return 0;
+        /* blacklist malfunctioning device(s) */
+        if (!strncmp (dev->sane.model, "SCX-4500W", 9)
+            || !strncmp (dev->sane.model, "C460", 4)
+            || !!strstr (dev->sane.model, "WorkCentre 3225")
+            || !!strstr (dev->sane.model, "CLX-3170")
+            || !!strstr (dev->sane.model, "4x24")
+            || !!strstr (dev->sane.model, "4x28")
+            || !strncmp (dev->sane.model, "M288x", 5))
+            return 0;
         return 1;
     } else
         return 0;
 #else
     return 0;
 #endif
+}
+
+static int isJPEGEnabled(struct device __sane_unused__ *dev)
+{
+    return isSupportedDevice(dev) && dev->compressionEnabled;
 }
 
 static void dbg_dump(struct device *dev)
@@ -243,7 +255,7 @@ static void dbg_dump(struct device *dev)
     for (i = 0; i < dlen; i++, dptr += 3)
         sprintf(dptr, " %02x", dev->res[i]);
 
-    DBG(5, "[%lu]%s%s\n", (u_long)dev->reslen, dbuf,
+    DBG(5, "[%zu]%s%s\n", dev->reslen, dbuf,
         (dlen < (int)dev->reslen)? "..." : "");
 }
 
@@ -270,8 +282,8 @@ static int dev_command(struct device *dev, SANE_Byte *cmd, size_t reqlen)
     }
 
     dev->state = 0;
-    DBG(4, ":: dev_command(%s[%#x], %lu)\n", str_cmd(cmd[2]), cmd[2],
-        (u_long)reqlen);
+    DBG(4, ":: dev_command(%s[%#x], %zu)\n", str_cmd(cmd[2]), cmd[2],
+        reqlen);
     status = dev->io->dev_request(dev, cmd, sendlen, res, &dev->reslen);
     if (status != SANE_STATUS_GOOD) {
         DBG(1, "%s: dev_request: %s\n", __func__, sane_strstatus(status));
@@ -286,8 +298,8 @@ static int dev_command(struct device *dev, SANE_Byte *cmd, size_t reqlen)
 
     /* normal command reply, some sanity checking */
     if (dev->reslen < reqlen) {
-        DBG(1, "%s: illegal response len %lu, need %lu\n",
-            __func__, (u_long)dev->reslen, (u_long)reqlen);
+        DBG(1, "%s: illegal response len %zu, need %zu\n",
+            __func__, dev->reslen, reqlen);
         dev->state = SANE_STATUS_IO_ERROR;
         return 0;
     } else {
@@ -303,14 +315,14 @@ static int dev_command(struct device *dev, SANE_Byte *cmd, size_t reqlen)
         }
         pktlen = dev->res[2] + 3;
         if (dev->reslen != pktlen) {
-            DBG(2, "%s: illegal response len %lu, should be %lu\n",
-                __func__, (u_long)pktlen, (u_long)dev->reslen);
+            DBG(2, "%s: illegal response len %zu, should be %zu\n",
+                __func__, pktlen, dev->reslen);
             dev->state = SANE_STATUS_IO_ERROR;
             return 0;
         }
         if (dev->reslen > reqlen)
-            DBG(2, "%s: too big packet len %lu, need %lu\n",
-                __func__, (u_long)dev->reslen, (u_long)reqlen);
+            DBG(2, "%s: too big packet len %zu, need %zu\n",
+                __func__, dev->reslen, reqlen);
     }
 
     dev->state = 0;
@@ -522,7 +534,7 @@ static void reset_options(struct device *dev)
     dev->val[OPT_RESOLUTION].w = 150;
     dev->val[OPT_MODE].s = string_match(scan_modes, SANE_VALUE_SCAN_MODE_COLOR);
 
-    /* if docs loaded in adf use it as default source, flatbed oterwise */
+    /* if docs loaded in adf use it as default source, flatbed otherwise */
     dev->val[OPT_SOURCE].s = UNCONST(doc_sources[(dev->doc_loaded)? 1 : 0]);
 
     dev->val[OPT_THRESHOLD].w = SANE_FIX(50);
@@ -599,6 +611,22 @@ static void init_options(struct device *dev)
     dev->opt[OPT_SOURCE].constraint_type = SANE_CONSTRAINT_STRING_LIST;
     dev->opt[OPT_SOURCE].constraint.string_list = doc_sources;
 
+    dev->opt[OPT_JPEG].name = "jpeg";
+    dev->opt[OPT_JPEG].title = SANE_I18N("jpeg compression");
+    dev->opt[OPT_JPEG].desc = SANE_I18N("JPEG Image Compression");
+    dev->opt[OPT_JPEG].unit = SANE_UNIT_NONE;
+    dev->opt[OPT_JPEG].type = SANE_TYPE_BOOL;
+    dev->opt[OPT_JPEG].cap |= SANE_CAP_ADVANCED;
+#ifdef HAVE_LIBJPEG
+    dev->compressionEnabled = SANE_TRUE;
+    if (!isSupportedDevice(dev))
+        dev->opt[OPT_JPEG].cap |= SANE_CAP_INACTIVE;
+    dev->val[OPT_JPEG].b = SANE_TRUE;
+#else
+    dev->opt[OPT_JPEG].cap |= SANE_CAP_INACTIVE;
+    dev->val[OPT_JPEG].b = SANE_FALSE;
+#endif
+
     dev->opt[OPT_GROUP_GEO].name = SANE_NAME_GEOMETRY;
     dev->opt[OPT_GROUP_GEO].title = SANE_TITLE_GEOMETRY;
     dev->opt[OPT_GROUP_GEO].desc = SANE_DESC_GEOMETRY;
@@ -651,7 +679,10 @@ static void set_parameters(struct device *dev)
     dev->para.pixels_per_line = dev->win_width / px_to_len;
     dev->para.bytes_per_line = dev->para.pixels_per_line;
 
-    if (!isSupportedDevice(dev)) {
+    DBG(5, dev->val[OPT_JPEG].b ? "JPEG compression enabled\n" : "JPEG compression disabled\n" );
+    dev->compressionEnabled = dev->val[OPT_JPEG].b;
+
+    if (!isJPEGEnabled(dev)) {
 #if BETTER_BASEDPI
         px_to_len = 1213.9 / dev->val[OPT_RESOLUTION].w;
 #endif
@@ -780,7 +811,7 @@ static int dev_set_window(struct device *dev)
     /* Set to JPEG Lossy Compression, if mode is color (only for supported model)...
      * else go with Uncompressed (For backard compatibility with old models )*/
     if (dev->composition == MODE_RGB24) {
-        if (isSupportedDevice(dev)) {
+        if (isJPEGEnabled(dev)) {
             cmd[0x14] = 0x6;
         }
     }
@@ -1032,7 +1063,8 @@ list_one_device(SANE_String_Const devname)
 
 /* SANE API ignores return code of this callback */
 static SANE_Status
-list_conf_devices(UNUSED(SANEI_Config *config), const char *devname)
+list_conf_devices(SANEI_Config __sane_unused__ *config, const char *devname,
+                  void __sane_unused__ *data)
 {
     return tr_from_devname(devname)->configure_device(devname, list_one_device);
 }
@@ -1045,7 +1077,7 @@ sane_init(SANE_Int *version_code, SANE_Auth_Callback cb)
         (version_code) ? "!=" : "==", (cb) ? "!=" : "==");
 
     if (version_code)
-        *version_code = SANE_VERSION_CODE(V_MAJOR, V_MINOR, BACKEND_BUILD);
+        *version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BACKEND_BUILD);
 
     sanei_usb_init();
     return SANE_STATUS_GOOD;
@@ -1084,7 +1116,7 @@ sane_get_devices(const SANE_Device *** device_list, SANE_Bool local)
     config.count = 0;
     config.descriptors = NULL;
     config.values = NULL;
-    sanei_configure_attach(XEROX_CONFIG_FILE, &config, list_conf_devices);
+    sanei_configure_attach(XEROX_CONFIG_FILE, &config, list_conf_devices, NULL);
 
     for (dev_count = 0, dev = devices_head; dev; dev = dev->next)
         dev_count++;
@@ -1164,7 +1196,7 @@ sane_get_parameters(SANE_Handle h, SANE_Parameters *para)
 static int dev_acquire(struct device *dev)
 {
     if (!dev_cmd_wait(dev, CMD_READ))
-        return dev->state;
+        return 0;
 
     dev->state = SANE_STATUS_GOOD;
     dev->vertical = dev->res[0x08] << 8 | dev->res[0x09];
@@ -1191,7 +1223,8 @@ static int dev_acquire(struct device *dev)
     if (dev->bytes_per_line > DATASIZE) {
         DBG(1, "%s: unsupported line size: %d bytes > %d\n",
             __func__, dev->bytes_per_line, DATASIZE);
-        return ret_cancel(dev, SANE_STATUS_NO_MEM);
+        ret_cancel(dev, SANE_STATUS_NO_MEM);
+        return 0;
     }
 
     dev->reading = 0; /* need to issue READ_IMAGE */
@@ -1282,7 +1315,7 @@ sane_read(SANE_Handle h, SANE_Byte *buf, SANE_Int maxlen, SANE_Int *lenp)
     SANE_Status status;
     struct device *dev = h;
 
-    DBG(3, "%s: %p, %p, %d, %p\n", __func__, h, buf, maxlen, (void *)lenp);
+    DBG(3, "%s: %p, %p, %d, %p\n", __func__, h, (void *) buf, maxlen, (void *) lenp);
 
     if (lenp)
         *lenp = 0;
@@ -1293,16 +1326,24 @@ sane_read(SANE_Handle h, SANE_Byte *buf, SANE_Int maxlen, SANE_Int *lenp)
         return SANE_STATUS_EOF;
 
     /* if there is no data to read or output from buffer */
-    if (!dev->blocklen && dev->datalen <= PADDING_SIZE) {
+    if (!dev->blocklen && (dev->datalen <= PADDING_SIZE || dev->final_block)) {
 
         /* copying uncompressed data */
         if (dev->composition == MODE_RGB24 &&
-            isSupportedDevice(dev) &&
+            isJPEGEnabled(dev) &&
             dev->decDataSize > 0) {
             int diff = dev->total_img_size - dev->total_out_size;
             int bufLen = (diff < maxlen) ? diff : maxlen;
-            if (0 < diff &&
-                0 < copy_decompress_data(dev, buf, bufLen, lenp)) {
+            if (diff &&
+                copy_decompress_data(dev, buf, bufLen, lenp)) {
+		if (lenp)
+		    dev->total_out_size += *lenp;
+                return SANE_STATUS_GOOD;
+            }
+        } else if (dev->composition != MODE_RGB24) {
+            int diff = dev->total_img_size - dev->total_out_size;
+            int bufLen = (diff < maxlen) ? diff : maxlen;
+            if (diff > 0 && copy_plain_trim(dev, buf, bufLen, lenp) > 0) {
                 dev->total_out_size += *lenp;
                 return SANE_STATUS_GOOD;
             }
@@ -1323,7 +1364,7 @@ sane_read(SANE_Handle h, SANE_Byte *buf, SANE_Int maxlen, SANE_Int *lenp)
                 /* this will never happen */
                 DBG(1, "image overflow %d bytes\n", dev->total_img_size - dev->total_out_size);
             }
-            if (isSupportedDevice(dev) &&
+            if (isJPEGEnabled(dev) &&
                 dev->composition == MODE_RGB24) {
                 remove(encTmpFileName);
             }
@@ -1356,29 +1397,33 @@ sane_read(SANE_Handle h, SANE_Byte *buf, SANE_Int maxlen, SANE_Int *lenp)
         int olen; /* output len */
 
         /* read as much data into the buffer */
-        datalen = DATAROOM(dev) & USB_BLOCK_MASK;
+        datalen = MIN(dev->blocklen, DATAROOM(dev) & USB_BLOCK_MASK);
         while (datalen && dev->blocklen) {
             SANE_Byte *rbuf = dev->data + DATATAIL(dev);
 
-            DBG(9, "<> request len: %lu, [%d, %d; %d]\n",
-                (u_long)datalen, dev->dataoff, DATATAIL(dev), dev->datalen);
+            DBG(9, "<> request len: %zu, [%d, %d; %d]\n",
+                datalen, dev->dataoff, DATATAIL(dev), dev->datalen);
+
             if ((status = dev->io->dev_request(dev, NULL, 0, rbuf, &datalen)) !=
                 SANE_STATUS_GOOD)
                 return status;
+
             dev->datalen += datalen;
             dev->blocklen -= datalen;
-            DBG(9, "<> got %lu, [%d, %d; %d]\n",
-                (u_long)datalen, dev->dataoff, DATATAIL(dev), dev->datalen);
+
+            DBG(9, "<> got %zu, [%d, %d; %d]\n",
+                datalen, dev->dataoff, DATATAIL(dev), dev->datalen);
+
             if (dev->blocklen < 0)
                 return ret_cancel(dev, SANE_STATUS_IO_ERROR);
 
-            datalen = DATAROOM(dev) & USB_BLOCK_MASK;
+            datalen = MIN(dev->blocklen, DATAROOM(dev) & USB_BLOCK_MASK);
         }
 
         if (buf && lenp) { /* read mode */
             /* copy will do minimal of valid data */
             if (dev->para.format == SANE_FRAME_RGB && dev->line_order) {
-                if (isSupportedDevice(dev)) {
+                if (isJPEGEnabled(dev)) {
                     clrlen = dump_to_tmp_file(dev);
                     /* decompress after reading entire block data*/
                     if (0 == dev->blocklen) {
@@ -1467,6 +1512,7 @@ sane_start(SANE_Handle h)
     if (!dev->data && !(dev->data = malloc(DATASIZE)))
         return ret_cancel(dev, SANE_STATUS_NO_MEM);
 
+    /* this is for jpeg mode only */
     if (!dev->decData && !(dev->decData = malloc(POST_DATASIZE)))
         return ret_cancel(dev, SANE_STATUS_NO_MEM);
 
@@ -1491,7 +1537,7 @@ sane_start(SANE_Handle h)
 
     dev->total_img_size = dev->para.bytes_per_line * dev->para.lines;
 
-    if (isSupportedDevice(dev) &&
+    if (isJPEGEnabled(dev) &&
         dev->composition == MODE_RGB24) {
 	int fd;
         remove(encTmpFileName);

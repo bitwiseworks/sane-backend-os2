@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -83,9 +81,8 @@ static int my_usb_control_msg (p_usb_dev_handle dev, int requesttype,
 #include "sm3840_params.h"
 
 static void idle_ab (p_usb_dev_handle udev);
-static void write_regs (p_usb_dev_handle udev, int regs, unsigned char reg1,
-			unsigned char val1,
-			... /*unsigned char reg, unsigned char val, ... */ );
+static void write_regs (p_usb_dev_handle udev, int regs, int reg1, int val1,
+			... /* int reg, int val, ... */ );
 static int write_vctl (p_usb_dev_handle udev, int request, int value,
 		       int index, unsigned char byte);
 static int read_vctl (p_usb_dev_handle udev, int request, int value,
@@ -124,9 +121,8 @@ static void set_gain_black (p_usb_dev_handle udev,
 			    int r_black, int g_black, int b_black);
 
 static void idle_ab (p_usb_dev_handle udev);
-static void write_regs (p_usb_dev_handle udev, int regs, unsigned char reg1,
-			unsigned char val1,
-			... /*unsigned char reg, unsigned char val, ... */ );
+static void write_regs (p_usb_dev_handle udev, int regs, int reg1, int val1,
+			... /* int reg, int val, ... */ );
 static int write_vctl (p_usb_dev_handle udev, int request, int value,
 		       int index, unsigned char byte);
 static int read_vctl (p_usb_dev_handle udev, int request, int value,

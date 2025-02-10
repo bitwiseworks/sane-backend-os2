@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -166,7 +164,9 @@ typedef struct
 extern SANE_Status sanei_configure_attach (
   const char *config_file,
   SANEI_Config *config,
-  SANE_Status (*config_attach)(SANEI_Config *config, const char *devname)
+  SANE_Status (*config_attach)(SANEI_Config *config, const char *devname,
+                               void *data),
+  void *data
 );
 
 /** Return the list of config directories, extracted from the SANE_CONFIG_DIR

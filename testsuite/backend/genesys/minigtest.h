@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef SANE_TESTSUITE_BACKEND_GENESYS_MINIGTEST_H
@@ -38,7 +36,7 @@ inline void print_location(std::ostream& out, const char* function, const char* 
 template<class T, class U>
 void check_equal(const T& t, const U& u, const char* function, const char* path, unsigned line)
 {
-    if (t != u) {
+    if (!(t == u)) {
         s_num_failures++;
         std::cerr << "FAILURE at ";
         print_location(std::cerr, function, path, line);
@@ -64,13 +62,47 @@ inline void check_true(bool x, const char* function, const char* path, unsigned 
     std::cerr << "\n";
 }
 
+inline void check_raises_success(const char* function, const char* path, unsigned line)
+{
+    s_num_successes++;
+    std::cerr << "SUCCESS at ";
+    print_location(std::cerr, function, path, line);
+    std::cerr << "\n";
+}
+
+inline void check_raises_did_not_raise(const char* function, const char* path, unsigned line)
+{
+    s_num_failures++;
+    std::cerr << "FAILURE at ";
+    print_location(std::cerr, function, path, line);
+    std::cerr << " : did not raise exception\n";
+
+}
+
+inline void check_raises_raised_unexpected(const char* function, const char* path, unsigned line)
+{
+    s_num_failures++;
+    std::cerr << "FAILURE at ";
+    print_location(std::cerr, function, path, line);
+    std::cerr << " : unexpected exception raised\n";
+}
 
 #define ASSERT_EQ(x, y)  do { check_equal((x), (y), __func__, __FILE__, __LINE__); } \
                          while (false)
 #define ASSERT_TRUE(x)  do { check_true(bool(x), __func__, __FILE__, __LINE__); } \
                         while (false)
-#define ASSERT_FALSE(x)  do { !check_true(bool(x), __func__, __FILE__, __LINE__); } \
+#define ASSERT_FALSE(x)  do { check_true(!bool(x), __func__, __FILE__, __LINE__); } \
                          while (false)
+
+#define ASSERT_RAISES(x, T) \
+    do { try { \
+        x; \
+        check_raises_did_not_raise(__func__, __FILE__, __LINE__); \
+    } catch (const T&) { \
+        check_raises_success(__func__, __FILE__, __LINE__); \
+    } catch (...) { \
+        check_raises_raised_unexpected(__func__, __FILE__, __LINE__); \
+    } } while (false)
 
 int finish_tests();
 

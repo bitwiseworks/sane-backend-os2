@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -552,7 +550,7 @@ sanei_pieusb_buffer_get(struct Pieusb_Read_Buffer* buffer, SANE_Byte* data, SANE
         }
     } else {
         /* not implemented */
-        DBG(DBG_error, "buffer_put(): paccket size & density of %d/%d not implementd\n", buffer->packet_size_bytes, buffer->packing_density);
+        DBG(DBG_error, "buffer_put(): paccket size & density of %d/%d not implemented\n", buffer->packet_size_bytes, buffer->packing_density);
         return;
     }
     *len = n;

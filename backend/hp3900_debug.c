@@ -15,8 +15,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -601,15 +600,15 @@ dbg_tiff_save (char *sFile, SANE_Int width, SANE_Int height, SANE_Int depth,
     }
 #else
   /* silent gcc */
-  sFile = sFile;
-  width = width;
-  height = height;
-  depth = depth;
-  colortype = colortype;
-  res_x = res_x;
-  res_y = res_y;
-  buffer = buffer;
-  size = size;
+  (void) sFile;
+  (void) width;
+  (void) height;
+  (void) depth;
+  (void) colortype;
+  (void) res_x;
+  (void) res_y;
+  (void) buffer;
+  (void) size;
 
   DBG (DBG_ERR, "- dbg_tiff_save: tiffio not supported\n");
 #endif
@@ -761,7 +760,7 @@ dbg_buffer (SANE_Int level, char *title, SANE_Byte * buffer, SANE_Int size,
 			    snprintf (sline, 80, " BF: ");
 			  else
 			    snprintf (sline, 80, "               ");
-			  bzero (&text, sizeof (text));
+			  memset (&text, 0, sizeof (text));
 			}
 		      data = _B0 (buffer[cont]);
 		      text[col] = (data > 31) ? data : '·';
@@ -776,7 +775,7 @@ dbg_buffer (SANE_Int level, char *title, SANE_Byte * buffer, SANE_Int size,
 				    start + offset - 8);
 			  sline = strcat (sline, sdata);
 			  DBG (level, "%s", sline);
-			  bzero (sline, 81);
+			  memset (sline, 0, 81);
 			}
 		    }
 		  if (col > 0)
@@ -791,7 +790,7 @@ dbg_buffer (SANE_Int level, char *title, SANE_Byte * buffer, SANE_Int size,
 				start + offset - 8);
 		      sline = strcat (sline, sdata);
 		      DBG (level, "%s", sline);
-		      bzero (sline, 81);
+		      memset (sline, 0, 81);
 		    }
 		  free (sdata);
 		}
@@ -1421,7 +1420,7 @@ dbg_registers (SANE_Byte * buffer)
      DBG(DBG_FNC, "   bit[0..3] = %02x : Scanner buttons ", iValue & 0x0f);
      if ((iValue & 0x0f) == 0x0f)
      DBG(DBG_FNC, "enabled\n");
-     else DBG(DBG_FNC, "dissabled\n");
+     else DBG(DBG_FNC, "disabled\n");
      DBG(DBG_FNC, "         bit[4..7] = ? : 0x%02x\n", (iValue >> 4) & 0x0f);
 
      dbg_buffer(DBG_FNC, "\n0x0159", &buffer[0x159], 11, 0x159);

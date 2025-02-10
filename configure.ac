@@ -2,10 +2,9 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl ******************************************************************
 dnl  Set up autoconf and automake
-dnl  When preparing a release, modify the numeric version components
-dnl  and remove the git suffix.
 dnl ******************************************************************
-AC_INIT([sane-backends],m4_esyscmd_s([git describe --dirty]),
+AC_INIT([sane-backends],
+        m4_esyscmd_s([tools/git-version-gen --prefix '' .tarball-version]),
         [sane-devel@alioth-lists.debian.net])
 AC_PREREQ([2.69])               dnl minimum autoconf version required
 AC_CONFIG_MACRO_DIR([m4])
@@ -13,10 +12,6 @@ AC_CONFIG_HEADERS([include/sane/config.h])
 
 AM_INIT_AUTOMAKE([1.15 subdir-objects -Wall])
 AM_SILENT_RULES
-dnl Turn off feature were automake will automatically run autoreconf.
-dnl This is because we used to check in generated files into CVS which
-dnl has known timestamp issues.
-AM_MAINTAINER_MODE
 
 dnl ******************************************************************
 dnl  Determine SANE version components and release status
@@ -42,6 +37,7 @@ dnl ******************************************************************
 AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_CC_C_O
+AM_PATH_PYTHON(2.7)
 sane_save_CC=$CC
 AC_PROG_CC_C99                  dnl enables extensions to ISO C99 :-(
 AS_IF([test xno != "x$ac_cv_prog_cc_c99"],
@@ -72,7 +68,7 @@ dnl Checks for programs.
 dnl ***********************************************************************
 AC_PATH_PROG(SANE_CONFIG_PATH, sane-config, no)
 
-dnl Call explicitely before using PKG_*
+dnl Call explicitly before using PKG_*
 PKG_PROG_PKG_CONFIG
 
 AM_CONDITIONAL(CROSS_COMPILING, test x$cross_compiling = xyes)
@@ -105,7 +101,7 @@ AC_CHECK_LIB(m, sqrt, MATH_LIB="-lm")
 AC_SUBST(MATH_LIB)
 case ${host_os} in
   os2*)
-  AC_CHECK_LIB(syslog, sylog, SYSLOG_LIBS="-lsyslog")
+  AC_CHECK_LIB(syslog, syslog, SYSLOG_LIBS="-lsyslog")
   ;;
   beos*)
   AC_CHECK_LIB(be, syslog, SYSLOG_LIBS="-lbe")
@@ -121,6 +117,9 @@ SANE_CHECK_PTHREAD
 SANE_CHECK_LOCKING
 SANE_CHECK_GPHOTO2
 
+dnl **************************************************************
+dnl Check for V4L availability
+dnl **************************************************************
 
 AC_ARG_WITH(v4l,
 	    AS_HELP_STRING([--with-v4l],
@@ -129,65 +128,68 @@ AC_ARG_WITH(v4l,
              # as "$with_v4l" will be set to "no"])
 
 if test "$with_v4l" != "no" ; then
-  PKG_CHECK_MODULES(LIBV4L, libv4l1, have_libv4l1=yes, have_libv4l1=no)
+  PKG_CHECK_MODULES(LIBV4L, [libv4l1 >= 0.8.3], have_libv4l1=yes, have_libv4l1=no)
 fi
 
-AC_ARG_ENABLE(avahi,
-	AS_HELP_STRING([--enable-avahi], [enable Avahi support for saned and the net backend]),
-	[enable_avahi=$enableval], [enable_avahi=no])
+dnl **************************************************************
+dnl Check for AVAHI availability
+dnl **************************************************************
 
-if test "$enable_avahi" = "yes"; then
-  PKG_CHECK_MODULES(AVAHI, [ avahi-client >= 0.6.24 ],
-                    [AC_DEFINE(WITH_AVAHI, 1, [define if Avahi support is enabled for saned and the net backend])], enable_avahi=no)
-fi
+AC_ARG_WITH(avahi,
+  AS_HELP_STRING([--with-avahi],
+    [enable Avahi support @<:@default=check@:>@]),
+  [],
+  [with_avahi=check])
+
+AS_IF([test xno != "x$with_avahi"],
+  [PKG_CHECK_MODULES(AVAHI, [avahi-client >= 0.6.24],
+    [with_avahi=yes
+    ],
+    [AS_IF([test xcheck != "x$with_avahi"],
+       [AC_MSG_ERROR([Avahi support requested but not found])])
+     with_avahi=no
+    ])
+  ])
+
+ AS_IF([test xno != "x$with_avahi"],
+ 	[AC_DEFINE(WITH_AVAHI,
+  		[1], [Define to 1 if Avahi support is available])],
+ 	[AC_DEFINE(WITH_AVAHI,
+  		[0], [Define to 1 if Avahi support is available])])
+
+AM_CONDITIONAL([have_libavahi], [test x != "x$AVAHI_LIBS"])
 
 dnl check sane to make sure we don't have two installations
 AC_CHECK_LIB(sane, sane_init, LIBSANE_EXISTS="yes")
 
 
 dnl **************************************************************
-dnl SNMP CHECKS
+dnl Check for libsnmp availability
 dnl **************************************************************
 
 AC_ARG_WITH(snmp,
-	AS_HELP_STRING([--with-snmp], [enable SNMP support @<:@default=yes@:>@]))
+  AS_HELP_STRING([--with-snmp],
+    [enable SNMP support @<:@default=check@:>@]),
+  [],
+  [with_snmp=check])
 
-if test "$with_snmp" = "no"; then
-	echo "Not including SNMP support"
-else
-	AC_PATH_PROG(SNMP_CONFIG_PATH, net-snmp-config, "no")
-	AC_CHECK_LIB([netsnmp], [snmp_timeout], LIBSNMP_EXISTS="yes")
-	AC_MSG_CHECKING(for proper SNMP version)
-	if test "$SNMP_CONFIG_PATH" != "no" ; then
-		snmp_version=`$SNMP_CONFIG_PATH --version 2>/dev/null`
-		vers=`echo $snmp_version | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2);}'`
-		if test -n "$vers" && test "$vers" -ge 5006; then
-			SNMP_LIBS=`$SNMP_CONFIG_PATH --libs`
-			SNMP_CFLAGS=`$SNMP_CONFIG_PATH --cflags`
-			AC_MSG_RESULT(yes)
-			with_snmp="yes"
-		else
-			AC_MSG_RESULT(no)
-			AC_MSG_WARN([You need at least net-snmp 5.6, your version is $snmp_version])
-			with_snmp="no"
-		fi
-	else
-		with_snmp="no"
-		AC_MSG_RESULT(no)
-	fi
-fi
+AS_IF([test xno != "x$with_snmp"],
+  [PKG_CHECK_MODULES(SNMP, [netsnmp >= 5.6],
+    [with_snmp=yes
+    ],
+    [AS_IF([test xcheck != "x$with_snmp"],
+       [AC_MSG_ERROR([libsnmp requested but not found])])
+     with_snmp=no
+    ])
+  ])
 
-if test "$with_snmp" = "yes" && test "${LIBSNMP_EXISTS}x" = "yesx"; then
-	AC_SUBST(SNMP_LIBS)
-	AC_SUBST(SNMP_CFLAGS)
-	AC_DEFINE(HAVE_LIBSNMP, 1, [Define to 1 if you have the net-snmp library.])
-else
-	AC_MSG_WARN([net-snmp library disabled, autodetecting network scanners will not be supported.])
-fi
+ AS_IF([test xno != "x$with_snmp"],
+ 	[AC_DEFINE(HAVE_LIBSNMP,
+  		[1], [Define to 1 if libsnmp is available])],
+ 	[AC_DEFINE(HAVE_LIBSNMP,
+  		[0], [Define to 1 if libsnmp is available])])
 
-
-
-
+AM_CONDITIONAL([have_snmp], [test x != "x$SNMP_LIBS"])
 
 dnl ***********************************************************************
 dnl Checks for header files.
@@ -196,7 +198,7 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(fcntl.h unistd.h libc.h sys/dsreq.h sys/select.h \
     sys/time.h sys/shm.h sys/ipc.h sys/scanio.h os2.h \
     sys/socket.h sys/io.h sys/hw.h sys/types.h linux/ppdev.h \
-    dev/ppbus/ppi.h machine/cpufunc.h sys/sem.h sys/poll.h \
+    dev/ppbus/ppi.h machine/cpufunc.h sys/sem.h poll.h \
     windows.h be/kernel/OS.h limits.h sys/ioctl.h asm/types.h\
     netinet/in.h tiffio.h ifaddrs.h pwd.h getopt.h)
 AC_CHECK_HEADERS([asm/io.h],,,[#include <sys/types.h>])
@@ -433,6 +435,80 @@ AS_IF([test xyes = "x$with_usb" && test xyes != "x$have_usb"],
   ])
 AM_CONDITIONAL([have_usblib], [test x != "x$USB_LIBS"])
 
+dnl ******************************************************************
+dnl Check for libcurl availability
+dnl ******************************************************************
+AC_ARG_WITH(libcurl,
+  AS_HELP_STRING([--with-libcurl],
+    [enable functionality that needs libcurl @<:@default=check@:>@]),
+  [],
+  [with_libcurl=check])
+
+AS_IF([test xno != "x$with_libcurl"],
+  [PKG_CHECK_MODULES(libcurl, [libcurl],
+     [with_libcurl=yes
+     ],
+     [AS_IF([test xcheck != "x$with_libcurl"],
+        [AC_MSG_ERROR([libcurl requested but not found])])
+      with_libcurl=no
+     ])
+  ])
+
+AS_IF([test xno != "x$with_libcurl"],
+ 	[AC_DEFINE(HAVE_LIBCURL,
+  		[1], [Define to 1 if libcurl is available])],
+ 	[AC_DEFINE(HAVE_LIBCURL,
+  		[0], [Define to 1 if libcurl is available])])
+
+AM_CONDITIONAL([have_libcurl], [test x != "x$libcurl_LIBS"])
+
+dnl ******************************************************************
+dnl Check for poppler-glib availability
+dnl ******************************************************************
+AC_ARG_WITH(poppler-glib,
+  AS_HELP_STRING([--with-poppler-glib],
+    [enable functionality that needs poppler-glib @<:@default=check@:>@]),
+  [],
+  [with_poppler_glib=check])
+
+AS_IF([test xno != "x$with_poppler_glib"],
+  [PKG_CHECK_MODULES(POPPLER_GLIB, [poppler-glib],
+     [with_poppler_glib=yes
+     ],
+     [AS_IF([test xcheck != "x$with_poppler_glib"],
+        [AC_MSG_ERROR([poppler-glib requested but not found])])
+      with_poppler_glib=no
+     ])
+  ])
+
+  AS_IF([test xno != "x$with_poppler_glib"],
+ 	[AC_DEFINE(HAVE_POPPLER_GLIB,
+  		[1], [Define to 1 if libpoppler-glib is available])],
+ 	[AC_DEFINE(HAVE_POPPLER_GLIB,
+  		[0], [Define to 1 if libpoppler-glib is available])])
+
+AM_CONDITIONAL([have_poppler_glib], [test x != "x$POPPLER_GLIB_LIBS"])
+
+dnl ******************************************************************
+dnl Check for USB record/replay support
+dnl ******************************************************************
+AC_ARG_WITH(usb_record_replay,
+            AS_HELP_STRING([--with-usb-record-replay],
+                           [enable USB record and replay to XML files @<:@default=yes@:>@]))
+
+if test "x$with_usb_record_replay" != "xno"; then
+  PKG_CHECK_MODULES([XML], [libxml-2.0], have_libxml=yes, have_libxml=no)
+  if test "x$have_libxml" = xyes; then
+    AC_DEFINE(HAVE_LIBXML2, 1, [Define to 1 if libxml2 is available])
+    AC_DEFINE(WITH_USB_RECORD_REPLAY, 1, [define if USB record replay is enabled])
+  else
+    if test "x$with_usb_record_replay" = xyes; then
+      AC_MSG_ERROR([USB record and replay support was requested but libxml-2.0 was not found])
+    fi
+  fi
+fi
+AM_CONDITIONAL([have_libxml2], [test x != "x$XML_LIBS"])
+
 dnl ************
 dnl SCSI Support
 dnl ************
@@ -518,7 +594,7 @@ AC_ARG_ENABLE(scsibuffersize,
   [set_scsibuffersize="$enableval"], [set_scsibuffersize=131072])
 AC_DEFINE_UNQUOTED(SCSIBUFFERSIZE, $set_scsibuffersize,
                    [SCSI command buffer size])
-dnl FIXME: Move tihs to configuration printout area but probably
+dnl FIXME: Move this to configuration printout area but probably
 dnl but probably needs to be wrapped by what ever uses it so its
 dnl only printed when used.
 echo "scsi buffersize: $set_scsibuffersize"
@@ -537,7 +613,7 @@ dnl ****
 dnl IPv6
 dnl ****
 
-dnl check for IPv6 (can be overriden by --enable-ipv6)
+dnl check for IPv6 (can be overridden by --enable-ipv6)
 if test "$ac_cv_func_getnameinfo" = "yes" \
   && test "$ac_cv_func_getaddrinfo" = "yes" ; then
   SANE_CHECK_IPV6
@@ -562,8 +638,8 @@ esac
 dnl Check for lock dir
 
 AC_ARG_WITH(lockdir, AS_HELP_STRING([--with-lockdir=DIR],
-                                    [set SANE lockdir @<:@localstatedir/lock/sane@:>@]),
-                                    [locksanedir=$withval],[locksanedir=${localstatedir}/lock/sane])
+                                    [set SANE lockdir @<:@localstatedir/lock@:>@]),
+                                    [locksanedir=$withval],[locksanedir=${localstatedir}/lock])
 AC_SUBST(locksanedir)
 
 configdir="${sysconfdir}/sane.d"
@@ -594,17 +670,17 @@ AC_ARG_ENABLE(local-backends,
                  [turn off compilation of all backends but net]))
 
 ALL_BACKENDS="abaton agfafocus apple artec artec_eplus48u as6e \
-        avision bh canon canon630u canon_dr canon_pp cardscan \
+        avision bh canon canon630u canon_dr canon_lide70 canon_pp cardscan \
         coolscan coolscan2 coolscan3 dc25 dc210 dc240 \
-        dell1600n_net dmc epjitsu epson epson2 epsonds fujitsu genesys \
-        gphoto2 gt68xx hp hp3500 hp3900 hp4200 hp5400 \
+        dell1600n_net dmc epjitsu epson epson2 epsonds escl fujitsu \
+        genesys gphoto2 gt68xx hp hp3500 hp3900 hp4200 hp5400 \
         hp5590 hpsj5s hpljm1005 hs2p ibm kodak kodakaio kvs1025 kvs20xx \
-        kvs40xx leo lexmark ma1509 magicolor \
+        kvs40xx leo lexmark lexmark_x2600 ma1509 magicolor \
         matsushita microtek microtek2 mustek mustek_pp \
         mustek_usb mustek_usb2 nec net niash pie pieusb pint \
         pixma plustek plustek_pp qcam ricoh ricoh2 rts8891 s9036 \
         sceptre sharp sm3600 sm3840 snapscan sp15c st400 \
-        stv680 tamarack teco1 teco2 teco3 test u12 umax
+        stv680 tamarack teco1 teco2 teco3 test u12 umax \
         umax_pp umax1220u v4l xerox_mfp p5"
 
 # If user specifies backends manually then cause configure
@@ -624,13 +700,17 @@ else
   fi
 fi
 
-SANE_CHECK_BACKENDS
-
 if test "${sane_cv_use_libjpeg}" = "yes"; then
   SANEI_SANEI_JPEG_LO="../sanei/sanei_jpeg.lo"
+  saved_LIBS="${LIBS}"
+  LIBS="${JPEG_LIBS}"
+  AC_CHECK_FUNCS(jpeg_crop_scanline jpeg_skip_scanlines)
+  LIBS="${saved_LIBS}"
 fi
 AM_CONDITIONAL(HAVE_JPEG, test x$sane_cv_use_libjpeg = xyes)
 AC_SUBST(SANEI_SANEI_JPEG_LO)
+
+SANE_CHECK_BACKENDS
 
 AC_ARG_ENABLE(pnm-backend,
   AS_HELP_STRING([--enable-pnm-backend],
@@ -646,11 +726,15 @@ for backend in ${BACKENDS} ; do
   BACKEND_LIBS_ENABLED="${BACKEND_LIBS_ENABLED} libsane-${backend}.la"
   BACKEND_CONFS_ENABLED="${BACKEND_CONFS_ENABLED} ${backend}.conf"
   BACKEND_MANS_ENABLED="${BACKEND_MANS_ENABLED} sane-${backend}.5"
+  if test x$backend = xgenesys; then
+    with_genesys_tests=yes
+  fi
   if test x$backend = xumax_pp; then
     install_umax_pp_tools=yes
   fi
 done
 AC_SUBST(BACKEND_LIBS_ENABLED)
+AM_CONDITIONAL(WITH_GENESYS_TESTS, test xyes = x$with_genesys_tests)
 AM_CONDITIONAL(INSTALL_UMAX_PP_TOOLS, test xyes = x$install_umax_pp_tools)
 
 AC_ARG_VAR(PRELOADABLE_BACKENDS, [list of backends to preload into single DLL])
@@ -729,54 +813,6 @@ AC_ARG_ENABLE(parport-directio,
     fi
   ])
 
-dnl ******************************************************************
-dnl  SANE API specification format conversion support
-dnl ******************************************************************
-AC_ARG_WITH(api-spec,
-  AS_HELP_STRING([--with-api-spec],
-    [convert API spec to supported output formats @<:@default=check@:>@]),
-    [],
-    [with_api_spec=check])
-dnl  Test for all tools that may be involved.  These tests are fast and
-dnl  running them allows for the Makefile targets to be formulated such
-dnl  that any non-requested formats can be made using a one-off without
-dnl  the need to reconfigure.
-AC_PATH_PROG(MAKEINDEX, makeindex, no)
-AC_PATH_PROG(DVIPS, dvips, no)
-AC_PATH_PROG(LATEX, latex, no)
-AC_PATH_PROG(PDFLATEX, pdflatex, no)
-AC_PATH_PROG(FIG2DEV, fig2dev, no)
-AC_PATH_PROG(GS, gs, no)
-AC_PATH_PROG(DLH, dlh, no)
-AC_PATH_PROG(PPMTOGIF, ppmtogif, no)
-AS_IF([test xno != "x$with_api_spec"],
-  [dnl  Flag formats for which all required tools have been found
-   AS_IF([   test xno != "x$MAKEINDEX" \
-          && test xno != "x$DVIPS" \
-          && test xno != "x$FIG2DEV" \
-          && test xno != "x$LATEX"],       [with_api_ps=yes])
-   AS_IF([   test xno != "x$MAKEINDEX" \
-          && test xno != "x$PDFLATEX" \
-          && test xno != "x$FIG2DEV" \
-          && test xno != "x$GS"],          [with_api_pdf=yes])
-   AS_IF([   test xno != "x$MAKEINDEX" \
-          && test xno != "x$DVIPS" \
-          && test xno != "x$FIG2DEV" \
-          && test xno != "x$DLH" \
-          && test xno != "x$GS" \
-          && test xno != "x$PPMTOFIG" ],   [with_api_html=yes])
-
-   AS_IF([test xyes = "x$with_api_spec" \
-          && test xyes != "x$with_api_ps" \
-          && test xyes != "x$with_api_pdf" \
-          && test xyes != "x$with_api_html"],
-     [AC_MSG_ERROR([tools to convert the API spec are missing])
-     ])
-  ])
-AM_CONDITIONAL(WITH_API_PS, [test x$with_api_ps = xyes])
-AM_CONDITIONAL(WITH_API_PDF, [test x$with_api_pdf = xyes])
-AM_CONDITIONAL(WITH_API_HTML, [test x$with_api_html = xyes])
-
 dnl ***********************************************************************
 dnl Write output files
 dnl ***********************************************************************
@@ -825,7 +861,9 @@ else
   echo "Build saned:   no"
 fi
 echo "IPv6 support:  `eval eval echo ${ipv6}`"
-echo "Avahi support: `eval eval echo ${enable_avahi}`"
+echo "Avahi support: `eval eval echo ${with_avahi}`"
+echo "cURL support:  `eval eval echo ${with_libcurl}`"
+echo "POPPLER_GLIB support:  `eval eval echo ${with_poppler_glib}`"
 echo "SNMP support:  `eval eval echo ${with_snmp}`"
 echo "-> The following backends will be built:"
 for backend in ${BACKENDS} ; do

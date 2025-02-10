@@ -14,9 +14,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -52,6 +50,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -173,7 +172,7 @@
 # include <sys/scsi/targets/scgio.h>
 #elif defined (HAVE_SYS_SCSI_SCSI_H)
   /*
-   * the "offical" solaris uscsi(7I) interface; comes last, so that users
+   * the "official" solaris uscsi(7I) interface; comes last, so that users
    * installing the SCG/SG driver can still use these generic scsi interfaces
    */
 # define USE SOLARIS_USCSI_INTERFACE
@@ -347,7 +346,7 @@ int sanei_scsi_max_request_size = MAX_DATA;
 #endif
 
 /* the struct returned by the SG ioctl call SG_GET_SCSI_ID changed
-   from version 2.1.34 to 2.1.35, and we need the informations from
+   from version 2.1.34 to 2.1.35, and we need the information from
    the field s_queue_depth, which was introduced in 2.1.35.
    To get this file compiling also with older versions of sg.h, the
    struct is re-defined here.
@@ -383,7 +382,7 @@ typedef struct req
     {
       struct sg_header hdr;
       /* Make sure this is the last element, the real size is
-         SG_BIG_BUFF and machine dependant */
+         SG_BIG_BUFF and machine dependent */
       u_int8_t data[1];
     }
     cdb;
@@ -615,7 +614,7 @@ open_aspi (void)
   DBG (1, "OS/2: unique id is    '%s'\n", PSRBlock->u.inq.unique_id);
 
   strcpy (tmpAspi, "asXXXXXX");
-  mktemp (tmpAspi);
+  mkstemp (tmpAspi);
   DBG (2, "open_aspi: open temporary file '%s'\n", tmpAspi);
   tmp = fopen (tmpAspi, "w");
   if (!tmp)
@@ -2298,7 +2297,7 @@ issue (struct req *req)
 		     /* this is messy... Sometimes it happens that we have
 		        a valid looking sense buffer, but the DRIVER_SENSE
 		        bit is not set. Moreover, we can check this only for
-		        not tooo old SG drivers
+		        not too old SG drivers
 		      */
 		     && (req->sgdata.cdb.hdr.driver_status & DRIVER_SENSE)
 #endif
@@ -2347,7 +2346,7 @@ issue (struct req *req)
 		      status = SANE_STATUS_DEVICE_BUSY;
 		    else if (handler)
 		      /* sense handler should return SANE_STATUS_GOOD if it
-		         decided all was ok afterall */
+		         decided all was ok after all */
 		      status =
 			(*handler) (req->fd, req->sgdata.cdb.hdr.sense_buffer,
 				    arg);
@@ -2415,7 +2414,7 @@ issue (struct req *req)
 		      status = SANE_STATUS_DEVICE_BUSY;
 		    else if (handler && req->sgdata.sg3.hdr.sb_len_wr)
 		      /* sense handler should return SANE_STATUS_GOOD if it
-		         decided all was ok afterall */
+		         decided all was ok after all */
 		      status =
 			(*handler) (req->fd, req->sgdata.sg3.sense_buffer,
 				    arg);
@@ -3271,8 +3270,8 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
     ccb = cam_getccb (dev);
 
     /* Build the CCB */
-    bzero (&(&ccb->ccb_h)[1], sizeof (struct ccb_scsiio));
-    bcopy (cmd, &ccb->csio.cdb_io.cdb_bytes, cmd_size);
+    memset (&(&ccb->ccb_h)[1], 0, sizeof (struct ccb_scsiio));
+    memcpy (&ccb->csio.cdb_io.cdb_bytes, cmd, cmd_size);
 
     /*
      * Set the data direction flags.
@@ -3368,7 +3367,7 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
     int retval = 0;
 
     /* build ccb for device match */
-    bzero (&cdm, sizeof (cdm));
+    memset (&cdm, 0, sizeof (cdm));
     cdm.ccb_h.func_code = XPT_DEV_MATCH;
 
     /* result buffer */
@@ -3454,7 +3453,7 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
       }
 
     /* build ccb for device match */
-    bzero (&cdm, sizeof (cdm));
+    memset (&cdm, 0, sizeof (cdm));
     cdm.ccb_h.func_code = XPT_DEV_MATCH;
 
     /* result buffer */
@@ -3511,7 +3510,7 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
 	    if (cdm.matches[i].type != DEV_MATCH_PERIPH)
 	      continue;
 	    result = &cdm.matches[i].result.periph_result;
-	    DBG (4, "%s%d on scbus%d %d:%d\n",
+	    DBG (4, "%s%d on scbus%d %d:" PRIu64 "\n",
 		 result->periph_name, result->unit_number,
 		 result->path_id, result->target_id, result->target_lun);
 	    if (cam_compare_inquiry (fd, result->path_id,
@@ -3833,12 +3832,12 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
  * (c) R=I+S Rapp Informatik System Germany
  * Email: wolfgang@rapp-informatik.de
  *
- * The driver version should run with other scsi componets like disk
+ * The driver version should run with other scsi components like disk
  * attached to the same controller at the same time.
  *
  * Attention : This port needs a sane kernel driver for Unixware 2.x
  * The driver is available in binary pkgadd format
- * Plese mail me.
+ * Please mail me.
  *
  */
   SANE_Status
@@ -3978,7 +3977,7 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
 #ifdef UWSUPPORTED		/* at this time not supported by driver */
 	  if (sb_ptr->SCB.sc_comp_code != SDI_ASW)
 	    {
-	      DBG (1, "sanei_scsi_cmd: scsi_cmd failture %x\n",
+	      DBG (1, "sanei_scsi_cmd: scsi_cmd failure %x\n",
 		   sb_ptr->SCB.sc_comp_code);
 	      if (sb_ptr->SCB.sc_comp_code == SDI_CKSTAT
 		  && sb_ptr->SCB.sc_status == S_CKCON)
@@ -4449,7 +4448,7 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
 	memcpy (databuf, (u_char *) src, src_size);
       }
 
-    bzero (sensebuf, 128);
+    memset (sensebuf, 0, 128);
 
     /*
      * Do SCSI request...
@@ -5358,7 +5357,7 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
     memcpy (&cdb.cdb, cmd, cmd_size);
     if (dst && dst_size)
       {
-	bzero (dst, *dst_size);
+	memset (dst, 0, *dst_size);
 	range.address = (IOVirtualAddress) dst;
 	range.length = *dst_size;
 	transferCount = *dst_size;
@@ -5699,7 +5698,7 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
 	DBG (6, "isRead dst_size:%ld\n", *dst_size);
 
 	/* Zero the buffer. */
-	bzero (dst, *dst_size);
+	memset (dst, 0, *dst_size);
 
 	/* Configure the virtual range for the buffer. */
 	range.address = (long) dst;
@@ -5722,8 +5721,8 @@ sanei_scsi_find_devices (const char *findvendor, const char *findmodel,
 
 
     /* zero the senseData and CDB */
-    bzero (&senseData, sizeof (senseData));
-    bzero (cdb, sizeof (cdb));
+    memset (&senseData, 0, sizeof (senseData));
+    memset (cdb, 0, sizeof (cdb));
 
     /* copy the command data */
     memcpy (cdb, cmd, cmd_size);

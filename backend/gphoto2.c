@@ -5,7 +5,7 @@
  * particular, the current incarnation will only support cameras
  * that directly generate jpeg files.
  *
- * Please report sucesses or failures using this backend!
+ * Please report successes or failures using this backend!
  *
  * However, having said that, I've already found it to be quite useful
  * even in its current form - one reason is that gphoto2 provides access
@@ -38,9 +38,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -671,8 +669,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
 
   DBG_INIT ();
 
-  DBG (1,
-       "GPHOTO2 Backend $Id$\n");
+  DBG (1, "GPHOTO2 Backend\n");
 
   if (getenv ("GP_DEBUG"))
     {
@@ -680,7 +677,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
     }
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (GPHOTO2_CONFIG_FILE);
 

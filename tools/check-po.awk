@@ -11,9 +11,7 @@
 #  General Public License for more details.
 #
 #  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-#  MA 02111-1307, USA.
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 # This script will (hopefully!) check the completeness of a .po
@@ -23,14 +21,14 @@
 # (and the percentage it represents), how many are fuzzy (and the
 # percentage it represents amongst translated strings), and how
 # many are untranslated (and the percentage it represents).
-# It will _not_ tell you wether your file is syntactically correct
+# It will _not_ tell you whether your file is syntactically correct
 # (eg. check for terminating double quotes!). And of course it
-# will _not_ tell you wether the translations are correct! ;-]
+# will _not_ tell you whether the translations are correct! ;-]
 #
-# It was originaly been written for SANE backends translations, but
+# It was originally been written for SANE backends translations, but
 # shall be able to check any .po file.
 #
-# Originally writen by Yann E. MORIN
+# Originally written by Yann E. MORIN
 # <yann dot morin dot 1998 at anciens dot enib dot fr>
 #
 # Output will look like :
@@ -39,7 +37,7 @@
 #   |              |     |  |   |
 #   |              |     |  |   \-> Original untranslated string
 #   |              |     |  |
-#   |              |     |  \-> flag telling wether it is
+#   |              |     |  \-> flag telling whether it is
 #   |              |     |      fuzzy (F) or not (-)
 #   |              |     |
 #   |              |     \-> line number in the .po file
@@ -139,7 +137,7 @@ $1 ~ /msgid/ && first == 0 \
     trans = trans a[i]
   }
 
-  # Checks wether we have a translation or not, wether it is fuzzy or not
+  # Checks whether we have a translation or not, whether it is fuzzy or not
   if( ( trans == "" ) || ( is_fuzzy == 1 ) )
   {
     # Enclose original messages between double quotes

@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -356,7 +354,7 @@ static SANE_Status gt68xx_scanner_stop_scan (GT68xx_Scanner * scanner);
  * This function stores in memory calibration data created at calibration
  * time into file
  * @param scanner Scanner object.
- * @return SANE_STATUS_GOOD when succesfull
+ * @return SANE_STATUS_GOOD when successful
  */
 static SANE_Status gt68xx_write_calibration (GT68xx_Scanner * scanner);
 
@@ -365,7 +363,7 @@ static SANE_Status gt68xx_write_calibration (GT68xx_Scanner * scanner);
  * This function sets in memory calibration data from data saved into file.
  *
  * @param scanner Scanner object.
- * @return SANE_STATUS_GOOD when succesfull
+ * @return SANE_STATUS_GOOD when successful
  */
 static SANE_Status gt68xx_read_calibration (GT68xx_Scanner * scanner);
 

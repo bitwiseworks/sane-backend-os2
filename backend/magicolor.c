@@ -114,7 +114,7 @@ static struct MagicolorCap magicolor_cap[] = {
 
   /* KONICA MINOLTA magicolor 1690MF, USB ID 0x123b:2089 */
   {
-      0x2089, "mc1690mf", "KONICA MINOLTA magicolor 1690MF", "1.3.6.1.4.1.183341.1.1.2.1.32.3.2",
+      0x2089, "mc1690mf", "KONICA MINOLTA magicolor 1690MF", ".1.3.6.1.4.1.18334.1.1.1.1.1.23.1.1",
       -1, 0x85,
       600, {150, 600, 0}, magicolor_default_resolutions, 3,  /* 600 dpi max, 3 resolutions */
       8, magicolor_default_depths,                          /* color depth 8 default, 1 and 8 possible */
@@ -836,6 +836,26 @@ cmd_get_scanning_parameters(SANE_Handle handle,
 		        *data_pixels, *data_pixels,
 		        *lines, *lines,
 		        *pixels_per_line, *pixels_per_line);
+
+		/*
+		 * SECURITY REMEDIATION
+		 * See gitlab issue #279 - Issue10 SIGFPE in mc_setup_block_mode
+		 *
+		 * pixels_per_line cannot be zero, otherwise a division by zero error can occur later.
+		 * Added checking the parameters to ensure that this issue cannot occur.
+		 *
+		 * Additionally to the reported issue, it makes no sense for any of the values of
+		 * data_pixels, lines or pixels_per_line to be zero. I do not have any knowledge
+		 * of valid maximums for these parameters.
+		 *
+		 */
+		if ((*data_pixels == 0) || (*lines == 0) || (*pixels_per_line == 0)) {
+			DBG (1, "%s: ERROR: Returned image parameters contain invalid "
+				"bytes. Zero values for these parameters are not rational.\n",
+				__func__);
+			dump_hex_buffer_dense (1, rxbuf, 8);
+			return SANE_STATUS_INVAL;
+		}
 	}
 
 	return status;
@@ -1525,8 +1545,10 @@ mc_get_device_from_identification (const char*ident)
 {
 	int n;
 	for (n = 0; n < NELEMS (magicolor_cap); n++) {
-		if (strcmp (magicolor_cap[n].model, ident) || strcmp (magicolor_cap[n].OID, ident))
+		if ((strcmp (magicolor_cap[n].model, ident) == 0) || (strcmp (magicolor_cap[n].OID, ident) == 0))
+		{
 			return &magicolor_cap[n];
+		}
 	}
 	return NULL;
 }
@@ -1833,9 +1855,9 @@ mc_network_discovery_handle (struct snmp_pdu *pdu, snmp_discovery_data *magic)
 	oid anOID[MAX_OID_LEN];
 	size_t anOID_len = MAX_OID_LEN;
 	/* Device information variables */
-	char ip_addr[1024];
-	char model[1024];
-	char device[1024];
+	char ip_addr[1024] = "";
+	char model[1024] = "";
+	char device[1024] = "";
 	/* remote IP detection variables */
 	netsnmp_indexed_addr_pair *responder = (netsnmp_indexed_addr_pair *) pdu->transport_data;
 	struct sockaddr_in *remote = NULL;
@@ -1884,6 +1906,13 @@ mc_network_discovery_handle (struct snmp_pdu *pdu, snmp_discovery_data *magic)
 			DBG (3, "%s: SystemObjectID does not return an OID, device is not a magicolor device\n", __func__);
 			return 0;
 		}
+
+		// Make sure that snprint_objid gives us just numbers, instead of a
+		// SNMPv2-SMI::enterprises prefix.
+		netsnmp_ds_set_int(NETSNMP_DS_LIBRARY_ID,
+				   NETSNMP_DS_LIB_OID_OUTPUT_FORMAT,
+				   NETSNMP_OID_OUTPUT_NUMERIC);
+
 		snprint_objid (device, sizeof(device), vp->val.objid, value_len);
 		DBG (5, "%s: Device object ID is '%s'\n", __func__, device);
 
@@ -1903,8 +1932,9 @@ mc_network_discovery_handle (struct snmp_pdu *pdu, snmp_discovery_data *magic)
 	read_objid(MAGICOLOR_SNMP_SYSDESCR_OID, anOID, &anOID_len);
 	vp = find_varbind_in_list (varlist, anOID, anOID_len);
 	if (vp) {
-		memcpy(model,vp->val.string,vp->val_len);
-		model[vp->val_len] = '\0';
+		size_t model_len = min(vp->val_len, sizeof(model) - 1);
+		memcpy(model, vp->val.string, model_len);
+		model[model_len] = '\0';
 		DBG (5, "%s: Found model: %s\n", __func__, model);
 	}
 
@@ -2127,10 +2157,11 @@ attach_one_net(const char *dev, unsigned int model)
 }
 
 static SANE_Status
-attach_one_config(SANEI_Config __sane_unused__ *config, const char *line)
+attach_one_config(SANEI_Config __sane_unused__ *config, const char *line,
+		  void *data)
 {
 	int vendor, product, timeout;
-
+	SANE_Bool local_only = *(SANE_Bool*) data;
 	int len = strlen(line);
 
 	DBG(7, "%s: len = %d, line = %s\n", __func__, len, line);
@@ -2159,24 +2190,27 @@ attach_one_config(SANEI_Config __sane_unused__ *config, const char *line)
 
 	} else if (strncmp(line, "net", 3) == 0) {
 
-		/* remove the "net" sub string */
-		const char *name = sanei_config_skip_whitespace(line + 3);
-		char IP[1024];
-		unsigned int model = 0;
+		if (!local_only) {
+			/* remove the "net" sub string */
+			const char *name =
+				sanei_config_skip_whitespace(line + 3);
+			char IP[1024];
+			unsigned int model = 0;
 
-		if (strncmp(name, "autodiscovery", 13) == 0) {
-			DBG (50, "%s: Initiating network autodiscovervy via SNMP\n", __func__);
-			mc_network_discovery(NULL);
-		} else if (sscanf(name, "%s %x", IP, &model) == 2) {
-			DBG(50, "%s: Using network device on IP %s, forcing model 0x%x\n", __func__, IP, model);
-			attach_one_net(IP, model);
-		} else {
-			/* use SNMP to detect the type. If not successful,
-			 * add the host with model type 0 */
-			DBG(50, "%s: Using network device on IP %s, trying to autodetect model\n", __func__, IP);
-			if (mc_network_discovery(name)==0) {
-				DBG(1, "%s: Autodetecting device model failed, using default model\n", __func__);
-				attach_one_net(name, 0);
+			if (strncmp(name, "autodiscovery", 13) == 0) {
+				DBG (50, "%s: Initiating network autodiscovervy via SNMP\n", __func__);
+				mc_network_discovery(NULL);
+			} else if (sscanf(name, "%s %x", IP, &model) == 2) {
+				DBG(50, "%s: Using network device on IP %s, forcing model 0x%x\n", __func__, IP, model);
+				attach_one_net(IP, model);
+			} else {
+				/* use SNMP to detect the type. If not successful,
+				 * add the host with model type 0 */
+				DBG(50, "%s: Using network device on IP %s, trying to autodetect model\n", __func__, IP);
+				if (mc_network_discovery(name)==0) {
+					DBG(1, "%s: Autodetecting device model failed, using default model\n", __func__);
+					attach_one_net(name, 0);
+				}
 			}
 		}
 
@@ -2232,7 +2266,7 @@ sane_init(SANE_Int *version_code, SANE_Auth_Callback __sane_unused__ authorize)
 	    MAGICOLOR_VERSION, MAGICOLOR_REVISION, MAGICOLOR_BUILD);
 
 	if (version_code != NULL)
-		*version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, V_MINOR,
+		*version_code = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR,
 						  MAGICOLOR_BUILD);
 
 	sanei_usb_init();
@@ -2249,7 +2283,7 @@ sane_exit(void)
 }
 
 SANE_Status
-sane_get_devices(const SANE_Device ***device_list, SANE_Bool __sane_unused__ local_only)
+sane_get_devices(const SANE_Device ***device_list, SANE_Bool local_only)
 {
 	Magicolor_Device *dev, *s, *prev=0;
 	int i;
@@ -2265,7 +2299,7 @@ sane_get_devices(const SANE_Device ***device_list, SANE_Bool __sane_unused__ loc
 
 	/* Read the config, mark each device as found, possibly add new devs */
 	sanei_configure_attach(MAGICOLOR_CONFIG_FILE, NULL,
-			       attach_one_config);
+			       attach_one_config, &local_only);
 
 	/*delete missing scanners from list*/
 	for (s = first_dev; s;) {
@@ -2789,12 +2823,11 @@ setvalue(SANE_Handle handle, SANE_Int option, void *value, SANE_Int *info)
 
 	case OPT_BR_X:
 	case OPT_BR_Y:
-		sval->w = *((SANE_Word *) value);
-		if (SANE_UNFIX(sval->w) == 0) {
+		if (SANE_UNFIX(*((SANE_Word *) value)) == 0) {
 			DBG(17, "invalid br-x or br-y\n");
 			return SANE_STATUS_INVAL;
 		}
-		/* passthru */
+		// fall through
 	case OPT_TL_X:
 	case OPT_TL_Y:
 		sval->w = *((SANE_Word *) value);
@@ -2968,7 +3001,7 @@ sane_read(SANE_Handle handle, SANE_Byte *data, SANE_Int max_length,
 	}
 
 	DBG(18, "moving data %p %p, %d (%d lines)\n",
-		s->ptr, s->end,
+		(void *) s->ptr, (void *) s->end,
 		max_length, max_length / s->params.bytes_per_line);
 
 	mc_copy_image_data(s, data, max_length, length);

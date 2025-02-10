@@ -22,9 +22,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -108,7 +106,7 @@ static void u12map_CheckGammaSettings( U12_Device *dev )
 	}
 }
 
-/** adjust acording to brightness and contrast
+/** adjust according to brightness and contrast
  */
 static void u12map_Adjust( U12_Device *dev, int which, SANE_Byte *buf )
 {

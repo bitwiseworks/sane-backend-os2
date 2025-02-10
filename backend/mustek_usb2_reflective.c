@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -84,31 +82,31 @@ Reflective_Reset ()
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_Open (&g_chip, g_pDeviceFile))
+  if (SANE_STATUS_GOOD != Asic_Open (&g_chip, g_pDeviceFile))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_Open return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_Reset (&g_chip))
+  if (SANE_STATUS_GOOD != Asic_Reset (&g_chip))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_Reset return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_SetSource (&g_chip, LS_REFLECTIVE))
+  if (SANE_STATUS_GOOD != Asic_SetSource (&g_chip, LS_REFLECTIVE))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_SetSource return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_TurnLamp (&g_chip, TRUE))
+  if (SANE_STATUS_GOOD != Asic_TurnLamp (&g_chip, TRUE))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_TurnLamp return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_Close (&g_chip))
+  if (SANE_STATUS_GOOD != Asic_Close (&g_chip))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_Close return error\n");
       return FALSE;
@@ -141,10 +139,10 @@ Reflective_Reset ()
 /**********************************************************************
 Author: Jack            Date: 2005/05/13
 Routine Description:
-	get the suggest parameter of scaning
+	get the suggest parameter of scanning
 Parameters:
-	pTarget: the information of scaning
-	pSuggest: suggest parameter of scaning
+	pTarget: the information of scanning
+	pSuggest: suggest parameter of scanning
 Return value:
 	if the operation is success
 	return TRUE
@@ -364,7 +362,7 @@ Reflective_SetupScan (COLORMODE ColorMode,
 		      unsigned short YDpi,
 		      SANE_Bool isInvert, unsigned short X, unsigned short Y, unsigned short Width, unsigned short Height)
 {
-  isInvert = isInvert;
+  (void) isInvert;
   DBG (DBG_FUNC, "Reflective_SetupScan: Call in\n");
   if (g_bOpened)
     {
@@ -441,7 +439,7 @@ Reflective_SetupScan (COLORMODE ColorMode,
       break;
     }
 
-  if (Asic_Open (&g_chip, g_pDeviceFile) != STATUS_GOOD)
+  if (Asic_Open (&g_chip, g_pDeviceFile) != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC, "Reflective_SetupScan: Asic_Open return error\n");
       return FALSE;
@@ -1155,7 +1153,7 @@ Reflective_FindTopLeft (unsigned short * lpwStartX, unsigned short * lpwStartY)
   Asic_SetCalibrate (&g_chip, 8, wXResolution, wYResolution, 0, 0, wCalWidth,
 		     wCalHeight, FALSE);
   Asic_SetAFEGainOffset (&g_chip);
-  if (Asic_ScanStart (&g_chip) != STATUS_GOOD)
+  if (Asic_ScanStart (&g_chip) != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC, "Reflective_FindTopLeft: Asic_ScanStart return error\n");
       free (lpCalData);
@@ -1164,7 +1162,7 @@ Reflective_FindTopLeft (unsigned short * lpwStartX, unsigned short * lpwStartY)
 
   for (i = 0; i < nScanBlock; i++)
     {
-      if (STATUS_GOOD !=
+      if (SANE_STATUS_GOOD !=
 	  Asic_ReadCalibrationData (&g_chip,
 				    lpCalData + i * g_dwCalibrationSize,
 				    g_dwCalibrationSize, 8))
@@ -1176,7 +1174,7 @@ Reflective_FindTopLeft (unsigned short * lpwStartX, unsigned short * lpwStartY)
 	}
     }
 
-  if (STATUS_GOOD !=
+  if (SANE_STATUS_GOOD !=
       Asic_ReadCalibrationData (&g_chip,
 				lpCalData +
 				(nScanBlock) * g_dwCalibrationSize,
@@ -1342,7 +1340,7 @@ Return value:
 static SANE_Bool
 Reflective_LineCalibration16Bits ()
 {
-  STATUS status;
+  SANE_Status status;
   SANE_Byte * lpWhiteData;
   SANE_Byte * lpDarkData;
   unsigned int dwWhiteTotalSize;
@@ -1405,7 +1403,7 @@ Reflective_LineCalibration16Bits ()
   status =
     Asic_SetCalibrate (&g_chip, 48, g_XDpi, g_YDpi, g_X, 0, wCalWidth,
 		       wCalHeight, TRUE);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_SetCalibrate return error \n");
@@ -1417,7 +1415,7 @@ Reflective_LineCalibration16Bits ()
     }
 
   status = Asic_ScanStart (&g_chip);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_ScanStart return error \n");
@@ -1429,7 +1427,7 @@ Reflective_LineCalibration16Bits ()
 
   status =
     Asic_ReadCalibrationData (&g_chip, lpWhiteData, dwWhiteTotalSize, 8);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       free (lpWhiteData);
       free (lpDarkData);
@@ -1440,7 +1438,7 @@ Reflective_LineCalibration16Bits ()
 
   /*Read dark level data */
   status = Asic_SetMotorType (&g_chip, FALSE, TRUE);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_SetMotorType return error \n");
@@ -1453,7 +1451,7 @@ Reflective_LineCalibration16Bits ()
   status =
     Asic_SetCalibrate (&g_chip, 48, g_XDpi, g_YDpi, g_X, 0, wCalWidth,
 		       wCalHeight, TRUE);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_SetCalibrate return error \n");
@@ -1464,7 +1462,7 @@ Reflective_LineCalibration16Bits ()
     }
 
   status = Asic_TurnLamp (&g_chip, FALSE);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_TurnLamp return error \n");
@@ -1477,7 +1475,7 @@ Reflective_LineCalibration16Bits ()
   usleep (500000);
 
   status = Asic_ScanStart (&g_chip);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_ScanStart return error \n");
@@ -1488,7 +1486,7 @@ Reflective_LineCalibration16Bits ()
     }
 
   status = Asic_ReadCalibrationData (&g_chip, lpDarkData, dwDarkTotalSize, 8);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_ReadCalibrationData return error \n");
@@ -1502,7 +1500,7 @@ Reflective_LineCalibration16Bits ()
 
   /* Turn on lamp */
   status = Asic_TurnLamp (&g_chip, TRUE);
-  if (status != STATUS_GOOD)
+  if (status != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Reflective_LineCalibration16Bits: Asic_TurnLamp return error \n");

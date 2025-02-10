@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -57,6 +55,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pwd.h>
 #ifdef HAVE_LIBC_H
 # include <libc.h> /* NeXTStep/OpenStep */
 #endif
@@ -67,7 +66,7 @@
 #include <netinet/in.h>
 #include <netdb.h> /* OS/2 needs this _after_ <netinet/in.h>, grrr... */
 
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
 # include <avahi-client/client.h>
 # include <avahi-client/lookup.h>
 
@@ -313,6 +312,32 @@ add_device (const char *name, Net_Device ** ndp)
 }
 #endif /* NET_USES_AF_INDEP */
 
+/* Calls getpwuid_r(). The return value must be freed by the caller. */
+char* get_current_username()
+{
+  long bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
+  if (bufsize == -1)
+  {
+    return NULL;
+  }
+
+  char* buf = (char*) malloc(bufsize);
+  if (buf == NULL)
+  {
+    return NULL;
+  }
+
+  struct passwd pwd;
+  struct passwd *result;
+  if (getpwuid_r(getuid(), &pwd, buf, bufsize, &result) != 0 || result == NULL)
+  {
+    return NULL;
+  }
+
+  /* pw_name is allocated somewhere within buf, so we use memmove() */
+  memmove(buf, pwd.pw_name, strlen(pwd.pw_name));
+  return buf;
+}
 
 #ifdef NET_USES_AF_INDEP
 static SANE_Status
@@ -486,12 +511,14 @@ connect_dev (Net_Device * dev)
   /* exchange version codes with the server: */
   req.version_code = SANE_VERSION_CODE (V_MAJOR, V_MINOR,
 					SANEI_NET_PROTOCOL_VERSION);
-  req.username = getlogin ();
+  req.username = get_current_username();
   DBG (2, "connect_dev: net_init (user=%s, local version=%d.%d.%d)\n",
        req.username, V_MAJOR, V_MINOR, SANEI_NET_PROTOCOL_VERSION);
   sanei_w_call (&dev->wire, SANE_NET_INIT,
 		(WireCodecFunc) sanei_w_init_req, &req,
 		(WireCodecFunc) sanei_w_init_reply, &reply);
+  free(req.username);
+  req.username = NULL;
 
   if (dev->wire.status != 0)
     {
@@ -695,7 +722,7 @@ do_authorization (Net_Device * dev, SANE_String resource)
 }
 
 
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
 static void
 net_avahi_resolve_callback (AvahiServiceResolver *r, AvahiIfIndex interface, AvahiProtocol protocol,
 			    AvahiResolverEvent event, const char *name, const char *type,
@@ -707,9 +734,9 @@ net_avahi_resolve_callback (AvahiServiceResolver *r, AvahiIfIndex interface, Ava
   char *t;
 
   /* unused */
-  interface = interface;
-  protocol = protocol;
-  userdata = userdata;
+  (void) interface;
+  (void) protocol;
+  (void) userdata;
 
   if (!r)
     return;
@@ -761,8 +788,8 @@ net_avahi_browse_callback (AvahiServiceBrowser *b, AvahiIfIndex interface, Avahi
   AvahiProtocol proto;
 
   /* unused */
-  flags = flags;
-  userdata = userdata;
+  (void) flags;
+  (void) userdata;
 
   if (!b)
     return;
@@ -810,7 +837,7 @@ net_avahi_callback (AvahiClient *c, AvahiClientState state, void * userdata)
   int error;
 
   /* unused */
-  userdata = userdata;
+  (void) userdata;
 
   if (!c)
     return;
@@ -964,7 +991,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   first_device = NULL;
   first_handle = NULL;
 
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
   net_avahi_init ();
 #endif /* WITH_AVAHI */
 
@@ -1044,12 +1071,12 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 
 	      continue;
 	    }
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
 	  avahi_threaded_poll_lock (avahi_thread);
 #endif /* WITH_AVAHI */
 	  DBG (2, "sane_init: trying to add %s\n", device_name);
 	  add_device (device_name, 0);
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
 	  avahi_threaded_poll_unlock (avahi_thread);
 #endif /* WITH_AVAHI */
 	}
@@ -1095,12 +1122,12 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 	      if (host[0] == '\0')
 		  continue;
 #endif /* ENABLE_IPV6 */
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
 	      avahi_threaded_poll_lock (avahi_thread);
 #endif /* WITH_AVAHI */
 	      DBG (2, "sane_init: trying to add %s\n", host);
 	      add_device (host, 0);
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
 	      avahi_threaded_poll_unlock (avahi_thread);
 #endif /* WITH_AVAHI */
 	    }
@@ -1132,7 +1159,7 @@ sane_exit (void)
 
   DBG (1, "sane_exit: exiting\n");
 
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
   net_avahi_cleanup ();
 #endif /* WITH_AVAHI */
 
@@ -1203,7 +1230,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   char *full_name;
   int i, num_devs;
   size_t len;
-#define ASSERT_SPACE(n)                                                    \
+#define ASSERT_SPACE(n) do                                                 \
   {                                                                        \
     if (devlist_len + (n) > devlist_size)                                  \
       {                                                                    \
@@ -1218,7 +1245,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
              return SANE_STATUS_NO_MEM;                                    \
           }                                                                \
       }                                                                    \
-  }
+  } while (0)
 
   DBG (3, "sane_get_devices: local_only = %d\n", local_only);
 
@@ -1518,11 +1545,11 @@ sane_open (SANE_String_Const full_name, SANE_Handle * meta_handle)
       DBG (1,
 	   "sane_open: device %s not found, trying to register it anyway\n",
 	   nd_name);
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
       avahi_threaded_poll_lock (avahi_thread);
 #endif /* WITH_AVAHI */
       status = add_device (nd_name, &dev);
-#ifdef WITH_AVAHI
+#if WITH_AVAHI
       avahi_threaded_poll_unlock (avahi_thread);
 #endif /* WITH_AVAHI */
       if (status != SANE_STATUS_GOOD)
@@ -2134,7 +2161,7 @@ sane_read (SANE_Handle handle, SANE_Byte * data, SANE_Int max_length,
   int is_even;
 
   DBG (3, "sane_read: handle=%p, data=%p, max_length=%d, length=%p\n",
-       handle, data, max_length, (void *) length);
+       handle, (void *) data, max_length, (void *) length);
   if (!length)
     {
       DBG (1, "sane_read: length == NULL\n");
@@ -2251,7 +2278,7 @@ sane_read (SANE_Handle handle, SANE_Byte * data, SANE_Int max_length,
   *length = nread;
   /* Check whether we are scanning with a depth of 16 bits/pixel and whether
      server and client have different byte order. If this is true, then it's
-     neccessary to check whether read returned an odd number. If an odd number
+     necessary to check whether read returned an odd number. If an odd number
      has been returned, we must save the last byte.
   */
   if ((depth == 16) && (server_big_endian != client_big_endian))

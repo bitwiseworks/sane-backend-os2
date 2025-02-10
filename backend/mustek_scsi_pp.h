@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -96,7 +94,7 @@ static SANE_Status mustek_scsi_pp_test_ready (int fd);
  *
  * @return
  * - SANE_STATUS_GOOD - on success
- * - SANE_STATUS_IO_ERROR - if an error occured during the dialog with the
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the dialog with the
  *   device
  */
 static SANE_Status mustek_scsi_pp_cmd (int fd, const void *src, size_t src_size,
@@ -113,7 +111,7 @@ static SANE_Status mustek_scsi_pp_cmd (int fd, const void *src, size_t src_size,
  *
  * @return
  * - SANE_STATUS_GOOD - on success
- * - SANE_STATUS_IO_ERROR - if an error occured during the dialog with the
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the dialog with the
  *   device
  */
 static SANE_Status mustek_scsi_pp_rdata (int fd, int planes,

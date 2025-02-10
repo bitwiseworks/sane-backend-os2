@@ -13,8 +13,8 @@
    for more details.
 
    You should have received a copy of the GNU General Public License
-   along with sane; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   along with sane; see the file COPYING.
+   If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -140,6 +140,9 @@
 #define SANE_NAME_SCAN_LAMP_DEN		"scan-lamp-density"
 #define SANE_NAME_SELECT_LAMP_DENSITY	"select-lamp-density"
 #define SANE_NAME_LAMP_OFF_AT_EXIT	"lamp-off-at-exit"
+#define SANE_NAME_FOCUS			"focus"
+#define SANE_NAME_AUTOFOCUS             "autofocus"
+#define SANE_NAME_INFRARED              "infra-red"
 
 /* well known options from 'SENSORS' group*/
 #define SANE_NAME_SCAN			"scan"
@@ -229,6 +232,10 @@
 #define SANE_TITLE_SCAN_LAMP_DEN	SANE_I18N("Scan lamp density")
 #define SANE_TITLE_SELECT_LAMP_DENSITY	SANE_I18N("Set lamp density")
 #define SANE_TITLE_LAMP_OFF_AT_EXIT	SANE_I18N("Lamp off at exit")
+#define SANE_TITLE_FOCUS		SANE_I18N("Focus position")
+#define SANE_TITLE_AUTOFOCUS		SANE_I18N("Autofocus")
+#define SANE_TITLE_INFRARED             SANE_I18N("Infrared scan")
+
 
 /* well known options from 'SENSORS' group*/
 #define SANE_TITLE_SCAN			"Scan button"
@@ -243,7 +250,7 @@
 /* Descriptive/help strings for above options: */
 #define SANE_DESC_NUM_OPTIONS \
 SANE_I18N("Read-only option that specifies how many options a specific " \
-"devices supports.")
+"device supports.")
 
 #define SANE_DESC_STANDARD    SANE_I18N("Source, mode and resolution options")
 #define SANE_DESC_GEOMETRY    SANE_I18N("Scan area and media size options")
@@ -412,7 +419,7 @@ SANE_I18N("Analog gamma-correction for blue")
 #define SANE_DESC_ANALOG_GAMMA_BIND \
 SANE_I18N("In RGB-mode use same values for each color")
 #define SANE_DESC_WARMUP \
-SANE_I18N("Warmup lamp before scanning")
+SANE_I18N("Warm up lamp before scanning")
 #define SANE_DESC_CAL_EXPOS_TIME \
 SANE_I18N("Define exposure-time for calibration")
 #define SANE_DESC_CAL_EXPOS_TIME_R \
@@ -439,6 +446,13 @@ SANE_I18N("Define lamp density for scan")
 SANE_I18N("Enable selection of lamp density")
 #define SANE_DESC_LAMP_OFF_AT_EXIT \
 SANE_I18N("Turn off lamp when program exits")
+#define SANE_DESC_FOCUS \
+SANE_I18N("Focus position for manual focus")
+#define SANE_DESC_AUTOFOCUS \
+SANE_I18N("Perform autofocus before scan")
+#define SANE_DESC_INFRARED \
+SANE_I18N("Perform infrared scan")
+
 
 /* well known options from 'SENSORS' group*/
 #define SANE_DESC_SCAN		SANE_I18N("Scan button")

@@ -29,9 +29,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -237,11 +235,7 @@ typedef const struct mode_param
 #define _E_SEQUENCE	  (_FIRST_ERR-30)	/* caller sequence does not match	*/
 #define _E_NO_ASIC	  (_FIRST_ERR-31)	/* can't detect ASIC            	*/
 
-#ifdef __KERNEL__
-# define _E_FAULT     (-EFAULT)
-#else
 # define _E_FAULT     (_E_INTERNAL)    /* should never happen in userspace  */
-#endif
 
 #define _E_LAMP_NOT_IN_POS	(_FIRST_ERR-40)
 #define _E_LAMP_NOT_STABLE	(_FIRST_ERR-41)
@@ -473,10 +467,6 @@ typedef struct {
 #define _ScanMode_AverageOut	1	/* CCD averaged 2 pixels value for output*/
 #define _ScanMode_Mono			2   /* not color mode						 */
 
-
-#ifndef __KERNEL__
-
-
 #define PLUSTEK_CONFIG_FILE	"plustek_pp.conf"
 
 #ifndef PATH_MAX
@@ -534,7 +524,7 @@ enum {
     NUM_OPTIONS
 };
 
-/** for compatiblity to version 0x0102 drivers
+/** for compatibility to version 0x0102 drivers
  */
 typedef struct {
 
@@ -633,7 +623,6 @@ typedef struct {
 	AdjDef adj;
 
 } CnfDef, *pCnfDef;
-#endif /* guard __KERNEL__ */
 
 #endif	/* guard __PLUSTEKPP_H__ */
 

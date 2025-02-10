@@ -29,9 +29,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -474,7 +472,7 @@ static void p12Init98003( pScanData ps, Bool shading )
     if( _AGFA_SCANNER == ps->Device.bPCBID )
         ps->Device.bDACType = _DA_WOLFSON8141;
 
-	DBG( DBG_LOW, "PCB-ID=0x%02x, CCD-ID=0x%02x, DAC-TYPE=0x%02x\n",
+    DBG( DBG_LOW, "PCB-ID=0x%02x, CCD-ID=0x%02x, DAC-TYPE=0x%02x\n",
                    ps->Device.bPCBID, ps->Device.bCCDID, ps->Device.bDACType );
 
     p12InitiateComponentModel( ps );

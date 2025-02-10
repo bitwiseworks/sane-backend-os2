@@ -12,10 +12,7 @@
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-  $Id$
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /*
@@ -198,7 +195,7 @@ _UnityGammaTable (unsigned char *hwGamma)
 }
 
 static const SANE_Range rangeXmm = { 0, 220, 1 };
-static const SANE_Range rangeYmm = { 0, 296, 1 };
+static const SANE_Range rangeYmm = { 0, 297, 1 };
 static const SANE_Int startUpGamma = SANE_FIX (1.6);
 
 static const char colorStr[] = { SANE_VALUE_SCAN_MODE_COLOR };
@@ -223,7 +220,7 @@ static const char lineartStr[] = { SANE_VALUE_SCAN_MODE_LINEART };
 #define MODE_GRAY    1
 #define MODE_LINEART 2
 
-/* lineart treshold range */
+/* lineart threshold range */
 static const SANE_Range rangeThreshold = {
   0,
   100,
@@ -660,7 +657,7 @@ _InitOptions (TScanner * s)
           pDesc->constraint_type = SANE_CONSTRAINT_RANGE;
           pDesc->constraint.range = &rangeYmm;
           pDesc->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT;
-          pVal->w = 290 /* have a bit reserve instaed of rangeYmm.max */ ;
+          pVal->w = 290 /* have a bit reserve instead of rangeYmm.max */ ;
           break;
 
         case optDPI:
@@ -768,6 +765,7 @@ _InitOptions (TScanner * s)
             SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_INACTIVE |
             SANE_CAP_EMULATED;
           pVal->w = 50;
+          break;
 
         default:
           DBG (DBG_ERR, "Uninitialised option %d\n", i);
@@ -829,7 +827,7 @@ sane_init (SANE_Int * piVersion, SANE_Auth_Callback __sane_unused__ pfnAuth)
 
   if (piVersion != NULL)
     {
-      *piVersion = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+      *piVersion = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
     }
 
   /* initialise transfer methods */
@@ -1370,7 +1368,7 @@ sane_read (SANE_Handle h, SANE_Byte * buf, SANE_Int maxlen, SANE_Int * len)
   TDataPipe *p;
   TModeParam const *pMode;
 
-  DBG (DBG_MSG, "sane_read: buf=%p, maxlen=%d, ", buf, maxlen);
+  DBG (DBG_MSG, "sane_read: buf=%p, maxlen=%d, ", (void *) buf, maxlen);
 
   s = (TScanner *) h;
 

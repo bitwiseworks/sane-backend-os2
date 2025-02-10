@@ -16,8 +16,8 @@
    for more details.
 
    You should have received a copy of the GNU General Public License
-   along with sane; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   along with sane; see the file COPYING.
+   If not, see <https://www.gnu.org/licenses/>.
 
    This file implements a SANE backend for AGFA Focus flatbed scanners.  */
 
@@ -236,8 +236,8 @@ test_ready (int fd)
 static SANE_Status
 sense_handler (int scsi_fd, u_char *result, void *arg)
 {
-  scsi_fd = scsi_fd;			/* silence gcc */
-  arg = arg;					/* silence gcc */
+  (void) scsi_fd;			/* silence gcc */
+  (void) arg;				/* silence gcc */
 
   if (result[0])
     {
@@ -253,7 +253,7 @@ sense_handler (int scsi_fd, u_char *result, void *arg)
 static SANE_Status
 stop_scan (int fd)
 {
-  fd = fd;						/* silence gcc */
+  (void) fd;				/* silence gcc */
 
   /* XXX don't know how to stop the scanner. To be tested ! */
 #if 0
@@ -428,7 +428,7 @@ set_window (AgfaFocus_Scanner * s)
   /* ranges from 20 (little contrast) down to -20 = 235 (much contrast) */
   int contr_adjust = (SANE_UNFIX (s->val[OPT_CONTRAST].w) * -20.0) / 100.0;
 
-  /* Warning ! The following structur SEEMS to be a valid SCSI-2 SET_WINDOW
+  /* Warning ! The following structure SEEMS to be a valid SCSI-2 SET_WINDOW
      command.  But e.g. the limits for the window are only 2 Bytes instead
      of 4.  The scanner was built at about 1990, so SCSI-2 wasn't available
      for development...  */
@@ -1280,14 +1280,14 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   size_t len;
   FILE *fp;
 
-  authorize = authorize;		/* silence gcc */
+  (void) authorize;			/* silence gcc */
 
   DBG_INIT ();
 
   sanei_thread_init ();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open ("agfafocus.conf");
   if (!fp)
@@ -1335,7 +1335,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   AgfaFocus_Device *dev;
   int i;
 
-  local_only = local_only;		/* silence gcc */
+  (void) local_only;			/* silence gcc */
 
   if (devlist)
     free (devlist);
@@ -1485,6 +1485,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	case OPT_BR_Y:
 	  if (info)
 	    *info |= SANE_INFO_RELOAD_PARAMS;
+          // fall through
 	case OPT_SHARPEN:
 	case OPT_EXPOSURE:
 	case OPT_ATTENUATION_RED:

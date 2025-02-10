@@ -15,10 +15,10 @@ scsi FUJITSU
 # To use a specific scsi device
 #scsi /dev/sg1
 
-# For Fujitsu scanners connected via USB on a known device (kernel driver):
+# For scanners connected via USB on a known device (kernel driver):
 #usb /dev/usb/scanner0
 
-# For Fujitsu scanners connected via USB using vendor and device ids (libusb):
+# For scanners connected via USB using vendor and device ids (libusb):
 #usb VENDORID PRODUCTID
 
 # NOTE: if you have to add your device here- please send the id and model
@@ -252,3 +252,63 @@ usb 0x04c5 0x1521
 
 #fi-7700S
 usb 0x04c5 0x1522
+
+#ScanSnap iX1500
+usb 0x04c5 0x159f
+
+#fi-800R
+usb 0x04c5 0x15fc
+
+#fi-7900
+usb 0x04c5 0x160a
+
+#fi-7800
+usb 0x04c5 0x160b
+
+#ScanSnap iX1600
+usb 0x04c5 0x1632
+
+#ScanPartner SP30
+usb 0x04c5 0x140a
+
+#fi-7300NX
+usb 0x04c5 0x1575
+
+#fi-8190
+usb 0x04c5 0x15fd
+
+#fi-8290
+usb 0x04c5 0x15fe
+
+#fi-8170
+usb 0x04c5 0x15ff
+
+#fi-8270
+usb 0x04c5 0x1600
+
+#fi-8150
+usb 0x04c5 0x1601
+
+#fi-8250
+usb 0x04c5 0x1602
+
+#fi-8150U
+usb 0x04c5 0x162d
+
+#fi-8250U
+usb 0x04c5 0x162e
+
+#ScanSnap iX1300
+usb 0x04c5 0x162c
+
+#ScanSnap iX1400
+usb 0x04c5 0x1630
+
+######################################
+# Ricoh-only scanners
+
+#fi-8040
+usb 0x05ca 0x0307
+
+#fi-70F"
+usb 0x05ca 0x0308

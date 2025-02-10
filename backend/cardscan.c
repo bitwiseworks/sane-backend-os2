@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -167,7 +165,7 @@ many times {
 
 14/94 and 22/a2
 
-########### discarge capacitor? ###########
+########### discharge capacitor? ###########
 four times {
 >> 21 02 00 0a 00
 << a1 00 02 00 0a 00
@@ -273,7 +271,7 @@ static struct scanner *scanner_devList = NULL;
 SANE_Status
 sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 {
-    authorize = authorize;        /* get rid of compiler warning */
+    (void) authorize;           /* get rid of compiler warning */
 
     DBG_INIT ();
     DBG (10, "sane_init: start\n");
@@ -281,10 +279,10 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
     sanei_usb_init();
 
     if (version_code)
-      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
     DBG (5, "sane_init: cardscan backend %d.%d.%d, from %s\n",
-      SANE_CURRENT_MAJOR, V_MINOR, BUILD, PACKAGE_STRING);
+      SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
     DBG (10, "sane_init: finish\n");
 
@@ -325,7 +323,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
     int num_devices=0;
     int i=0;
 
-    local_only = local_only;        /* get rid of compiler warning */
+    (void) local_only;          /* get rid of compiler warning */
 
     DBG (10, "sane_get_devices: start\n");
 
@@ -879,7 +877,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
       DBG (20, "sane_control_option: set value for '%s' (%d)\n", s->opt[option].name,option);
 
       if ( s->started ) {
-        DBG (5, "sane_control_option: cant set, device busy\n");
+        DBG (5, "sane_control_option: can't set, device busy\n");
         return SANE_STATUS_DEVICE_BUSY;
       }
 
@@ -1366,7 +1364,7 @@ read_from_scanner_color(struct scanner *s)
  * handle h is a valid handle) but usually affects long-running
  * operations only (such as image is acquisition). It is safe to call
  * this function asynchronously (e.g., from within a signal handler).
- * It is important to note that completion of this operaton does not
+ * It is important to note that completion of this operation does not
  * imply that the currently pending operation has been cancelled. It
  * only guarantees that cancellation has been initiated. Cancellation
  * completes only when the cancelled call returns (typically with a

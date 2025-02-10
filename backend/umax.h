@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -183,7 +181,7 @@ enum Umax_Option
 /* LIST OF AVAILABLE SCANNERS, THE VALUES LISTED HERE ARE THE SAME FOR DIFFERENT APPLICATIONS
    THAT USE THE SAME DEVICE */
 
-/* Umax_Device contains values relevant for the device that are not intersting for the sane interface */
+/* Umax_Device contains values relevant for the device that are not interesting for the sane interface */
 
 typedef struct Umax_Device
 {
@@ -354,21 +352,21 @@ typedef struct Umax_Device
   int			use_exposure_time_def_b;				    /* exposure time default */
 
   int			wdb_len;						   /* use this length of WDB */
-  unsigned int		width_in_pixels;				 /* thats the wanted width in pixels */
-  unsigned int		length_in_pixels;				/* thats the wanted length in pixels */
-  unsigned int		scanwidth;		       /* thats the width in pixels at x_coordinate_base dpi */
-  unsigned int		scanlength;		      /* thats the length in pixels at y_coordinate_base dpi */
+  unsigned int		width_in_pixels;				 /* that's the wanted width in pixels */
+  unsigned int		length_in_pixels;				/* that's the wanted length in pixels */
+  unsigned int		scanwidth;		       /* that's the width in pixels at x_coordinate_base dpi */
+  unsigned int		scanlength;		      /* that's the length in pixels at y_coordinate_base dpi */
   unsigned int		bytes_per_color;					     /* bytes per each color */
 
   unsigned int		x_resolution;					     /* scan-resolution for x in dpi */
   unsigned int		y_resolution;					     /* scan-resolution for y in dpi */
   double		scale_x;					  /* x-scaling of optical resolution */
   double		scale_y;					  /* y-scaling of optical resolution */
-  int			upper_left_x;			     /* thats the left edge in points at 1200pt/inch */
-  int			upper_left_y;			      /* thats the top edge in points at 1200pt/inch */
+  int			upper_left_x;			     /* that's the left edge in points at 1200pt/inch */
+  int			upper_left_y;			      /* that's the top edge in points at 1200pt/inch */
 
-  unsigned int		x_coordinate_base;			      /* x base in pixels/inch, normaly 1200 */
-  unsigned int		y_coordinate_base;			      /* y base in pixels/inch, normaly 1200 */
+  unsigned int		x_coordinate_base;			      /* x base in pixels/inch, normally 1200 */
+  unsigned int		y_coordinate_base;			      /* y base in pixels/inch, normally 1200 */
 
   unsigned int		bits_per_pixel;						 /* number of bits per pixel */
   int			bits_per_pixel_code;				/* 1 = 24bpp, 4 = 30 bpp, 8 = 36 bpp */
@@ -396,7 +394,7 @@ typedef struct Umax_Device
   int			adf;							       /* 1 if ADF turned on */
   int			uta;							       /* 1 if UTA turned on */
   int			calibration;			      /* calibration :0=ignore, 1=driver, 2=by image */
-  int			low_byte_first;			 /* 10 bit mode: 0=high byte frist, 1=low byte frist */
+  int			low_byte_first;			 /* 10 bit mode: 0=high byte first, 1=low byte first */
   int			colormode;				     /* LINEART, HALFTONE, GRAYSCALE or RGB  */
 #  define LINEART             1
 #  define HALFTONE            2

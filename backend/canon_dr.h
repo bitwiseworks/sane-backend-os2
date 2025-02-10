@@ -51,6 +51,22 @@ enum scanner_Option
   OPT_SIDE,
   OPT_HW_CROP,
 
+  /*imprinter option group*/
+  OPT_IMPRINT_GROUP,
+  OPT_PRE_IMPRINT_SPECSTRING,
+  OPT_PRE_IMPRINT_H_OFFSET,
+  OPT_PRE_IMPRINT_V_OFFSET,
+  OPT_PRE_IMPRINT_FONT_SIZE,
+  OPT_PRE_IMPRINT_FONT_ROT,
+  OPT_PRE_IMPRINT_SPACING,
+  OPT_POST_IMPRINT_SPECSTRING,
+  OPT_POST_IMPRINT_H_OFFSET,
+  OPT_POST_IMPRINT_V_OFFSET,
+  OPT_POST_IMPRINT_FONT_SIZE,
+  OPT_POST_IMPRINT_FONT_ROT,
+  OPT_POST_IMPRINT_SPACING,
+  OPT_POST_IMPRINT_ADDON_MODE,
+
   /*sensor group*/
   OPT_SENSOR_GROUP,
   OPT_START,
@@ -60,6 +76,8 @@ enum scanner_Option
   OPT_COUNTONLY,
   OPT_BYPASSMODE,
   OPT_COUNTER,
+  OPT_ROLLERCOUNTER,
+  OPT_TOTALCOUNTER,
   OPT_ADF_LOADED,
   OPT_CARD_LOADED,
 
@@ -106,6 +124,32 @@ struct img_params
 
 };
 
+struct imprint_params
+{
+  /* ------------------------------------------------------------------------------ */
+  /*  allowed values for post imprinter (in mm units):                              */
+  /* 21, 35, 47, 59, 72, 99, 114, 143, 155, 167, 196, 211, 239, 251, 263, 275, 289  */
+  /*  allowed values for pre imprinter (in mm units):                               */
+  /* 14, 28, 41, 53, 65, 106                                                        */
+  int h_offset;
+  /* --------------------------------------- */
+  /*  allowed values: 0 to 500 (in mm units) */
+  int v_offset;
+
+  int font_size;
+  int font_rot;
+  int spacing;
+
+#define IMPRINT_SPECSTRING_LEN 64
+  /* ---------------------------------- */
+  /*  special tokens:                   */
+  /*  \TIME       time in HH:MM:SS      */
+  /*  \DMY        date in DD/MM/YYYY    */
+  /*  \YMD        date in YYYY/MM/DD    */
+  /*  [[0-9]+]    scan page count       */
+  char specstring[IMPRINT_SPECSTRING_LEN];
+};
+
 struct scanner
 {
   /* --------------------------------------------------------------------- */
@@ -116,12 +160,18 @@ struct scanner
 
   /* --------------------------------------------------------------------- */
   /* immutable values which are set during reading of config file.         */
+  int connection;       /* hardware interface type */
   int buffer_size;
-  int connection;               /* hardware interface type */
+  int duplex_offset;    /* number of lines of padding added to front (1/1200)*/
+  int extra_status;     /* some machines need extra status read after cmd */
+  int inquiry_length;   /* some models are particular about inquiry size */
+  int padded_read;      /* some machines need extra 12 bytes on reads */
+  int tur_timeout;      /* some models are slow to wake up */
+  int vpd_length;       /* some models are particular about vpd size */
 
   /* --------------------------------------------------------------------- */
   /* immutable values which are set during inquiry probing of the scanner. */
-  /* members in order found in scsi data...                                */
+  /* members in order found in scsi data. These can also be in config file */
   char vendor_name[9];          /* raw data as returned by SCSI inquiry.   */
   char model_name[17];          /* raw data as returned by SCSI inquiry.   */
   char version_name[5];         /* raw data as returned by SCSI inquiry.   */
@@ -167,10 +217,20 @@ struct scanner
   int max_y_fb;
 
   int can_color;     /* actually might be in vpd, but which bit? */
+
   int need_ccal;     /* scanner needs software to help with afe calibration */
-  int need_fcal;     /* scanner needs software to help with fine calibration */
-  int need_fcal_buffer; /* software to apply calibration stored in scanner*/
   int ccal_version;  /* 0 in most scanners, 3 in newer ones */
+
+  int fcal_src;      /* where fine offset/gain calibration data comes from */
+  int fcal_dest;     /* where fine offset/gain calibration data is used */
+
+#define FCAL_SRC_NONE 0  /* scanner does not require fine calibration */
+#define FCAL_SRC_SCAN 1  /* make calibration scans, store gain/offset in struct */
+#define FCAL_SRC_HW 2    /* calibration permanently stored in scanner, downloaded into struct */
+
+#define FCAL_DEST_NONE 0 /* scanner does not require fine calibration */
+#define FCAL_DEST_SW 1   /* use gain/offset in struct to adjust output in software */
+#define FCAL_DEST_HW 2   /* send calibration data into scanner for use in hardware */
 
   int has_counter;
   int has_rif;
@@ -188,17 +248,18 @@ struct scanner
   int has_ssm2;          /* newer scanners user this similar command */
   int has_ssm_pay_head_len; /* newer scanners put the length twice in ssm */
   int has_hwcrop;
+  int has_pre_imprinter;
+  int has_post_imprinter;
   int can_read_sensors;
   int can_read_panel;
   int can_write_panel;
+  int can_read_lifecycle_counters;
   int rgb_format;       /* meaning unknown */
   int padding;          /* meaning unknown */
 
   int always_op;        /* send object pos between pages */
   int invert_tly;       /* weird bug in some smaller scanners */
   int unknown_byte2;    /* weird byte, required, meaning unknown */
-  int padded_read;      /* some machines need extra 12 bytes on reads */
-  int extra_status;     /* some machines need extra status read after cmd */
   int fixed_width;      /* some machines always scan full width */
   int even_Bpl;         /* some machines require even bytes per line */
 
@@ -207,7 +268,6 @@ struct scanner
   int color_inter_by_res[16]; /* and some even change by resolution */
   int duplex_interlace; /* different models interlace sides differently      */
   int jpeg_interlace;   /* different models interlace jpeg sides differently */
-  int duplex_offset;    /* number of lines of padding added to front (1/1200)*/
   int duplex_offset_side; /* padding added to front or back? */
 
   int sw_lut;           /* no hardware brightness/contrast support */
@@ -304,12 +364,33 @@ struct scanner
   unsigned char lut[256];
 
   /* --------------------------------------------------------------------- */
-  /* values used by the software enhancment code (deskew, crop, etc)       */
+  /* values used by the software enhancement code (deskew, crop, etc)      */
   SANE_Status deskew_stat;
   int deskew_vals[2];
   double deskew_slope;
 
   int crop_vals[4];
+
+  /* imprinter params */
+  struct imprint_params pre_imprint;
+  struct imprint_params post_imprint;
+  enum {
+    /*Black-on-White*/
+    ADDON_BoW = 0,
+    /*White-on-Black*/
+    ADDON_WoB,
+    /*Black-on-Image*/
+    ADDON_BoI,
+    ADDON_DISABLED
+  } post_imprint_addon_mode;
+
+  /* imprinter param constraints */
+  SANE_Int pre_imprinter_h_offset_list[7];
+  SANE_Int post_imprinter_h_offset_list[18];
+  SANE_Range imprinter_v_offset_range;
+  SANE_String_Const imprint_font_size_list[3];
+  SANE_Int imprinter_font_angle_list[5];
+  SANE_String_Const imprint_addon_mode_list[5];
 
   /* this is defined in sane spec as a struct containing:
         SANE_Frame format;
@@ -366,6 +447,8 @@ struct scanner
   int panel_counter;
   int sensor_adf_loaded;
   int sensor_card_loaded;
+  int roller_counter;
+  int total_counter;
 
   /* values which are used to track the frontend's access to sensors  */
   char panel_read[OPT_COUNTER - OPT_START + 1];
@@ -441,6 +524,7 @@ enum {
 #define GRAY_INTERLACE_NONE 0
 #define GRAY_INTERLACE_2510 1
 #define GRAY_INTERLACE_gG 2
+#define GRAY_INTERLACE_C120 3
 
 #define COLOR_INTERLACE_UNK 0
 #define COLOR_INTERLACE_RGB 1
@@ -450,12 +534,14 @@ enum {
 #define COLOR_INTERLACE_RRGGBB 5
 #define COLOR_INTERLACE_rRgGbB 6
 #define COLOR_INTERLACE_2510 7
+#define COLOR_INTERLACE_C120 8
 
 #define DUPLEX_INTERLACE_NONE 0
 #define DUPLEX_INTERLACE_FfBb 1
 #define DUPLEX_INTERLACE_FBfb 2
 #define DUPLEX_INTERLACE_2510 3
 #define DUPLEX_INTERLACE_fFBb 4
+#define DUPLEX_INTERLACE_PER_CHANNEL 5
 
 #define JPEG_INTERLACE_ALT 0
 #define JPEG_INTERLACE_NONE 1
@@ -525,7 +611,9 @@ static SANE_Status sense_handler (int scsi_fd, u_char * result, void *arg);
 static SANE_Status init_inquire (struct scanner *s);
 static SANE_Status init_vpd (struct scanner *s);
 static SANE_Status init_model (struct scanner *s);
+static SANE_Status init_imprinters (struct scanner *s);
 static SANE_Status init_panel (struct scanner *s);
+static SANE_Status init_counters (struct scanner *s);
 static SANE_Status init_user (struct scanner *s);
 static SANE_Status init_options (struct scanner *s);
 
@@ -573,6 +661,7 @@ static SANE_Status update_params (struct scanner *s, int calib);
 static SANE_Status update_i_params (struct scanner *s);
 static SANE_Status clean_params (struct scanner *s);
 
+static SANE_Status read_counters(struct scanner *s);
 static SANE_Status read_sensors(struct scanner *s, SANE_Int option);
 static SANE_Status read_panel(struct scanner *s, SANE_Int option);
 static SANE_Status send_panel(struct scanner *s);
@@ -609,10 +698,18 @@ static SANE_Status gain_buffers (struct scanner *s, int setup);
 
 static SANE_Status calibrate_AFE(struct scanner *s);
 static SANE_Status calibrate_fine(struct scanner *s);
-static SANE_Status calibrate_fine_buffer(struct scanner *s);
+static SANE_Status calibrate_fine_src_scan(struct scanner *s);
+static SANE_Status calibrate_fine_src_hw(struct scanner *s);
+static SANE_Status calibrate_fine_dest_hw(struct scanner *s);
 
 static SANE_Status write_AFE (struct scanner *s);
 static SANE_Status calibration_scan (struct scanner *s, int);
+
+static SANE_Status send_imprint_positioning(struct scanner* s, int is_postimprint, int enabled);
+static SANE_Status send_imprint_specstring(struct scanner* s, int is_postimprint);
+static SANE_Status send_imprint_date_and_time(struct scanner* s);
+static SANE_Status load_imprinting_settings(struct scanner *s);
+static SANE_Status detect_imprinter(struct scanner *s, SANE_Int option);
 
 static void hexdump (int level, char *comment, unsigned char *p, int l);
 static void default_globals (void);

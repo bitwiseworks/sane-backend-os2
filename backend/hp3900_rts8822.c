@@ -15,8 +15,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -63,7 +62,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>		/* bzero()   */
+#include <string.h>		/* memset()   */
 #include <time.h>		/* clock()   */
 #include <math.h>		/* truncf()  */
 #include <ctype.h>		/* tolower() */
@@ -555,11 +554,11 @@ static void Split_into_12bit_channels (SANE_Byte * destino,
 static SANE_Int Scan_Read_BufferA (struct st_device *dev,
 				   SANE_Int buffer_size, SANE_Int arg2,
 				   SANE_Byte * pBuffer,
-				   SANE_Int * bytes_transfered);
+				   SANE_Int * bytes_transferred);
 
 static SANE_Int Bulk_Operation (struct st_device *dev, SANE_Byte op,
 				SANE_Int buffer_size, SANE_Byte * buffer,
-				SANE_Int * transfered);
+				SANE_Int * transferred);
 static SANE_Int Get_PAG_Value (SANE_Byte scantype, SANE_Byte color);
 static SANE_Int GetOneLineInfo (struct st_device *dev, SANE_Int resolution,
 				SANE_Int * maximus, SANE_Int * minimus,
@@ -630,12 +629,12 @@ RTS_Alloc ()
     {
       SANE_Int rst = OK;
 
-      bzero (dev, sizeof (struct st_device));
+      memset (dev, 0, sizeof (struct st_device));
 
       /* initial registers */
       dev->init_regs = malloc (sizeof (SANE_Byte) * RT_BUFFER_LEN);
       if (dev->init_regs != NULL)
-	bzero (dev->init_regs, sizeof (SANE_Byte) * RT_BUFFER_LEN);
+	memset (dev->init_regs, 0, sizeof (SANE_Byte) * RT_BUFFER_LEN);
       else
 	rst = ERROR;
 
@@ -643,7 +642,7 @@ RTS_Alloc ()
 	{
 	  dev->scanning = malloc (sizeof (struct st_scanning));
 	  if (dev->scanning != NULL)
-	    bzero (dev->scanning, sizeof (struct st_scanning));
+	    memset (dev->scanning, 0, sizeof (struct st_scanning));
 	  else
 	    rst = ERROR;
 	}
@@ -652,7 +651,7 @@ RTS_Alloc ()
 	{
 	  dev->Reading = malloc (sizeof (struct st_readimage));
 	  if (dev->Reading != NULL)
-	    bzero (dev->Reading, sizeof (struct st_readimage));
+	    memset (dev->Reading, 0, sizeof (struct st_readimage));
 	  else
 	    rst = ERROR;
 	}
@@ -661,7 +660,7 @@ RTS_Alloc ()
 	{
 	  dev->Resize = malloc (sizeof (struct st_resize));
 	  if (dev->Resize != NULL)
-	    bzero (dev->Resize, sizeof (struct st_resize));
+	    memset (dev->Resize, 0, sizeof (struct st_resize));
 	  else
 	    rst = ERROR;
 	}
@@ -670,7 +669,7 @@ RTS_Alloc ()
 	{
 	  dev->status = malloc (sizeof (struct st_status));
 	  if (dev->status != NULL)
-	    bzero (dev->status, sizeof (struct st_status));
+	    memset (dev->status, 0, sizeof (struct st_status));
 	  else
 	    rst = ERROR;
 	}
@@ -909,7 +908,7 @@ Motor_Curve_Parse (SANE_Int * mtc_count, SANE_Int * buffer)
 	  if (*buffer == -2)
 	    {
 	      /* end of motorcurve */
-	      /* complete any openned phase */
+	      /* complete any opened phase */
 	      /* close phase */
 	      phase = -1;
 	    }
@@ -1255,7 +1254,7 @@ Load_Chipset (struct st_device *dev)
     {
       SANE_Int model;
 
-      bzero (dev->chipset, sizeof (struct st_chip));
+      memset (dev->chipset, 0, sizeof (struct st_chip));
 
       /* get chipset model of selected scanner */
       model = cfg_chipset_model_get (RTS_Debug->dev_model);
@@ -1597,7 +1596,7 @@ RTS_Scanner_SetParams (struct st_device *dev, struct params *param)
       data_bitset (&dev->init_regs[0x146], 0x40,
 		   ((dev->sensorcfg->type == CIS_SENSOR) ? 0 : 1));
 
-      /* turn on appropiate lamp */
+      /* turn on appropriate lamp */
       if (scan.scantype == ST_NORMAL)
 	Lamp_Status_Set (dev, NULL, TRUE, FLB_LAMP);
       else
@@ -1611,7 +1610,7 @@ RTS_Scanner_SetParams (struct st_device *dev, struct params *param)
 	compression = FALSE;
 
       /* resetting low level config */
-      bzero (&hwdcfg, sizeof (struct st_hwdconfig));
+      memset (&hwdcfg, 0, sizeof (struct st_hwdconfig));
 
       /* setting low level config */
       hwdcfg.scantype = scan.scantype;
@@ -1650,7 +1649,7 @@ SetScanParams (struct st_device *dev, SANE_Byte * Regs,
   dbg_ScanParams (scancfg);
   dbg_hwdcfg (hwdcfg);
 
-  bzero (&mycoords, sizeof (struct st_coords));
+  memset (&mycoords, 0, sizeof (struct st_coords));
   /* Copy scancfg to scan2 */
   memcpy (&scan2, scancfg, sizeof (struct st_scanparams));
 
@@ -2729,7 +2728,7 @@ Motor_Move (struct st_device *dev, SANE_Byte * Regs,
       /* unknown data */
       data_bitset (&cpRegs[0x1cf], 0x80, 1);	/*x------- */
 
-      /* sets one chanel per color */
+      /* sets one channel per color */
       data_bitset (&cpRegs[0x12], 0x3f, 0);	/* channel   */
       data_bitset (&cpRegs[0x12], 0xc0, 1);	/* 1 channel */
 
@@ -2924,7 +2923,7 @@ Load_MotorCurves (struct st_device *dev)
 
   DBG (DBG_FNC, "> Load_MotorCurves\n");
 
-  /* get motor setttings buffer for this device */
+  /* get motor settings buffer for this device */
   mtc = cfg_motorcurve_get ();
   if (mtc != NULL)
     {
@@ -3675,7 +3674,7 @@ Init_Registers (struct st_device *dev)
   DBG (DBG_FNC, "+ Init_Registers:\n");
 
   /* Lee dev->init_regs */
-  bzero (dev->init_regs, RT_BUFFER_LEN);
+  memset (dev->init_regs, 0, RT_BUFFER_LEN);
   RTS_ReadRegs (dev->usb_handle, dev->init_regs);
   Read_FE3E (dev, &v1619);
 
@@ -4116,7 +4115,7 @@ Lamp_Status_Get (struct st_device *dev, SANE_Byte * flb_lamp,
 		case RTS8822BL_03A:
 		  *flb_lamp = ((data2 & 0x40) != 0) ? 1 : 0;
 		  *tma_lamp = (((data2 & 0x20) != 0)
-			       && ((data1 & 0x10) == 1)) ? 1 : 0;
+			       && ((data1 & 0x10) != 0)) ? 1 : 0;
 		  break;
 		default:
 		  if ((_B1 (data1) & 0x10) == 0)
@@ -4342,7 +4341,7 @@ RTS_DMA_Write (struct st_device *dev, SANE_Int dmacs, SANE_Int options,
 		}
 	      else
 		{
-		  /* for some reason it's not posible to allocate space to check
+		  /* for some reason it's not possible to allocate space to check
 		     sent buffer so we just write data */
 		  Bulk_Operation (dev, BLK_WRITE, size, buffer, &transferred);
 		  rst = OK;
@@ -4401,7 +4400,7 @@ RTS_DMA_CheckType (struct st_device *dev, SANE_Byte * Regs)
 		  if (RTS_DMA_SetType (dev, Regs, a) != OK)
 		    break;
 
-		  /* wait 1500 miliseconds */
+		  /* wait 1500 milliseconds */
 		  if (RTS_DMA_WaitReady (dev, 1500) == OK)
 		    {
 		      /* reset dma */
@@ -4825,8 +4824,8 @@ Refs_Analyze_Pattern (struct st_scanparams *scancfg,
 	  if ((scancfg->coord.width - dist) > 1)
 	    {
 	      /* clear buffers */
-	      bzero (color_sum, sizeof (double) * buffersize);
-	      bzero (color_dif, sizeof (double) * buffersize);
+	      memset (color_sum, 0, sizeof (double) * buffersize);
+	      memset (color_dif, 0, sizeof (double) * buffersize);
 
 	      for (xpos = 0; xpos < scancfg->coord.width; xpos++)
 		{
@@ -4857,8 +4856,8 @@ Refs_Analyze_Pattern (struct st_scanparams *scancfg,
 		    {
 		      /*d4df */
 		      diff_max = color_dif[cnt];
-		      if (abs (color_dif[cnt] - color_dif[cnt - 1]) >
-			  abs (color_dif[coord] - color_dif[coord - 1]))
+		      if (fabs (color_dif[cnt] - color_dif[cnt - 1]) >
+			  fabs (color_dif[coord] - color_dif[coord - 1]))
 			coord = cnt;
 		    }
 
@@ -4875,8 +4874,8 @@ Refs_Analyze_Pattern (struct st_scanparams *scancfg,
 	  if ((scancfg->coord.height - dist) > 1)
 	    {
 	      /* clear buffers */
-	      bzero (color_sum, sizeof (double) * buffersize);
-	      bzero (color_dif, sizeof (double) * buffersize);
+	      memset (color_sum, 0, sizeof (double) * buffersize);
+	      memset (color_dif, 0, sizeof (double) * buffersize);
 
 	      for (ypos = 0; ypos < scancfg->coord.height; ypos++)
 		{
@@ -4908,8 +4907,8 @@ Refs_Analyze_Pattern (struct st_scanparams *scancfg,
 		  if ((color_dif[cnt] >= 0) && (color_dif[cnt] > diff_max))
 		    {
 		      diff_max = color_dif[cnt];
-		      if (abs (color_dif[cnt] - color_dif[cnt - 1]) >
-			  abs (color_dif[coord] - color_dif[coord - 1]))
+		      if (fabs (color_dif[cnt] - color_dif[cnt - 1]) >
+			  fabs (color_dif[coord] - color_dif[coord - 1]))
 			coord = cnt;
 		    }
 
@@ -4924,8 +4923,8 @@ Refs_Analyze_Pattern (struct st_scanparams *scancfg,
 	  if ((scancfg->coord.width - dist) > 1)
 	    {
 	      /* clear buffers */
-	      bzero (color_sum, sizeof (double) * buffersize);
-	      bzero (color_dif, sizeof (double) * buffersize);
+	      memset (color_sum, 0, sizeof (double) * buffersize);
+	      memset (color_dif, 0, sizeof (double) * buffersize);
 
 	      for (xpos = 0; xpos < scancfg->coord.width; xpos++)
 		{
@@ -4955,8 +4954,8 @@ Refs_Analyze_Pattern (struct st_scanparams *scancfg,
 		  if ((color_dif[cnt] >= 0) && (color_dif[cnt] > diff_max))
 		    {
 		      diff_max = color_dif[cnt];
-		      if (abs (color_dif[cnt] - color_dif[cnt - 1]) >
-			  abs (color_dif[coord] - color_dif[coord - 1]))
+		      if (fabs (color_dif[cnt] - color_dif[cnt - 1]) >
+			  fabs (color_dif[coord] - color_dif[coord - 1]))
 			coord = cnt;
 		    }
 
@@ -6188,7 +6187,7 @@ Reading_DestroyBuffers (struct st_device *dev)
       dev->scanning->imagebuffer = NULL;
     }
 
-  bzero (dev->Reading, sizeof (struct st_readimage));
+  memset (dev->Reading, 0, sizeof (struct st_readimage));
 
   return OK;
 }
@@ -6462,7 +6461,7 @@ RTS_ScanCounter_Inc (struct st_device *dev)
 	  break;
 	default:
 	  /* value is 4 bytes size starting from address 0x21 in lsb format */
-	  bzero (&somebuffer, sizeof (somebuffer));
+	  memset (&somebuffer, 0, sizeof (somebuffer));
 	  somebuffer[4] = 0x0c;
 
 	  RTS_EEPROM_ReadInteger (dev->usb_handle, 0x21, &idata);
@@ -7693,7 +7692,7 @@ arrangeline2 = 1
 
 static SANE_Int
 Scan_Read_BufferA (struct st_device *dev, SANE_Int buffer_size, SANE_Int arg2,
-		   SANE_Byte * pBuffer, SANE_Int * bytes_transfered)
+		   SANE_Byte * pBuffer, SANE_Int * bytes_transferred)
 {
   SANE_Int rst = OK;
   SANE_Byte *ptBuffer = NULL;
@@ -7701,11 +7700,11 @@ Scan_Read_BufferA (struct st_device *dev, SANE_Int buffer_size, SANE_Int arg2,
   struct st_readimage *rd = dev->Reading;
 
   DBG (DBG_FNC,
-       "+ Scan_Read_BufferA(buffer_size=%i, arg2, *pBuffer, *bytes_transfered):\n",
+       "+ Scan_Read_BufferA(buffer_size=%i, arg2, *pBuffer, *bytes_transferred):\n",
        buffer_size);
 
-  arg2 = arg2;			/* silence gcc */
-  *bytes_transfered = 0;
+  (void) arg2;			/* silence gcc */
+  *bytes_transferred = 0;
 
   if (pBuffer != NULL)
     {
@@ -7786,7 +7785,7 @@ Scan_Read_BufferA (struct st_device *dev, SANE_Int buffer_size, SANE_Int arg2,
 		      opStatus = Reading_Wait (dev, rd->Channels_per_dot,
 					       rd->Channel_size,
 					       iAmount,
-					       &rd->Bytes_Available, 10, sc);
+					       &rd->Bytes_Available, 60, sc);
 
 		      /* If something fails, perhaps we can read some bytes... */
 		      if (opStatus != OK)
@@ -7841,7 +7840,7 @@ Scan_Read_BufferA (struct st_device *dev, SANE_Int buffer_size, SANE_Int arg2,
 				}
 			      else
 				{
-				  *bytes_transfered += iAmount;
+				  *bytes_transferred += iAmount;
 				  buffer_size -= iAmount;
 				}
 
@@ -7867,7 +7866,7 @@ Scan_Read_BufferA (struct st_device *dev, SANE_Int buffer_size, SANE_Int arg2,
 	  /* is there any data read from scanner? */
 	  if (rd->RDSize > 0)
 	    {
-	      /* Add to the given buffer so many bytes as posible */
+	      /* Add to the given buffer as many bytes as possible */
 	      SANE_Int iAmount;
 
 	      iAmount = min (buffer_size, rd->RDSize);
@@ -7889,16 +7888,16 @@ Scan_Read_BufferA (struct st_device *dev, SANE_Int buffer_size, SANE_Int arg2,
 	      ptBuffer += iAmount;
 	      rd->RDSize -= iAmount;
 	      buffer_size -= iAmount;
-	      *bytes_transfered += iAmount;
+	      *bytes_transferred += iAmount;
 
 	      /* if there isn't any data in DMABuffer we can point RDStart
-	         to the begining of DMABuffer */
+	         to the beginning of DMABuffer */
 	      if (rd->RDSize == 0)
 		rd->RDStart = rd->DMABuffer;
 	    }
 
-	  /* in case of all data is read we return OK with bytes_transfered = 0 */
-	  if ((*bytes_transfered == 0)
+	  /* in case of all data is read we return OK with bytes_transferred = 0 */
+	  if ((*bytes_transferred == 0)
 	      || ((rd->RDSize == 0) && (rd->ImageSize == 0)))
 	    break;
 	}
@@ -7907,7 +7906,7 @@ Scan_Read_BufferA (struct st_device *dev, SANE_Int buffer_size, SANE_Int arg2,
 	RTS_DMA_Cancel (dev);
     }
 
-  DBG (DBG_FNC, "->   *bytes_transfered=%i\n", *bytes_transfered);
+  DBG (DBG_FNC, "->   *bytes_transferred=%i\n", *bytes_transferred);
   DBG (DBG_FNC, "->   Reading->ImageSize=%i\n", rd->ImageSize);
   DBG (DBG_FNC, "->   Reading->DMAAmount=%i\n", rd->DMAAmount);
   DBG (DBG_FNC, "->   Reading->RDSize   =%i\n", rd->RDSize);
@@ -7921,7 +7920,7 @@ static SANE_Int
 Reading_BufferSize_Get (struct st_device *dev, SANE_Byte channels_per_dot,
 			SANE_Int channel_size)
 {
-  /* returns the ammount of bytes in scanner's buffer ready to be read */
+  /* returns the amount of bytes in scanner's buffer ready to be read */
 
   SANE_Int rst;
 
@@ -8072,7 +8071,7 @@ Scan_Start (struct st_device *dev)
       dbg_ScanParams (&scancfg);
 
       /* reserva buffer 6 dwords en fa84-fa9f */
-      bzero (&hwdcfg, sizeof (struct st_hwdconfig));
+      memset (&hwdcfg, 0, sizeof (struct st_hwdconfig));
 
       /* wait till lamp is at home (should use timeout
          windows driver doesn't use it)
@@ -10009,7 +10008,7 @@ Shading_apply (struct st_device *dev, SANE_Byte * Regs,
 	}
 
       /*3d4c */
-      bzero (&calbuffers, sizeof (struct st_cal2));
+      memset (&calbuffers, 0, sizeof (struct st_cal2));
 
       /* If black shading correction is enabled ... */
       if ((Regs[0x1cf] & 8) != 0)
@@ -10039,7 +10038,7 @@ Shading_apply (struct st_device *dev, SANE_Byte * Regs,
 
 static SANE_Int
 Bulk_Operation (struct st_device *dev, SANE_Byte op, SANE_Int buffer_size,
-		SANE_Byte * buffer, SANE_Int * transfered)
+		SANE_Byte * buffer, SANE_Int * transferred)
 {
   SANE_Int iTransferSize, iBytesToTransfer, iPos, rst, iBytesTransfered;
 
@@ -10051,8 +10050,8 @@ Bulk_Operation (struct st_device *dev, SANE_Byte op, SANE_Int buffer_size,
   rst = OK;
   iBytesTransfered = 0;
 
-  if (transfered != NULL)
-    *transfered = 0;
+  if (transferred != NULL)
+    *transferred = 0;
 
   iTransferSize = min (buffer_size, RTS_Debug->dmatransfersize);
 
@@ -10072,8 +10071,8 @@ Bulk_Operation (struct st_device *dev, SANE_Byte op, SANE_Int buffer_size,
 	    }
 	  else
 	    {
-	      if (transfered != NULL)
-		*transfered += iBytesTransfered;
+	      if (transferred != NULL)
+		*transferred += iBytesTransfered;
 	    }
 	  iPos += iTransferSize;
 	  iBytesToTransfer -= iTransferSize;
@@ -10095,8 +10094,8 @@ Bulk_Operation (struct st_device *dev, SANE_Byte op, SANE_Int buffer_size,
 	    }
 	  else
 	    {
-	      if (transfered != NULL)
-		*transfered += iTransferSize;
+	      if (transferred != NULL)
+		*transferred += iTransferSize;
 	    }
 	  iPos += iTransferSize;
 	  iBytesToTransfer -= iTransferSize;
@@ -10340,7 +10339,7 @@ RTS_GetImage (struct st_device *dev, SANE_Byte * Regs,
 		(struct st_hwdconfig *) malloc (sizeof (struct st_hwdconfig));
 	      if (hwdcfg != NULL)
 		{
-		  bzero (hwdcfg, sizeof (struct st_hwdconfig));
+		  memset (hwdcfg, 0, sizeof (struct st_hwdconfig));
 
 		  if (((options & 2) != 0) || ((_B1 (options) & 1) != 0))
 		    {
@@ -10404,7 +10403,7 @@ RTS_GetImage (struct st_device *dev, SANE_Byte * Regs,
 						  sizeof (SANE_Byte));
 			  if (myRegs != NULL)
 			    {
-			      bzero (myRegs,
+			      memset (myRegs, 0,
 				     RT_BUFFER_LEN * sizeof (SANE_Byte));
 			      RTS_Setup (dev, myRegs, &scan, hwdcfg,
 					 gain_offset);
@@ -10547,7 +10546,7 @@ Refs_Detect (struct st_device *dev, SANE_Byte * Regs, SANE_Int resolution_x,
       *x = *y = 0;		/* default */
 
       /* set configuration to scan a little area at the top-left corner */
-      bzero (&scancfg, sizeof (struct st_scanparams));
+      memset (&scancfg, 0, sizeof (struct st_scanparams));
       scancfg.depth = 8;
       scancfg.colormode = CM_GRAY;
       scancfg.channel = CL_RED;
@@ -10588,7 +10587,7 @@ Refs_Detect (struct st_device *dev, SANE_Byte * Regs, SANE_Int resolution_x,
 	  pwmlamplevel = 0;
 	  Lamp_PWM_use (dev, 1);
 
-	  bzero (&gain_offset, sizeof (struct st_gain_offset));
+	  memset (&gain_offset, 0, sizeof (struct st_gain_offset));
 	  for (C = CL_RED; C <= CL_BLUE; C++)
 	    {
 	      gain_offset.pag[C] = 3;
@@ -10763,7 +10762,7 @@ Lamp_Status_Set (struct st_device *dev, SANE_Byte * Regs, SANE_Int turn_on,
       switch (dev->chipset->model)
 	{
 	case RTS8822BL_03A:
-	  /* register 0xe946 has 2 bits and each one referres one lamp
+	  /* register 0xe946 has 2 bits and each one refers one lamp
 	     0x40: FLB_LAMP | 0x20 : TMA_LAMP
 	     if both were enabled both lamps would be switched on */
 	  data_bitset (&Regs[0x146], 0x20, ((lamp == TMA_LAMP) && (turn_on == TRUE)) ? 1 : 0);	/* TMA */
@@ -11290,7 +11289,7 @@ Head_Relocate (struct st_device *dev, SANE_Int speed, SANE_Int direction,
       struct st_motormove mymotor;
       struct st_motorpos mtrpos;
 
-      bzero (&mymotor, sizeof (struct st_motormove));
+      memset (&mymotor, 0, sizeof (struct st_motormove));
       memcpy (Regs, dev->init_regs, RT_BUFFER_LEN * sizeof (SANE_Byte));
 
       if (speed < dev->motormove_count)
@@ -11338,7 +11337,7 @@ Calib_CreateFixedBuffers ()
 	  (USHORT *) malloc (0x7f8 * sizeof (USHORT));
 
       if (fixed_black_shading[channel] != NULL)
-	bzero (fixed_black_shading[channel], 0x7f8 * sizeof (USHORT));
+	memset (fixed_black_shading[channel], 0, 0x7f8 * sizeof (USHORT));
       else
 	ret = ERROR;
 
@@ -11348,7 +11347,7 @@ Calib_CreateFixedBuffers ()
 	  (USHORT *) malloc (0x7f8 * sizeof (USHORT));
 
       if (fixed_white_shading[channel] != NULL)
-	bzero (fixed_white_shading[channel], 0x7f8 * sizeof (USHORT));
+	memset (fixed_white_shading[channel], 0, 0x7f8 * sizeof (USHORT));
       else
 	ret = ERROR;
 
@@ -11365,7 +11364,7 @@ Calib_CreateBuffers (struct st_device *dev, struct st_calibration *buffer,
   SANE_Int ebp, ret, channel;
 
   ret = ERROR;
-  dev = dev;
+  (void) dev;
 
   buffer->shadinglength = scan.coord.width;
   ebp = 0x14;
@@ -12603,9 +12602,9 @@ Calib_BWShading (struct st_calibration_config *calibcfg,
   /*falta codigo */
 
   /*silence gcc */
-  calibcfg = calibcfg;
-  myCalib = myCalib;
-  gainmode = gainmode;
+  (void) calibcfg;
+  (void) myCalib;
+  (void) gainmode;
 
   return OK;
 }
@@ -12779,7 +12778,7 @@ Calib_WhiteShading_3 (struct st_device *dev,
 
 	      /*a743 */
 	      if (lf130 > 0)
-		bzero (buffer1, lf130 * sizeof (double));
+		memset (buffer1, 0, lf130 * sizeof (double));
 
 	      /*a761 */
 	      if (lf12c > 0)
@@ -12959,7 +12958,7 @@ Calib_WhiteShading_3 (struct st_device *dev,
 
 	      /*a743 */
 	      if (lf130 > 0)
-		bzero (buffer1, lf130 * sizeof (double));
+		memset (buffer1, 0, lf130 * sizeof (double));
 
 	      /*a761 */
 	      if (lf12c > 0)
@@ -13325,14 +13324,14 @@ Calib_BlackShading (struct st_device *dev,
   if (scancfg.depth > 8)
     {
       /*8bb2 */
-      bzero (&dbvalue, 6 * sizeof (double));
+      memset (&dbvalue, 0, 6 * sizeof (double));
       position = 0;
 
       if (bytes_per_line > 0)
 	{
 	  do
 	    {
-	      bzero (&buff3, 0x8000 * sizeof (SANE_Int));
+	      memset (&buff3, 0, 0x8000 * sizeof (SANE_Int));
 	      sumatorio = 0;
 	      ptr = buffer + position;
 	      current_line = 0;
@@ -13435,14 +13434,14 @@ Calib_BlackShading (struct st_device *dev,
   else
     {
       /*8eb6 */
-      bzero (&dbvalue, 6 * sizeof (double));
+      memset (&dbvalue, 0, 6 * sizeof (double));
       position = 0;
 
       if (bytes_per_line > 0)
 	{
 	  do
 	    {
-	      bzero (&buff2, 256 * sizeof (SANE_Byte));
+	      memset (&buff2, 0, 256 * sizeof (SANE_Byte));
 	      sumatorio = 0;
 	      /* ptr points to the next position of the first line */
 	      ptr = buffer + position;
@@ -13625,7 +13624,7 @@ Calibration (struct st_device *dev, SANE_Byte * Regs,
   DBG (DBG_FNC, "> Calibration\n");
   dbg_ScanParams (scancfg);
 
-  value = value;		/*silence gcc */
+  (void) value;			/*silence gcc */
 
   memcpy (&calibdata->Regs, Regs, sizeof (SANE_Byte) * RT_BUFFER_LEN);
 
@@ -13634,7 +13633,7 @@ Calibration (struct st_device *dev, SANE_Byte * Regs,
   Calib_LoadConfig (dev, &calibcfg, scan.scantype, scancfg->resolution_x,
 		    scancfg->depth);
 
-  bzero (&calibdata->gain_offset, sizeof (struct st_gain_offset));	/*[42b3654] */
+  memset (&calibdata->gain_offset, 0, sizeof (struct st_gain_offset));	/*[42b3654] */
   for (a = CL_RED; a <= CL_BLUE; a++)
     {
       myCalib->WRef[a] = calibcfg.WRef[a];
@@ -14005,7 +14004,7 @@ Free_Constrains (struct st_device *dev)
 static void
 RTS_DebugInit ()
 {
-  /* Default vaules */
+  /* Default values */
   RTS_Debug->dev_model = HP3970;
 
   RTS_Debug->DumpShadingData = FALSE;
@@ -14110,7 +14109,7 @@ Init_Vars (void)
 
   hp_gamma = malloc (sizeof (struct st_gammatables));
   if (hp_gamma != NULL)
-    bzero (hp_gamma, sizeof (struct st_gammatables));
+    memset (hp_gamma, 0, sizeof (struct st_gammatables));
   else
     rst = ERROR;
 
@@ -14118,7 +14117,7 @@ Init_Vars (void)
     {
       RTS_Debug = malloc (sizeof (struct st_debug_opts));
       if (RTS_Debug != NULL)
-	bzero (RTS_Debug, sizeof (struct st_debug_opts));
+	memset (RTS_Debug, 0, sizeof (struct st_debug_opts));
       else
 	rst = ERROR;
     }
@@ -14127,7 +14126,7 @@ Init_Vars (void)
     {
       default_gain_offset = malloc (sizeof (struct st_gain_offset));
       if (default_gain_offset != NULL)
-	bzero (default_gain_offset, sizeof (struct st_gain_offset));
+	memset (default_gain_offset, 0, sizeof (struct st_gain_offset));
       else
 	rst = ERROR;
     }
@@ -14136,7 +14135,7 @@ Init_Vars (void)
     {
       calibdata = malloc (sizeof (struct st_calibration_data));
       if (calibdata != NULL)
-	bzero (calibdata, sizeof (struct st_calibration_data));
+	memset (calibdata, 0, sizeof (struct st_calibration_data));
       else
 	rst = ERROR;
     }
@@ -14145,7 +14144,7 @@ Init_Vars (void)
     {
       wshading = malloc (sizeof (struct st_shading));
       if (wshading != NULL)
-	bzero (wshading, sizeof (struct st_shading));
+	memset (wshading, 0, sizeof (struct st_shading));
       else
 	rst = ERROR;
     }
@@ -14428,7 +14427,7 @@ WShading_Emulate (SANE_Byte * buffer, SANE_Int * chnptr, SANE_Int size,
 	      /* get channel color */
 	      chncolor = data_lsb_get (buffer + pos, chnsize);
 
-	      /* apply shading coeficient */
+	      /* apply shading coefficient */
 	      chncolor *= wshading->rates[*chnptr];
 
 	      /* care about limits */
@@ -14467,7 +14466,7 @@ WShading_Calibrate (struct st_device *dev, SANE_Byte * Regs,
 
   DBG (DBG_FNC, "> WShading_Calibrate(*myCalib)\n");
 
-  bzero (&myCalibTable, sizeof (struct st_gain_offset));
+  memset (&myCalibTable, 0, sizeof (struct st_gain_offset));
   for (C = CL_RED; C <= CL_BLUE; C++)
     {
       myCalibTable.pag[C] = 3;
@@ -14687,7 +14686,7 @@ motor_pos (struct st_device *dev, SANE_Byte * Regs,
 
   DBG (DBG_FNC, "> Calib_test(*myCalib)\n");
 
-  bzero (&myCalibTable, sizeof (struct st_gain_offset));
+  memset (&myCalibTable, 0, sizeof (struct st_gain_offset));
 
   calibcfg =
     (struct st_calibration_config *)
@@ -14821,7 +14820,7 @@ Calib_BlackShading_jkd (struct st_device *dev, SANE_Byte * Regs,
 
   DBG (DBG_FNC, "> Calib_BlackShading_jkd(*myCalib)\n");
 
-  bzero (&myCalibTable, sizeof (struct st_gain_offset));
+  memset (&myCalibTable, 0, sizeof (struct st_gain_offset));
   for (C = CL_RED; C <= CL_BLUE; C++)
     {
       myCalibTable.pag[C] = 3;
@@ -14955,7 +14954,7 @@ Calib_test (struct st_device *dev, SANE_Byte * Regs,
 
   DBG (DBG_FNC, "> Calib_test(*myCalib)\n");
 
-  bzero (&myCalibTable, sizeof (struct st_gain_offset));
+  memset (&myCalibTable, 0, sizeof (struct st_gain_offset));
 
   calibcfg =
     (struct st_calibration_config *)

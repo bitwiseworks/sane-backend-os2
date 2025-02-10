@@ -15,8 +15,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -459,7 +458,7 @@ show_buffer (SANE_Int level, SANE_Byte * buffer, SANE_Int size)
 	      sdata = (char *) malloc (256);
 	      if (sdata != NULL)
 		{
-		  bzero (sline, 256);
+		  memset (sline, 0, 256);
 		  for (cont = 0; cont < size; cont++)
 		    {
 		      if (col == 0)
@@ -480,7 +479,7 @@ show_buffer (SANE_Int level, SANE_Byte * buffer, SANE_Int size)
 			  snprintf (sdata, 255, " : %i\n", offset - 8);
 			  sline = strcat (sline, sdata);
 			  DBG (level, "%s", sline);
-			  bzero (sline, 256);
+			  memset (sline, 0, 256);
 			}
 		    }
 		  if (col > 0)
@@ -494,7 +493,7 @@ show_buffer (SANE_Int level, SANE_Byte * buffer, SANE_Int size)
 		      snprintf (sdata, 255, " : %i\n", offset - 8);
 		      sline = strcat (sline, sdata);
 		      DBG (level, "%s", sline);
-		      bzero (sline, 256);
+		      memset (sline, 0, 256);
 		    }
 		  free (sdata);
 		}

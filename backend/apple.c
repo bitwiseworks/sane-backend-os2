@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -330,8 +328,8 @@ return SANE_STATUS_GOOD;
 static SANE_Status
 sense_handler (int scsi_fd, u_char * result, void *arg)
 {
-  scsi_fd = scsi_fd;			/* silence gcc */
-  arg = arg;					/* silence gcc */
+  (void) scsi_fd;			/* silence gcc */
+  (void) arg;				/* silence gcc */
 
   switch (result[2] & 0x0F)
     {
@@ -393,7 +391,7 @@ return SANE_STATUS_GOOD;
   if (status == SANE_STATUS_IO_ERROR)
     {
 
-/* Now we are checking for Harware and Vendor Unique Errors for all models */
+/* Now we are checking for Hardware and Vendor Unique Errors for all models */
 /* First check the common Error conditions */
 
       if (result[18] & 0x80)
@@ -1010,7 +1008,7 @@ calc_parameters (Apple_Scanner * s)
    Looks like for two distinct val (Fixed) values we get the same
    double. How come ?
 
-   This hack fixed the looping situtation. Unfortunately SIGSEGV
+   This hack fixed the looping situation. Unfortunately SIGSEGV
    remains when you touch the slice bars (thouhg not all the
    time). But it's OK if you select scan_area from the preview window
    (cool).
@@ -1188,7 +1186,7 @@ mode_update (SANE_Handle handle, char *val)
       return SANE_STATUS_INVAL;
     }
 
-/* Second hand dependancies of mode option */
+/* Second hand dependencies of mode option */
 /* Looks like code doubling */
 
 
@@ -1546,7 +1544,7 @@ init_options (Apple_Scanner * s)
   /* Use volt_ref */
   s->opt[OPT_VOLT_REF].name = "volt-ref";
   s->opt[OPT_VOLT_REF].title = "Volt Reference";
-  s->opt[OPT_VOLT_REF].desc ="It's brightness equivalant.";
+  s->opt[OPT_VOLT_REF].desc ="It's brightness equivalent.";
   s->opt[OPT_VOLT_REF].type = SANE_TYPE_BOOL;
   if (s->hw->ScannerModel!=COLORONESCANNER)
     s->opt[OPT_VOLT_REF].cap |= SANE_CAP_INACTIVE;
@@ -1868,12 +1866,12 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   size_t len;
   FILE *fp;
 
-  authorize = authorize;	/* silence gcc */
+  (void) authorize;			/* silence gcc */
 
   DBG_INIT ();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (APPLE_CONFIG_FILE);
   if (!fp)
@@ -1932,7 +1930,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   Apple_Device *dev;
   int i;
 
-  local_only = local_only;		/* silence gcc */
+  (void) local_only;			/* silence gcc */
 
   if (devlist)
     free (devlist);
@@ -2064,7 +2062,8 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	v2 = SANE_UNFIX (f);
 	DBG (FLOW_CONTROL, "Value %g (Fixed)\n",
 	     (action == SANE_ACTION_GET_VALUE) ? v1 : v2);
-        }
+	break;
+	}
       default:
 	DBG (FLOW_CONTROL, "Value %u (Int).\n",
 		(action == SANE_ACTION_GET_VALUE)
@@ -2668,7 +2667,7 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 {
 DBG (FLOW_CONTROL,"sane_set_io_mode: Entering.\n");
 
- handle = handle;				/* silence gcc */
+ (void) handle;				/* silence gcc */
 
 if (non_blocking)
   {
@@ -2683,8 +2682,8 @@ return SANE_STATUS_GOOD;
 SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
 {
-  handle = handle;				/* silence gcc */
-  fd = fd;						/* silence gcc */
+  (void) handle;			/* silence gcc */
+  (void) fd;				/* silence gcc */
 
   DBG (FLOW_CONTROL, "sane_get_select_fd: Don't call me please. "
        "Unimplemented function\n");

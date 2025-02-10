@@ -12,10 +12,7 @@
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-  $Id$
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /*
@@ -877,7 +874,7 @@ _UnscrambleLine (unsigned char *pabLine,
   else
     {
       int i, j;			/* loop variables */
-      int c;			/* color buffer accumulator for horizontal avarage */
+      int c;			/* color buffer accumulator for horizontal average */
 
       /* initialize for incremental color buffer access */
       int iInc = 1;
@@ -1052,7 +1049,7 @@ CircBufferInit (int iHandle, TDataPipe * p,
 #define SAFETY_LINES 0
 #define MAX_LINES_PER_XFERBUF 800
       /* estimate of number of unsigned chars to transfer at all via the USB */
-      /* add some lines for securtiy */
+      /* add some lines for security */
 
       p->iLinesLeft =
 	iHeight + p->iSkipLines + p->iLinesPerCircBuf + SAFETY_LINES;
@@ -1216,7 +1213,7 @@ SimpleCalibExt (THWParams * pHWPar, unsigned char *pabCalibTable,
   TScanParams Params;
   unsigned char abGamma[4096];
   int i, j;
-  static unsigned char abBuf[HW_PIXELS * 3 * 71];	/* Carefull : see startWhite and endWhite below */
+  static unsigned char abBuf[HW_PIXELS * 3 * 71];	/* Careful : see startWhite and endWhite below */
   static unsigned char abLine[HW_PIXELS * 3];
   static unsigned char abWhite[HW_PIXELS * 3];
   unsigned char *pabWhite;

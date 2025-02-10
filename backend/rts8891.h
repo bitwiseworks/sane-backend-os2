@@ -15,9 +15,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -118,8 +116,8 @@ enum Rts8891_Configure_Option
   NUM_CFG_OPTIONS		/* MUST be last */
 };
 
-/** Scanner object. This struct holds informations usefull for
- * the functions defined in SANE's standard. Informations closer
+/** Scanner object. This struct holds information useful for
+ * the functions defined in SANE's standard. Information closer
  * to the hardware are in the Rts8891_Device structure. There is
  * as many session structure than frontends using the scanner.
  */

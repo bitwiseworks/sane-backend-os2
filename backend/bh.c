@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -1909,6 +1907,11 @@ start_scan (BH_Scanner *s)
 		    {
 		      DBG(1, "sane_start: error opening barfile `%s'\n",
 			  s->barfname);
+		      if (fd !=-1)
+		        {
+		          close(fd);
+		          unlink(s->barfname);
+		        }
 		      status = SANE_STATUS_IO_ERROR;
 		    }
 		}
@@ -1993,7 +1996,7 @@ sense_handler (int scsi_fd, u_char *result, void *arg)
   SANE_Status status = SANE_STATUS_INVAL;
   SANE_Char print_sense[(16 * 3) + 1];
 
-  scsi_fd = scsi_fd; /* get rid of compiler warning */
+  (void) scsi_fd; /* get rid of compiler warning */
   ErrorCode = result[0] & 0x7F;
   ValidData = (result[0] & 0x80) != 0;
   sense = result[2] & 0x0f; /* Key */
@@ -3159,16 +3162,16 @@ sane_init (SANE_Int *version_code, SANE_Auth_Callback authorize)
     char devnam[PATH_MAX] = "/dev/scanner";
     FILE *fp;
 
-    authorize = authorize; /* get rid of compiler warning */
+    (void) authorize; /* get rid of compiler warning */
 
     DBG_INIT();
     DBG(3, "sane_init called\n");
     DBG(1, "Bell+Howell SANE backend %d.%d build %d %s endian\n",
-	SANE_CURRENT_MAJOR, V_MINOR, BUILD,
+	SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD,
 	_is_host_little_endian() ? "little" : "big");
 
     if (version_code)
-	*version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+	*version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
     fp = sanei_config_open(BH_CONFIG_FILE);
     if (fp)
@@ -3247,7 +3250,7 @@ sane_get_devices (const SANE_Device ***device_list, SANE_Bool local)
     int i;
     DBG(3, "sane_get_devices called\n");
 
-    local = local; /* get rid of compiler warning */
+    (void) local; /* get rid of compiler warning */
     if (devlist)
 	free (devlist);
     devlist = malloc ((num_devices + 1) * sizeof (devlist[0]));
@@ -3820,7 +3823,7 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 
  return SANE_STATUS_GOOD;
 #else
- handle = handle; /* get rid of compiler warning */
+ (void) handle; /* get rid of compiler warning */
  return (non_blocking == 1) ? SANE_STATUS_UNSUPPORTED : SANE_STATUS_GOOD;
 #endif
 }
@@ -3842,7 +3845,7 @@ sane_get_select_fd (SANE_Handle handle, SANE_Int *fd)
 
   return SANE_STATUS_GOOD;
 #else
-  handle = handle; fd = fd; /* get rid of compiler warning */
+  (void) handle; (void) fd; /* get rid of compiler warning */
   return SANE_STATUS_UNSUPPORTED;
 #endif
 }

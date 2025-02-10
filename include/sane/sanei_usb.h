@@ -16,8 +16,8 @@
    License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with sane; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   along with sane; see the file COPYING.
+   If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -180,6 +180,70 @@ struct sanei_usb_dev_descriptor
 	SANE_Byte    max_packet_size;
 };
 
+/** Initialize sanei_usb for replay testing.
+
+    Initializes sanei_usb for testing by mocking whole USB stack. This function
+    must be called before sanei_usb_init().
+
+    The sanei_usb subsystem also implements a "development mode". It modifies
+    the XML data file with the actual commands of the test run and attempts to
+    proceed testing until a mismatching input command is found for which
+    input data is required.
+
+    A <known_commands_end/> node in the data XML file will cause sanei_usb not
+    to continue to the subsequent command in the XML file and instead it will
+    prepend all output commands before that node before an output command is
+    encountered.
+
+    @param path Path to the XML data file.
+    @param development_mode Enables development mode.
+ */
+extern SANE_Status sanei_usb_testing_enable_replay(SANE_String_Const path,
+                                                   int development_mode);
+
+/** Initialize sanei_usb for recording.
+ *
+ * Initializes sanei_usb for recording communication with the scanner. This
+ * function must be called before sanei_usb_init().
+ *
+ * @param path Path to the XML data file.
+ * @param be_name The name of the backend to enable recording for.
+ */
+extern SANE_Status sanei_usb_testing_enable_record(SANE_String_Const path,
+                                                   SANE_String_Const be_name);
+
+/** Returns backend name for testing.
+ *
+ * Returns backend name for the file registered in sanei_usb_testing_enable.
+ * The caller is responsible for freeing it.
+ */
+extern SANE_String sanei_usb_testing_get_backend();
+
+/** Returns SANE_TRUE if replay testing mode is enabled, i.e. whether we are working with fake
+ * scan data.
+ */
+extern SANE_Bool sanei_usb_is_replay_mode_enabled();
+
+/** Clears currently recorded data.
+
+    This is useful on certain backends to clear the currently recorded data if it relates to
+    other devices than the one that the scan will be performed on. On these backends all
+    devices that the backend supports are opened multiple times. Recording this interaction
+    to XML file makes it impossible to replay it, as the existence of these devices is not mocked
+    currently.
+
+    This function may only be called when no USB devices are open, otherwise the behavior is
+    unpredictable.
+ */
+extern void sanei_usb_testing_record_clear();
+
+/** Records a debug message in the captured USB data if testing mode is enabled. If testing mode
+ * is not enabled, this function does nothing.
+ *
+ * @param msg Message to record
+ */
+extern void sanei_usb_testing_record_message(SANE_String_Const message);
+
 /** Initialize sanei_usb.
  *
  * Call this before any other sanei_usb function.
@@ -195,7 +259,7 @@ extern void sanei_usb_exit (void);
 
 /** Search for USB devices.
  *
- * Search USB busses for scanner devices.
+ * Search USB buses for scanner devices.
  */
 extern void sanei_usb_scan_devices (void);
 
@@ -339,9 +403,9 @@ extern SANE_Status sanei_usb_reset (SANE_Int dn);
  * @param size size of the data
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
+ * - SANE_STATUS_GOOD - on success
  * - SANE_STATUS_EOF - if zero bytes have been read
- * - SANE_STATUS_IO_ERROR - if an error occured during the read
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the read
  * - SANE_STATUS_INVAL - on every other error
  *
  */
@@ -358,8 +422,8 @@ sanei_usb_read_bulk (SANE_Int dn, SANE_Byte * buffer, size_t * size);
  * @param size size of the data
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
- * - SANE_STATUS_IO_ERROR - if an error occured during the write
+ * - SANE_STATUS_GOOD - on success
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the write
  * - SANE_STATUS_INVAL - on every other error
  */
 extern SANE_Status
@@ -367,7 +431,7 @@ sanei_usb_write_bulk (SANE_Int dn, const SANE_Byte * buffer, size_t * size);
 
 /** Send/receive a control message to/from a USB device.
  *
- * This function is only supported for libusb devices and kernel acces with
+ * This function is only supported for libusb devices and kernel access with
  * Linux 2.4.13 and newer.
  * For a detailed explanation of the parameters, have a look at the USB
  * specification at the <a href="http://www.usb.org/developers/docs/">
@@ -404,9 +468,9 @@ sanei_usb_control_msg (SANE_Int dn, SANE_Int rtype, SANE_Int req,
  * @param size size of the data
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
+ * - SANE_STATUS_GOOD - on success
  * - SANE_STATUS_EOF - if zero bytes have been read
- * - SANE_STATUS_IO_ERROR - if an error occured during the read
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the read
  * - SANE_STATUS_INVAL - on every other error
  *
  */
@@ -442,9 +506,9 @@ sanei_usb_attach_matching_devices (const char *name,
  * @param configuration, configuration nummber
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
+ * - SANE_STATUS_GOOD - on success
  * - SANE_STATUS_EOF - if zero bytes have been read
- * - SANE_STATUS_IO_ERROR - if an error occured during the read
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the read
  * - SANE_STATUS_INVAL - on every other error
  *
  */
@@ -460,9 +524,9 @@ sanei_usb_set_configuration (SANE_Int dn, SANE_Int configuration);
  * @param interface_number interface number
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
+ * - SANE_STATUS_GOOD - on success
  * - SANE_STATUS_EOF - if zero bytes have been read
- * - SANE_STATUS_IO_ERROR - if an error occured during the read
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the read
  * - SANE_STATUS_INVAL - on every other error
  *
  */
@@ -478,9 +542,9 @@ sanei_usb_claim_interface (SANE_Int dn, SANE_Int interface_number);
  * @param interface_number interface number
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
+ * - SANE_STATUS_GOOD - on success
  * - SANE_STATUS_EOF - if zero bytes have been read
- * - SANE_STATUS_IO_ERROR - if an error occured during the read
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the read
  * - SANE_STATUS_INVAL - on every other error
  *
  */
@@ -496,9 +560,9 @@ sanei_usb_release_interface (SANE_Int dn, SANE_Int interface_number);
  * @param alternate, alternate nummber
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
+ * - SANE_STATUS_GOOD - on success
  * - SANE_STATUS_EOF - if zero bytes have been read
- * - SANE_STATUS_IO_ERROR - if an error occured during the read
+ * - SANE_STATUS_IO_ERROR - if an error occurred during the read
  * - SANE_STATUS_INVAL - on every other error
  *
  */
@@ -515,7 +579,7 @@ sanei_usb_set_altinterface (SANE_Int dn, SANE_Int alternate);
  * @param desc where to put the information to
  *
  * @return
- * - SANE_STATUS_GOOD - on succes
+ * - SANE_STATUS_GOOD - on success
  * - SANE_STATUS_UNSUPPORTED - if the feature is not supported by the OS or
  *   SANE.
  * - SANE_STATUS_INVAL - on every other error

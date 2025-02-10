@@ -73,9 +73,6 @@ AC_DEFUN([SANE_CHECK_MISSING_HEADERS],
   if test "${ac_cv_header_unistd_h}" != "yes" ; then
     MISSING_HEADERS="${MISSING_HEADERS}\"unistd.h\" "
   fi
-  if test "${ac_cv_header_stdc}" != "yes" ; then
-    MISSING_HEADERS="${MISSING_HEADERS}\"ANSI C headers\" "
-  fi
   if test "${MISSING_HEADERS}" != "" ; then
     echo "*** The following essential header files couldn't be found:"
     echo "*** ${MISSING_HEADERS}"
@@ -251,22 +248,31 @@ AC_DEFUN([SANE_CHECK_PTHREAD],
     AC_DEFINE(PTHREAD_T_IS_INTEGER, 1,
               [Define if pthread_t is integer.])
   else
-    # Until the sanei_thread implementation is fixed.
-    have_pthread=no
-    use_pthread=no
+    case "$host_os" in
+      darwin*)
+        # Always use pthreads on macOS
+        use_pthread=yes
+        ;;
+      *)
+        # Until the sanei_thread implementation is fixed.
+        use_pthread=no
+        ;;
+    esac
   fi
 
-  if test $use_pthread = yes ; then
-    AC_DEFINE_UNQUOTED(USE_PTHREAD, "$use_pthread",
-                   [Define if pthreads should be used instead of forked processes.])
-  else
-    dnl Reset library in case it was found but we are not going to use it.
-    PTHREAD_LIBS=""
-  fi
   if test "$have_pthread" = "yes" ; then
     AM_CPPFLAGS="${AM_CPPFLAGS} -D_REENTRANT"
   fi
   AC_SUBST(PTHREAD_LIBS)
+
+  if test $use_pthread = yes ; then
+    AC_DEFINE_UNQUOTED(USE_PTHREAD, "$use_pthread",
+                   [Define if pthreads should be used instead of forked processes.])
+    SANEI_THREAD_LIBS=$PTHREAD_LIBS
+  else
+    SANEI_THREAD_LIBS=""
+  fi
+  AC_SUBST(SANEI_THREAD_LIBS)
   AC_MSG_CHECKING([whether to enable pthread support])
   AC_MSG_RESULT([$have_pthread])
   AC_MSG_CHECKING([whether to use pthread instead of fork])
@@ -324,10 +330,9 @@ AC_DEFUN([SANE_CHECK_PNG],
 ])
 
 #
-# Checks for pthread support
+# Checks for device locking support
 AC_DEFUN([SANE_CHECK_LOCKING],
 [
-  LOCKPATH_GROUP=uucp
   use_locking=yes
   case "${host_os}" in
     os2* )
@@ -348,23 +353,6 @@ AC_DEFUN([SANE_CHECK_LOCKING],
       fi
     ])
   if test $use_locking = yes ; then
-    AC_ARG_WITH([group],
-      AS_HELP_STRING([--with-group],
-                     [use the specified group for lock dir @<:@default=uucp@:>@]),
-        [LOCKPATH_GROUP="$withval"]
-    )
-    # check if the group does exist
-    lasterror=""
-    touch sanetest.file
-    chgrp $LOCKPATH_GROUP sanetest.file 2>/dev/null || lasterror=$?
-    rm -f sanetest.file
-    if test ! -z "$lasterror"; then
-      AC_MSG_WARN([Group $LOCKPATH_GROUP does not exist on this system.])
-      AC_MSG_WARN([Locking feature will be disabled.])
-      use_locking=no
-    fi
-  fi
-  if test $use_locking = yes ; then
     INSTALL_LOCKPATH=install-lockpath
     AC_DEFINE([ENABLE_LOCKING], 1,
               [Define to 1 if device locking should be enabled.])
@@ -373,11 +361,7 @@ AC_DEFUN([SANE_CHECK_LOCKING],
   fi
   AC_MSG_CHECKING([whether to enable device locking])
   AC_MSG_RESULT([$use_locking])
-  if test $use_locking = yes ; then
-    AC_MSG_NOTICE([Setting lockdir group to $LOCKPATH_GROUP])
-  fi
   AC_SUBST(INSTALL_LOCKPATH)
-  AC_SUBST(LOCKPATH_GROUP)
 ])
 
 dnl
@@ -495,6 +479,7 @@ AC_DEFUN([SANE_CHECK_IPV6],
   if test "$ipv6" != "no" ; then
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#define INET6
+	#include <stdlib.h>
 	#include <sys/types.h>
 	#include <sys/socket.h> ]], [[
 	 /* AF_INET6 available check */
@@ -516,6 +501,7 @@ AC_DEFUN([SANE_CHECK_IPV6],
     AC_MSG_CHECKING([whether struct sockaddr_storage has an ss_family member])
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	#define INET6
+	#include <stdlib.h>
 	#include <sys/types.h>
 	#include <sys/socket.h> ]], [[
 	/* test if the ss_family member exists in struct sockaddr_storage */
@@ -528,6 +514,7 @@ AC_DEFUN([SANE_CHECK_IPV6],
     ], [
 		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 		#define INET6
+		#include <stdlib.h>
 		#include <sys/types.h>
 		#include <sys/socket.h> ]], [[
 		/* test if the __ss_family member exists in struct sockaddr_storage */
@@ -609,6 +596,33 @@ for be in ${BACKENDS}; do
       echo "*** $be backend requires JPEG library - $DISABLE_MSG"
       backend_supported="no"
     fi
+    ;;
+
+    escl)
+    if test "x${with_avahi}" != "xyes"; then
+      echo "*** $be backend requires AVAHI library - $DISABLE_MSG"
+      backend_supported="no"
+    fi
+    if test "x${with_libcurl}" != "xyes"; then
+      echo "*** $be backend requires cURL library - $DISABLE_MSG"
+      backend_supported="no"
+    fi
+    if test "x${have_libxml}" != "xyes"; then
+      echo "*** $be backend requires XML library - $DISABLE_MSG"
+      backend_supported="no"
+    fi
+    # FIXME: Remove when PNG and/or PDF support have been added.
+    if test "x${sane_cv_use_libjpeg}" != "xyes"; then
+      echo "*** $be backend currently requires JPEG library - $DISABLE_MSG"
+      backend_supported="no"
+    else
+      if test "x${ac_cv_func_jpeg_crop_scanline}"  != "xyes" \
+      || test "x${ac_cv_func_jpeg_skip_scanlines}" != "xyes"; then
+        echo "*** $be backend requires a newer JPEG library - $DISABLE_MSG"
+        backend_supported="no"
+      fi
+    fi
+
     ;;
 
     gphoto2)

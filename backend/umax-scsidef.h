@@ -16,9 +16,7 @@
     General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-    MA 02111-1307, USA.
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
     As a special exception, the authors of SANE give permission for
     additional uses of the libraries contained in this release of SANE.
@@ -699,7 +697,7 @@ static unsigned char window_descriptor_blockC[] =
 /* 0x48 */  0x00, 0x00, 0x00, 0x00,							       /* Line Count */
 #define set_WD_line_count(sb, val)			putnbyte(sb + 0x48, val, 4)
 
-/* 0x4c */  4, 176,							/* x coordiante base 1200 (pts/inch) */
+/* 0x4c */  4, 176,							/* x coordinate base 1200 (pts/inch) */
 #define set_WD_x_coordinate_base(sb, val)		putnbyte(sb + 0x4c, val, 2)
 
 /* 0x4e */  4, 176,							/* y coordinate base 1200 (pts/inch) */
@@ -1055,7 +1053,7 @@ static char *scanner_error_str[] =
  "fb sensor error",     /* 70 */
  "fb home or motor sensor error",
  "fb filter or motor sensor error",
- "fb lens or motor sensor error"
+ "fb lens or motor sensor error",
  "first line position error (LER error, vertical)",
  "first pixel position error (SER error, horizontal)",
  "first pixel position error for lens 2 (SER2 error, horizontal)",

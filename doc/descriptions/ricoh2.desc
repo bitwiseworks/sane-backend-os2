@@ -12,8 +12,6 @@
 
 :backend "ricoh2"                 ; name of backend
 :version "1.0"                    ; version of backend (or "unmaintained")
-:new :yes                         ; Is the backend new to this SANE release?
-                                  ; :yes or :no
 :manpage "sane-ricoh2"            ; name of manpage (if it exists)
 :url "http://www.ricoh.com/"      ; backend's web page
 
@@ -23,6 +21,11 @@
 
 :mfg "Ricoh"                      ; name a manufacturer
 :url "http://www.ricoh.com/"      ; manufacturer's URL
+
+:model "SG-3100SFNw"
+:status :basic
+:interface "USB"
+:usbid "0x05ca" "0x0439"
 
 :model "SG-3100SNw"
 :status :basic
@@ -34,7 +37,7 @@
 :interface "USB"
 :usbid "0x05ca" "0x042c"
 
-:model "SP-111SU"
+:model "SP-111SU/SP-112SU"
 :status :basic
 :interface "USB"
 :usbid "0x05ca" "0x0448"

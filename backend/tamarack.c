@@ -14,9 +14,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    Note: The exception that is mentioned in the other source files is
    not here. If a case arises where you need the rights that that
@@ -30,8 +28,8 @@
    This file implements a SANE backend for Tamarack flatbed scanners.  */
 
 /*
-   This driver was written initially by changing all occurances of
-   "mustek" to "tamarack". This actuall worked without modification
+   This driver was written initially by changing all occurrences of
+   "mustek" to "tamarack". This actually worked without modification
    for the manufacturer detection code! :-)
 
  */
@@ -184,8 +182,8 @@ wait_ready (int fd)
 static SANE_Status
 sense_handler (int scsi_fd, u_char *result, void *arg)
 {
-  scsi_fd = scsi_fd;
-  arg = arg; /* silence compilation warnings */
+  (void) scsi_fd;
+  (void) arg; /* silence compilation warnings */
 
   switch (result[0])
     {
@@ -915,14 +913,14 @@ sane_init (SANE_Int *version_code, SANE_Auth_Callback authorize)
   size_t len;
   FILE *fp;
 
-  authorize = authorize; /* silence compilation warnings */
+  (void) authorize; /* silence compilation warnings */
 
   DBG_INIT();
 
   sanei_thread_init();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (TAMARACK_CONFIG_FILE);
   if (!fp) {
@@ -968,7 +966,7 @@ sane_get_devices (const SANE_Device ***device_list, SANE_Bool local_only)
   Tamarack_Device *dev;
   int i;
 
-  local_only = local_only; /* silence compilation warnings */
+  (void) local_only; /* silence compilation warnings */
 
   if (devlist)
     free (devlist);

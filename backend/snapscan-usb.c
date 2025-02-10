@@ -16,9 +16,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-  MA 02111-1307, USA.
+  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
   As a special exception, the authors of SANE give permission for
   additional uses of the libraries contained in this release of SANE.
@@ -68,8 +66,9 @@
      So far this strategy has worked flawlessly. Thanks Dmitri!
 */
 
-/* $Id$
-   SnapScan backend scan data sources */
+/*
+   SnapScan backend scan data sources
+*/
 
 #include "snapscan-usb.h"
 #include "snapscan-mutex.c"
@@ -579,7 +578,6 @@ static void snapscani_usb_shm_exit(void)
 }
 #endif
 /*
- * $Log$
  * Revision 1.22  2006/01/26 17:42:30  hmg-guest
  * Added #defines for SHM_R/W for cygwin (patch from Philip Aston <philipa@mail.com>).
  *
@@ -648,7 +646,7 @@ static void snapscani_usb_shm_exit(void)
  *
  * Revision 1.12  2001/09/18 15:01:07  oliverschwartz
  * - Read scanner id string again after firmware upload
- *   to indentify correct model
+ *   to identify correct model
  * - Make firmware upload work for AGFA scanners
  * - Change copyright notice
  *

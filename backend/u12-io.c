@@ -24,9 +24,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -402,7 +400,7 @@ static SANE_Byte u12io_DataFromRegister( U12_Device *dev, SANE_Byte reg )
 static void u12io_CloseScanPath( U12_Device *dev )
 {
 	DBG( _DBG_INFO, "u12io_CloseScanPath()\n" );
-/* FIXME: Probaly not needed */
+/* FIXME: Probably not needed */
 #if 0
 	u12io_RegisterToScanner( dev, 0xff );
 #endif

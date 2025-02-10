@@ -89,9 +89,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -2835,7 +2833,7 @@ static SetDef Settings[] =
 	 * it's used by the driver to select the device settings. For other devices
 	 * than those of Plustek, you'll not need to add the second '-' part
 	 *
-	 * The second entry decribes the capabilities of the device, you may find
+	 * The second entry describes the capabilities of the device, you may find
 	 * one suitable for your scanner, for a better description of the entries
 	 * have a look at the beginning of this file at Cap0x07B3_0x0017_0 for
 	 * the UT12

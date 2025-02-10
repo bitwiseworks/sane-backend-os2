@@ -13,8 +13,8 @@
    License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with sane; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   along with sane; see the file COPYING.
+   If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -96,7 +96,7 @@ Wire;
 extern void sanei_w_init (Wire *w, void (*codec_init)(Wire *));
 extern void sanei_w_exit (Wire *w);
 extern void sanei_w_space (Wire *w, size_t howmuch);
-extern void sanei_w_void (Wire *w);
+extern void sanei_w_void (Wire *w, void *);
 extern void sanei_w_byte (Wire *w, SANE_Byte *v);
 extern void sanei_w_char (Wire *w, SANE_Char *v);
 extern void sanei_w_word (Wire *w, SANE_Word *v);

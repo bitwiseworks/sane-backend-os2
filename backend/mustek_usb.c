@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -95,7 +93,7 @@ static Mustek_Usb_Device **new_dev;
 /* Length of new_dev array */
 static SANE_Int new_dev_len;
 
-/* Number of entries alloced for new_dev */
+/* Number of entries allocated for new_dev */
 static SANE_Int new_dev_alloced;
 
 static SANE_String_Const mode_list[6];
@@ -701,10 +699,10 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 
   DBG_INIT ();
   DBG (2, "SANE Mustek USB backend version %d.%d build %d from %s\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD, PACKAGE_STRING);
+       SANE_CURRENT_MINOR, BUILD, PACKAGE_STRING);
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
 
   DBG (5, "sane_init: authorize %s null\n", authorize ? "!=" : "==");
 

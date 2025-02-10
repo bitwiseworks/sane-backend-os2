@@ -6,18 +6,30 @@
 
 TEST_LDADD = \
   ../../../sanei/libsanei.la \
+  ../../../sanei/sanei_usb.lo \
+  ../../../sanei/sanei_magic.lo \
   ../../../lib/liblib.la \
   ../../../backend/libgenesys.la \
   ../../../backend/sane_strstatus.lo \
-  $(MATH_LIB) $(USB_LIBS) $(PTHREAD_LIBS)
+  $(MATH_LIB) $(TIFF_LIBS) $(USB_LIBS) $(XML_LIBS) $(PTHREAD_LIBS)
 
-check_PROGRAMS = genesys_tests
-TESTS = $(check_PROGRAMS)
+check_PROGRAMS = genesys_unit_tests genesys_session_config_tests
+TESTS = genesys_unit_tests
 
 AM_CPPFLAGS += -I. -I$(srcdir) -I$(top_builddir)/include -I$(top_srcdir)/include $(USB_CFLAGS) \
-    -DBACKEND_NAME=genesys
+    -DBACKEND_NAME=genesys -DTESTSUITE_BACKEND_GENESYS_SRCDIR=$(srcdir)
 
-genesys_tests_SOURCES = tests.cc tests.h minigtest.cc minigtest.h \
-    tests_calibration.cc
+genesys_unit_tests_SOURCES = tests.cpp tests.h \
+    minigtest.cpp minigtest.h tests_printers.h \
+    tests_calibration.cpp \
+    tests_image.cpp \
+    tests_image_pipeline.cpp \
+    tests_motor.cpp \
+    tests_row_buffer.cpp \
+    tests_utilities.cpp
 
-genesys_tests_LDADD = $(TEST_LDADD)
+genesys_unit_tests_LDADD = $(TEST_LDADD)
+
+genesys_session_config_tests_SOURCES = session_config_test.cpp
+
+genesys_session_config_tests_LDADD = $(TEST_LDADD)

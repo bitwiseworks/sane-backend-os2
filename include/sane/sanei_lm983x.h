@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -141,7 +139,7 @@ extern SANE_Status sanei_lm983x_read( SANE_Int fd, SANE_Byte reg,
  *
  * @param fd    - device file descriptor
  * @return
- * - SANE_TRUE  - reset successfuly done
+ * - SANE_TRUE  - reset successfully done
  * - SANE_FALSE - reset failed
  */
 extern SANE_Bool sanei_lm983x_reset( SANE_Int fd );

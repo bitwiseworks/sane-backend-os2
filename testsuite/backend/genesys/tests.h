@@ -15,14 +15,21 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef SANE_TESTSUITE_BACKEND_GENESYS_GENESYS_UNIT_TEST_H
 #define SANE_TESTSUITE_BACKEND_GENESYS_GENESYS_UNIT_TEST_H
 
+namespace genesys {
+
 void test_calibration_parsing();
+void test_image();
+void test_image_pipeline();
+void test_motor();
+void test_row_buffer();
+void test_utilities();
+
+} // namespace genesys
 
 #endif

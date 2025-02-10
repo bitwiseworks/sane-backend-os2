@@ -1,4 +1,5 @@
 /* sane - Scanner Access Now Easy.
+   Copyright (C) 20020 Ralph Little <skelband@gmail.com>
    Copyright (C) 2003 Martijn van Oosterhout <kleptog@svana.org>
    Copyright (C) 2003 Thomas Soumarmon <thomas.soumarmon@cogitae.net>
 
@@ -19,8 +20,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -42,8 +42,6 @@
    If you write modifications of your own for SANE, it is your choice
    whether to permit this exception to apply to your modifications.
    If you do not wish that, delete this exception notice.
-
-   $Id$
 */
 
 
@@ -111,7 +109,7 @@ THWParams;
 
 /* The scanner needs a Base DPI off which all it's calibration and
  * offset/size parameters are based.  For the time being this is the same as
- * the iDpi but maybe we want it seperate. This is because while this field
+ * the iDpi but maybe we want it separate. This is because while this field
  * would have limited values (300,600,1200,2400) the x/y dpi can vary. The
  * windows interface seems to allow 200dpi (though I've never tried it). We
  * need to decide how these values are related to the HW coordinates. */
@@ -138,6 +136,16 @@ typedef struct
 }
 TScanParams;
 
+/*
+ * Panel settings. We can read and set these.
+ *
+ */
+typedef struct
+{
+  SANE_Word copycount;  // 0..99 LCD display value
+  SANE_Word bwcolour;   // 1=Colour or 2=Black/White from scan type LEDs
+}
+TPanelInfo;
 
 
 #endif /* NO _HP5400_H_ */

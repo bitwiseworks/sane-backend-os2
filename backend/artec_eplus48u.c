@@ -42,9 +42,7 @@ Updates (C) 2001 by Henning Meier-Geinitz.
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -353,9 +351,6 @@ static void
 finish_shading_buffer (Artec48U_Scanner * s, SANE_Bool white)
 {
   unsigned int i, j, cnt, c, div;
-  unsigned long max_r;
-  unsigned long max_g;
-  unsigned long max_b;
   unsigned char *shading_buffer;
   cnt = 0;
 
@@ -381,18 +376,12 @@ finish_shading_buffer (Artec48U_Scanner * s, SANE_Bool white)
 	  ++cnt;
 	}
     }
-  max_r = 0;
-  max_g = 0;
-  max_b = 0;
 
   for (c = 0; c < (30720 * s->dev->epro_mult) - 5; c += 6) /*epro*/
     {
       i = (int) shading_buffer[c] + ((int) shading_buffer[c + 1] << 8);
-      max_r += i;
       i = (int) shading_buffer[c + 2] + ((int) shading_buffer[c + 3] << 8);
-      max_g += i;
       i = (int) shading_buffer[c + 4] + ((int) shading_buffer[c + 5] << 8);
-      max_b += i;
     }
 }
 
@@ -510,7 +499,7 @@ copy_scan_line (Artec48U_Scanner * s)
 {
   /*For resolution of 1200 dpi we have to interpolate
      horizontally, because the optical horizontal resolution is
-     limited to 600 dpi. We simply use the avarage value of two pixels. */
+     limited to 600 dpi. We simply use the average value of two pixels. */
   int cnt, i, j;
   int xs = s->params.pixel_xs;
   int interpolate = 0;
@@ -787,7 +776,7 @@ attach (const char *dev_name, Artec48U_Device ** devp)
   vendor_string[40] = 0;
   model_string[40] = 0;
 
-  /* assign all the stuff we need fo this device... */
+  /* assign all the stuff we need for this device... */
   dev->sane.vendor = strdup (vendor_string);
   XDBG ((3, "attach: setting vendor string: %s\n", vendor_string));
   dev->sane.model = strdup (model_string);
@@ -874,7 +863,7 @@ decodeVal (char *src, char *opt, int what, void *result, void *def)
 
   if (tmp)
     {
-      /* on success, compare wiht the given one */
+      /* on success, compare with the given one */
       if (0 == strcmp (tmp, opt))
 	{
 	  XDBG ((1, "Decoding option >%s<\n", opt));
@@ -952,7 +941,7 @@ decodeVal (char *src, char *opt, int what, void *result, void *def)
 }
 
 /**
- * function to retrive the device name of a given string
+ * function to retrieve the device name of a given string
  * @param src  -  string that keeps the option name to check src for
  * @param dest -  pointer to the string, that should receive the detected
  *                devicename
@@ -1630,7 +1619,7 @@ artec48u_device_memory_read (Artec48U_Device * dev,
   SANE_Status status;
 
   XDBG ((8, "%s: dev=%p, addr=0x%x, size=0x%x, data=%p\n",
-       function_name, (void *) dev, addr, size, data));
+       function_name, (void *) dev, addr, size, (void *) data));
   CHECK_DEV_ACTIVE (dev, function_name);
 
   status = sanei_usb_control_msg (dev->fd, 0xc0, 0x01,
@@ -2956,7 +2945,7 @@ init_options (Artec48U_Scanner * s)
     SANE_I18N ("If enabled, only the shading correction is "
 	       "performed during calibration. The default values "
 	       "for gain, offset and exposure time, "
-	       "either build-in or from the configuration file, "
+	       "either built-in or from the configuration file, "
 	       "are used.");
   s->opt[OPT_CALIBRATE_SHADING].type = SANE_TYPE_BOOL;
   s->opt[OPT_CALIBRATE_SHADING].unit = SANE_UNIT_NONE;
@@ -3058,7 +3047,7 @@ calculate_contrast (Artec48U_Scanner * s)
    Works like the white shading correction, with the difference, that the red-, green-
    and blue exposure time is set to 0x04 (the value is taken from the windoze driver).
   -Since we do this over the whole width of the image with the maximal optical resolution,
-   we can use the shading data for every scan, independend of the size, position or resolution,
+   we can use the shading data for every scan, independent of the size, position or resolution,
    because we have the shading values for every sensor/LED.
 
   Note:
@@ -4476,7 +4465,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   auth = authorize;
 
   if (version_code != NULL)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (ARTEC48U_CONFIG_FILE);
 

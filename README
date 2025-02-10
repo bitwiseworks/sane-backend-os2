@@ -29,6 +29,17 @@ make install
 
 man sane
 
+Pre-built binaries:
+===================
+
+In addition to versions included in releases, some platforms have more current versions available.
+
+Ubuntu PPA https://launchpad.net/~sane-project/+archive/ubuntu/sane-release
+
+sudo add-apt-repository ppa:sane-project/sane-release
+sudo apt update
+sudo apt install libsane libsane-common sane-utils
+
 
 Prerequisites
 =============
@@ -56,6 +67,8 @@ installed.
         - libieee1284 (>=0.1.5): For some parallel port backends.
 
         - libgphoto2 (>=2.0): For the gphoto2 backend.
+
+        - a C++11 compliant C++ compiler for the genesys backend.
 
 If you got the source straight from the git repository, as opposed to
 a source tarball, you will need a few more utilities.  These utilities
@@ -132,10 +145,12 @@ configure options, there are the following SANE specific options:
 	Means, that some backends will use a lockfile for allowing multiple
 	access to one scanner. This is useful, i.e. one frontend is scanning
 	the button status and another one will scan. The path to the lock
-	files is define by --localstatedir at the configure step and is
-	$localstatedir/lock/sane. The default group is uucp and can be
-	changed by using --with-group=newgroup. If you do not want any
-	backend to use a lockfile, simply use --disable-locking.
+	files is defined by --localstatedir at the configure step and is
+	$localstatedir/lock. The default group is uucp and can be changed
+	by using --with-group=newgroup. If you do not want any backend to
+	use a lockfile, simply use --disable-locking.
+	Note: The Plustek backend is currently the only backend that makes
+	      use of this feature.
 
 To limit the backends that are compiled, set the variable BACKENDS to
 the list of backends to compile.  The following will limit compiling

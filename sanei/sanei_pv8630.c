@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -89,7 +87,8 @@ sanei_pv8630_read_byte (int fd, SANEI_PV_Index index, SANE_Byte * byte)
 {
   SANE_Status status;
 
-  DBG(DBG_info, "sanei_pv8630_read_byte - index=%d, byte=%p\n", index, byte);
+  DBG(DBG_info, "sanei_pv8630_read_byte - index=%d, byte=%p\n",
+      index, (void *) byte);
 
   status =
     sanei_usb_control_msg (fd, 0xc0, PV8630_REQ_READBYTE, 0, index, 1, byte);

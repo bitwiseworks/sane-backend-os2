@@ -19,9 +19,7 @@ vim: ts=4 sw=4 noexpandtab
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -441,8 +439,8 @@ st400_sense_handler( int fd, SANE_Byte *result, void *arg )
 	/* ST400_Device *dev = arg; */
 	SANE_Status status;
 
-	fd = fd;
-	arg = arg; /* silence compilation warnings */
+	(void) fd;
+	(void) arg; /* silence compilation warnings */
 
 	switch( result[0] & 0x0f ) {
 		case 0x0:
@@ -565,7 +563,7 @@ st400_config_get_arg(char **optP, unsigned long *argP, size_t linenum)
 {
 	int n;
 
-	linenum = linenum; /* silence compilation warnings */
+	(void) linenum; /* silence compilation warnings */
 
 	if( sscanf(*optP, "%lu%n", argP, &n) == 1 ) {
 		*optP += n;
@@ -682,7 +680,7 @@ sane_init( SANE_Int *versionP, SANE_Auth_Callback authorize )
 	DBG(DCODE, "sane_init: version %s null, authorize %s null\n", (versionP) ? "!=" : "==", (authorize) ? "!=" : "==");
 
 	if( versionP != NULL )
-		*versionP = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, V_MINOR, 0);
+		*versionP = SANE_VERSION_CODE(SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
 	status = SANE_STATUS_GOOD;
 	if( (fp = sanei_config_open(ST400_CONFIG_FILE)) != NULL ) {
@@ -1223,7 +1221,7 @@ sane_read( SANE_Handle handle, SANE_Byte *buf, SANE_Int maxlen, SANE_Int *lenP )
 	size_t r, i;
 	SANE_Byte val;
 
-	DBG(DCODE, "sane_read(%p, %p, %d, %p)\n", handle, buf, (int)maxlen, (void *) lenP);
+	DBG(DCODE, "sane_read(%p, %p, %d, %p)\n", handle, (void *) buf, (int) maxlen, (void *) lenP);
 
 	*lenP = 0;
 	if( !dev->status.scanning )

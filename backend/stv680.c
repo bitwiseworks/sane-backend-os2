@@ -30,14 +30,11 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
    ------------------------------------------------------------------
 */
 
-/*  $Id$
-
+/*
    stv680 vidcam  driver Gerard Klaver
 */
 
@@ -296,7 +293,7 @@ stv680_init_2 (Stv680_Vidcam * dev)
     dev->buffer_size = 356 * 292;
   if (dev->VGA)
     dev->buffer_size = 644 * 484;
-  DBG (DBG_proc, "stv680_init_2: dev->bufffer = 0x%lx\n", (unsigned long) (size_t) dev->buffer_size);
+  DBG (DBG_proc, "stv680_init_2: dev->buffer = 0x%lx\n", (unsigned long) (size_t) dev->buffer_size);
 
   dev->buffer = malloc (dev->buffer_size);
 
@@ -1189,8 +1186,8 @@ stv680_fill_image (Stv680_Vidcam * dev)
 }
 
 #define MSG_MAXLEN   45
-#define CHAR_HEIGHT  11
-#define CHAR_WIDTH   6
+#define TEXT_CHAR_HEIGHT  11
+#define TEXT_CHAR_WIDTH   6
 #define CHAR_START   4
 
 static SANE_Status
@@ -1216,14 +1213,14 @@ stv680_add_text (SANE_Byte * image, int width, int height, char *txt)
 
   len = strftime (line, MSG_MAXLEN, fmttxt, tm);
 
-  for (y = 0; y < CHAR_HEIGHT; y++)
+  for (y = 0; y < TEXT_CHAR_HEIGHT; y++)
     {
-      ptr = image + 3 * width * (height - CHAR_HEIGHT - 2 + y) + 12;
+      ptr = image + 3 * width * (height - TEXT_CHAR_HEIGHT - 2 + y) + 12;
 
       for (x = 0; x < len; x++)
 	{
-	  f = fontdata[line[x] * CHAR_HEIGHT + y];
-	  for (i = CHAR_WIDTH - 1; i >= 0; i--)
+      f = fontdata[line[x] * TEXT_CHAR_HEIGHT + y];
+      for (i = TEXT_CHAR_WIDTH - 1; i >= 0; i--)
 	    {
 	      if (f & (CHAR_START << i))
 		{
@@ -1442,7 +1439,7 @@ stv680_bayer_unshuffle (Stv680_Vidcam * dev, SANE_Byte * buf, size_t * size)
 	   "stv680_bayer_unshuffle: if needed, trim to size 160 done\n");
     }
   /* reset to proper width */
-  if ((dev->subsample == 160))
+  if (dev->subsample == 160)
     {
       vw = 160;
       vh = 120;
@@ -1523,15 +1520,15 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 
   DBG (DBG_sane_init, "sane_init\n");
 
-  authorize = authorize;	/* silence gcc */
+  (void) authorize;		/* silence gcc */
 
   DBG (DBG_error, "This is sane-stv680 version %d.%d-%d\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD);
+       SANE_CURRENT_MINOR, BUILD);
   DBG (DBG_error, "(C) 2004-2006 by Gerard Klaver\n");
 
   if (version_code)
     {
-      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
     }
 
   DBG (DBG_proc, "sane_init: authorize %s null\n", authorize ? "!=" : "==");
@@ -1587,7 +1584,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
 
   DBG (DBG_proc, "sane_get_devices: enter\n");
 
-  local_only = local_only;	/* silence gcc */
+  (void) local_only;		/* silence gcc */
 
   if (devlist)
     free (devlist);
@@ -2076,8 +2073,8 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 
   DBG (DBG_proc, "sane_set_io_mode: enter\n");
 
-  handle = handle;		/* silence gcc */
-  non_blocking = non_blocking;	/* silence gcc */
+  (void) handle;		/* silence gcc */
+  (void) non_blocking;		/* silence gcc */
 
 
   DBG (DBG_proc, "sane_set_io_mode: exit\n");
@@ -2090,8 +2087,8 @@ sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
 {
   DBG (DBG_proc, "sane_get_select_fd: enter\n");
 
-  handle = handle;		/* silence gcc */
-  fd = fd;			/* silence gcc */
+  (void) handle;		/* silence gcc */
+  (void) fd;			/* silence gcc */
 
   DBG (DBG_proc, "sane_get_select_fd: exit\n");
 

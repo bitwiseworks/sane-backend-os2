@@ -12,7 +12,7 @@
  * - 0.32 - no changes
  * - 0.33 - no changes
  * - 0.34 - reactivated code in imageP96WaitLineData() to recover from
- *          loosing data
+ *          losing data
  * - 0.35 - no changes
  * - 0.36 - removed comment
  *        - added wDither exchange to imageP9xSetupScanSettings
@@ -30,7 +30,7 @@
  *          these I/O timeouts...
  * - 0.40 - no changes
  * - 0.41 - no changes
- * - 0.42 - fixed a problem for the 12bit modes fo ASIC9800x based devices
+ * - 0.42 - fixed a problem for the 12bit modes for ASIC9800x based devices
  *        - changed include names
  * - 0.43 - removed floating point stuff
  *        - cleanup
@@ -51,9 +51,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -1290,11 +1288,7 @@ static Bool imageP98003ReadOneImageLine( pScanData ps )
 
     } while( !MiscCheckTimer( &timer ));
 
-#ifdef __KERNEL__
-	_PRINT(
-#else
 	DBG( DBG_HIGH,
-#endif
 	"Timeout - Scanner malfunction !!\n" );
 	MotorToHomePosition(ps);
 
@@ -1508,7 +1502,7 @@ static int imageP98003SetupScanSettings( pScanData ps, pScanInfo pInf )
     }
 
     /*
-     * now assign the buffer pointers for image aquisition
+     * now assign the buffer pointers for image acquisition
      */
 	ps->Scan.p48BitBuf.pb = NULL;
 

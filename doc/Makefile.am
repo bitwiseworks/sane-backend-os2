@@ -18,13 +18,14 @@ EXTRA_DIST = scanimage.man sane-config.man sane-find-scanner.man \
 # custom install/uninstall if we required man pages for every backend.
 
 BACKEND_5MANS = sane-abaton.5 sane-agfafocus.5 sane-apple.5 sane-as6e.5 \
+        sane-canon_lide70.5 \
 	sane-dll.5 sane-dc25.5 sane-dmc.5 sane-epson.5 sane-epson2.5 sane-epsonds.5 \
-	sane-hp.5 sane-gphoto2.5 sane-leo.5 sane-lexmark.5 \
+	sane-escl.5 sane-hp.5 sane-gphoto2.5 sane-leo.5 sane-lexmark.5 \
 	sane-matsushita.5 sane-microtek.5 sane-microtek2.5 sane-mustek.5 \
 	sane-nec.5 sane-net.5 sane-pie.5 sane-pieusb.5 sane-pint.5 sane-pnm.5 \
 	sane-umax.5 sane-qcam.5 sane-scsi.5 sane-artec.5 sane-kodak.5 sane-kodakaio.5 \
 	sane-fujitsu.5 sane-sharp.5 sane-s9036.5 sane-tamarack.5 \
-	sane-ricoh.5 sane-ricoh.5 sane-avision.5 sane-plustek.5 sane-st400.5 \
+	sane-ricoh.5 sane-ricoh2.5 sane-avision.5 sane-plustek.5 sane-st400.5 \
 	sane-mustek_pp.5 sane-dc210.5 sane-v4l.5 sane-snapscan.5 \
 	sane-canon.5 sane-coolscan.5 sane-bh.5 sane-dc240.5 \
 	sane-umax_pp.5 sane-umax1220u.5 sane-sm3600.5 sane-usb.5 \
@@ -37,12 +38,13 @@ BACKEND_5MANS = sane-abaton.5 sane-agfafocus.5 sane-apple.5 sane-as6e.5 \
 	sane-hp5590.5 sane-hpljm1005.5 sane-cardscan.5 sane-hp3900.5 \
 	sane-epjitsu.5 sane-hs2p.5 sane-canon_dr.5 sane-xerox_mfp.5 \
 	sane-rts8891.5 sane-coolscan3.5 sane-kvs1025.5 sane-kvs20xx.5 \
-	sane-kvs40xx.5 sane-p5.5 sane-magicolor.5
+	sane-kvs40xx.5 sane-p5.5 sane-magicolor.5 sane-lexmark_x2600.5
 
 EXTRA_DIST += sane-abaton.man sane-agfafocus.man sane-apple.man sane-as6e.man \
+        sane-canon_lide70.man \
 	sane-dll.man sane-dc25.man sane-dmc.man sane-epson.man \
-	sane-epson2.man sane-epsonds.man sane-hp.man sane-gphoto2.man sane-leo.man \
-	sane-lexmark.man sane-matsushita.man sane-microtek.man \
+	sane-epson2.man sane-epsonds.man sane-escl.man sane-hp.man sane-gphoto2.man \
+	sane-leo.man sane-lexmark.man sane-matsushita.man sane-microtek.man \
 	sane-microtek2.man sane-mustek.man sane-nec.man sane-net.man \
 	sane-pie.man sane-pieusb.man sane-pint.man sane-pnm.man sane-umax.man \
 	sane-qcam.man sane-scsi.man sane-artec.man sane-fujitsu.man \
@@ -62,7 +64,7 @@ EXTRA_DIST += sane-abaton.man sane-agfafocus.man sane-apple.man sane-as6e.man \
 	sane-cardscan.man sane-hp3900.man sane-epjitsu.man sane-hs2p.man \
 	sane-canon_dr.man sane-xerox_mfp.man sane-rts8891.man \
 	sane-coolscan3.man sane-kvs1025.man sane-kvs20xx.man sane-kvs40xx.man \
-	sane-p5.man sane-magicolor.man
+	sane-p5.man sane-magicolor.man sane-lexmark_x2600.man
 
 man7_MANS = sane.7
 EXTRA_DIST += sane.man
@@ -80,12 +82,11 @@ HTML_PAGES = sane-backends.html sane-backends-external.html \
 endif
 doc_DATA = $(HTML_PAGES)
 
-all: bemans $(API_SPECS) html-pages
+all: bemans html-pages
 
 dist_doc_DATA = backend-writing.txt
 nobase_dist_doc_DATA = $(BEDOCS)
-doc_DATA += $(API_SPECS)
-EXTRA_DIST += descriptions.txt releases.txt sane-logo2.jpg sane-logo.png \
+EXTRA_DIST += descriptions.txt releases.md sane-logo2.jpg sane-logo.png \
   sane.png
 
 MAN2HTML = nroff -c -man |\
@@ -94,7 +95,8 @@ MAN2HTML = nroff -c -man |\
 	  sed 's,<BODY>,<BODY BGCOLOR=\#FFFFFF TEXT=\#000000><H1 ALIGN=CENTER><IMG SRC="/images/sane.png" HEIGHT=117 WIDTH=346></H1>,'
 
 %.1 %.5 %.7 %.8: %.man
-	@echo "Generating manpage $@...";
+	$(AM_V_GEN)
+	@if $(AM_V_P); then echo "Generating manpage $@..."; fi
 	@sed -e 's|@DATADIR@|$(datadir)|g' \
 	  -e 's|@CONFIGDIR@|$(configdir)|g' \
 	  -e 's|@DOCDIR@|$(docdir)|g' \
@@ -123,11 +125,12 @@ BEDOCS += mustek/mustek.CHANGES
 BEDOCS += mustek_usb/mustek_usb.CHANGES mustek_usb/mustek_usb.TODO
 BEDOCS += mustek_usb2/mustek_usb2.CHANGES mustek_usb2/mustek_usb2.TODO
 BEDOCS += niash/niash.TODO
-BEDOCS += plustek/FAQ plustek/MakeModule.sh plustek/Makefile.kernel24 \
-  plustek/Makefile.kernel26 plustek/Plustek-PARPORT-TODO.txt \
+BEDOCS += plustek/FAQ \
+  plustek/Plustek-PARPORT-TODO.txt \
   plustek/Plustek-PARPORT.changes plustek/Plustek-PARPORT.txt \
   plustek/Plustek-USB-TODO.txt plustek/Plustek-USB.changes \
   plustek/Plustek-USB.txt
+BEDOCS += saned/saned.install.md
 BEDOCS += sceptre/s1200.txt
 BEDOCS += teco/teco1.txt teco/teco2.txt teco/teco3.txt
 BEDOCS += u12/U12.changes u12/U12.todo
@@ -151,13 +154,14 @@ DESC_FILES = descriptions/abaton.desc descriptions/agfafocus.desc \
   descriptions/artec_eplus48u.desc descriptions/as6e.desc \
   descriptions/avision.desc descriptions/bh.desc descriptions/canon630u.desc \
   descriptions/canon.desc descriptions/canon_dr.desc \
+  descriptions/canon_lide70.desc \
   descriptions/canon_pp.desc descriptions/cardscan.desc \
   descriptions/coolscan2.desc descriptions/coolscan.desc \
   descriptions/coolscan3.desc \
   descriptions/dc210.desc descriptions/dc240.desc descriptions/dc25.desc \
   descriptions/dell1600n_net.desc descriptions/dll.desc descriptions/dmc.desc \
   descriptions/epjitsu.desc descriptions/epson2.desc descriptions/epson.desc \
-  descriptions/epsonds.desc \
+  descriptions/epsonds.desc descriptions/escl.desc \
   descriptions/fujitsu.desc descriptions/genesys.desc \
   descriptions/gphoto2.desc descriptions/gt68xx.desc descriptions/hp3500.desc \
   descriptions/hp3900.desc descriptions/hp4200.desc descriptions/hp5400.desc \
@@ -184,9 +188,10 @@ DESC_FILES = descriptions/abaton.desc descriptions/agfafocus.desc \
   descriptions/umax1220u.desc descriptions/umax.desc \
   descriptions/umax_pp.desc  descriptions/unsupported.desc \
   descriptions/v4l.desc descriptions/xerox_mfp.desc
-EXTRA_DIST += $(DESC_FILES) descriptions/template.desc.
+EXTRA_DIST += $(DESC_FILES) descriptions/template.desc
 
-DESC_EXT_FILES = descriptions-external/brother2.desc \
+DESC_EXT_FILES = descriptions-external/ambir.desc \
+  descriptions-external/brother2.desc \
   descriptions-external/brother.desc \
   descriptions-external/brother-mfc4600.desc \
   descriptions-external/cs3200f.desc \
@@ -197,105 +202,24 @@ DESC_EXT_FILES = descriptions-external/brother2.desc \
   descriptions-external/hpaio.desc \
   descriptions-external/hpoj.desc \
   descriptions-external/kodak-twain.desc \
+  descriptions-external/kyocera.desc \
   descriptions-external/lhii.desc \
   descriptions-external/mustek_a3p1.desc \
   descriptions-external/panamfs.desc \
   descriptions-external/primascan.desc \
   descriptions-external/primax.desc \
   descriptions-external/samsung.desc \
+  descriptions-external/scangearmp2.desc \
   descriptions-external/scanwit.desc \
   descriptions-external/utsushi.desc \
   descriptions-external/v4l2.desc \
   descriptions-external/viceo.desc
-EXTRA_DIST += $(DESC_EXT_FILES) descriptions-external/template.desc.
+EXTRA_DIST += $(DESC_EXT_FILES) descriptions-external/template.desc
 
 install-data-local: install-beman5
 
 uninstall-local:
 	rm -rf $(DESTDIR)$(beman5dir)/sane-*.5
-
-##  SANE API specification format conversion support
-
-API_SPECS  =
-if WITH_API_PS
-API_SPECS += sane.ps
-endif
-if WITH_API_PDF
-API_SPECS += sane.pdf
-endif
-if WITH_API_HTML
-API_SPECS += sane-html
-endif
-
-API_SPEC_INPUTS  = $(srcdir)/sane.tex
-API_SPEC_INPUTS += $(srcdir)/net.tex
-EXTRA_DIST += $(API_SPEC_INPUTS)
-
-API_SPEC_TEX_FIGS  =
-API_SPEC_TEX_FIGS += figs/area.fig
-API_SPEC_TEX_FIGS += figs/flow.fig
-API_SPEC_TEX_FIGS += figs/hierarchy.fig
-API_SPEC_TEX_FIGS += figs/image-data.fig
-API_SPEC_TEX_FIGS += figs/xfer.fig
-EXTRA_DIST += $(API_SPEC_TEX_FIGS)
-
-API_SPEC_EPS_FIGS  =
-API_SPEC_EPS_FIGS += figs/area.eps
-API_SPEC_EPS_FIGS += figs/flow.eps
-API_SPEC_EPS_FIGS += figs/hierarchy.eps
-API_SPEC_EPS_FIGS += figs/image-data.eps
-API_SPEC_EPS_FIGS += figs/xfer.eps
-
-API_SPEC_PDF_FIGS  =
-API_SPEC_PDF_FIGS += figs/area.pdf
-API_SPEC_PDF_FIGS += figs/flow.pdf
-API_SPEC_PDF_FIGS += figs/hierarchy.pdf
-API_SPEC_PDF_FIGS += figs/image-data.pdf
-API_SPEC_PDF_FIGS += figs/xfer.pdf
-
-##  These icons are referred to in the generated HTML output.
-API_SPEC_HTML_ICONS  =
-API_SPEC_HTML_ICONS += icons/contents.gif
-API_SPEC_HTML_ICONS += icons/index.gif
-API_SPEC_HTML_ICONS += icons/next.gif       icons/next_gr.gif
-API_SPEC_HTML_ICONS += icons/previous.gif   icons/previous_gr.gif
-API_SPEC_HTML_ICONS += icons/references.gif icons/references_gr.gif
-API_SPEC_HTML_ICONS += icons/up.gif         icons/up_gr.gif
-EXTRA_DIST += $(API_SPEC_HTML_ICONS)
-
-am_TEXINPUTS = TEXINPUTS="$(builddir):$(srcdir):$$TEXINPUTS"
-
-sane.ind: $(API_SPEC_INPUTS)
-	@echo Generating index for $<...
-	@touch sane.ind
-	@$(am_TEXINPUTS) $(LATEX) $< </dev/null >/dev/null && \
-	  $(MAKEINDEX) -q sane.idx && \
-	  $(am_TEXINPUTS) $(LATEX) $< </dev/null >/dev/null
-
-.fig.eps:
-	@test -d $(@D) || $(MKDIR_P) $(@D)
-	$(FIG2DEV) -L eps $< $@
-
-sane.dvi: $(API_SPEC_INPUTS) $(API_SPEC_EPS_FIGS) sane.ind
-	@echo Generating $@ from $<...
-	@$(am_TEXINPUTS) $(LATEX) $< </dev/null >/dev/null
-
-sane.ps: sane.dvi
-	@echo Generating $@ from $<...
-	@$(am_TEXINPUTS) $(DVIPS) -q $< -o $@
-
-.fig.pdf:
-	@test -d $(@D) || $(MKDIR_P) $(@D)
-	$(FIG2DEV) -L pdf $< $@
-
-sane.pdf: $(API_SPEC_INPUTS) $(API_SPEC_PDF_FIGS) sane.ind
-	@echo Generating $@ from $<...
-	@$(am_TEXINPUTS) $(PDFLATEX) $< >/dev/null
-
-sane-html: sane.dvi
-	$(am_TEXINPUTS) $(DLH) $(srcdir)/sane.tex
-
-##  ^^
 
 html-man: $(MANPAGES)
 	@for page in $(MANPAGES); do \
@@ -343,20 +267,12 @@ descriptions-external.db: $(DESC_EXT_FILES) ../tools/sane-desc$(EXEEXT)
 	  > descriptions-external.db
 
 html-pages: $(HTML_PAGES)
-html-local: html-pages html-man sane-html
-
-clean-local:
-	rm -f *.toc *.aux *.log *.cp *.fn *.tp *.vr *.pg *.ky *.blg *.idx *.cb
-	rm -f *.ilg
-	rm -f $(API_SPEC_EPS_FIGS) $(API_SPEC_PDF_FIGS)
-	-rmdir figs
+html-local: html-pages html-man
 
 distclean-local:
 	rm -f $(MANPAGES)
-	rm -f *.lot *.lof *.ind
-	rm -f sane.dvi sane.ps sane-backends.html sane-backends-external.html
+	rm -f sane-backends.html sane-backends-external.html
 	rm -f sane-mfgs.html sane-mfgs-external.html
-	rm -f sane/*.html sane/*.gif
 	rm -f doxygen-sanei.conf doxygen-genesys.conf
 	-rm -rf sane sanei-html
 	for manpage in $(MANPAGES) ; do \

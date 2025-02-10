@@ -32,11 +32,21 @@
 
 #include "sane/sanei_debug.h"
 
-static int
+
+static ssize_t
 epsonds_net_read_raw(epsonds_scanner *s, unsigned char *buf, ssize_t wanted,
 		       SANE_Status *status)
 {
-	int ready, read = -1;
+	DBG(15, "%s: wanted: %ld\n", __func__, wanted);
+
+	if (wanted == 0)
+	{
+	    *status = SANE_STATUS_GOOD;
+		return 0;
+	}
+
+	int ready;
+	ssize_t read = -1;
 	fd_set readable;
 	struct timeval tv;
 
@@ -62,106 +72,98 @@ epsonds_net_read_raw(epsonds_scanner *s, unsigned char *buf, ssize_t wanted,
 	return read;
 }
 
-int
+static ssize_t
+epsonds_net_read_buf(epsonds_scanner *s, unsigned char *buf, ssize_t wanted,
+		       SANE_Status * status)
+{
+	ssize_t read = 0;
+
+	DBG(23, "%s: reading up to %lu from buffer at %p, %lu available\n",
+		__func__, (u_long) wanted, (void *) s->netptr, (u_long) s->netlen);
+
+	if ((size_t) wanted > s->netlen) {
+		*status = SANE_STATUS_IO_ERROR;
+		wanted = s->netlen;
+	}
+
+	memcpy(buf, s->netptr, wanted);
+	read = wanted;
+
+	s->netptr += read;
+	s->netlen -= read;
+
+	if (s->netlen == 0) {
+		DBG(23, "%s: freeing %p\n", __func__, (void *) s->netbuf);
+		free(s->netbuf);
+		s->netbuf = s->netptr = NULL;
+		s->netlen = 0;
+	}
+
+	return read;
+}
+
+ssize_t
 epsonds_net_read(epsonds_scanner *s, unsigned char *buf, ssize_t wanted,
 		       SANE_Status * status)
 {
-	ssize_t size;
-	ssize_t read = 0;
-	unsigned char header[12];
-
-	/* read from buffer, if available */
-	if (wanted && s->netptr != s->netbuf) {
-		DBG(23, "reading %lu from buffer at %p, %lu available\n",
-			(u_long) wanted, s->netptr, (u_long) s->netlen);
-
-		memcpy(buf, s->netptr, wanted);
-		read = wanted;
-
-		s->netlen -= wanted;
-
-		if (s->netlen == 0) {
-			DBG(23, "%s: freeing %p\n", __func__, s->netbuf);
-			free(s->netbuf);
-			s->netbuf = s->netptr = NULL;
-			s->netlen = 0;
-		}
-
-		return read;
-	}
-
-	/* receive net header */
-	size = epsonds_net_read_raw(s, header, 12, status);
-	if (size != 12) {
+	if (wanted < 0) {
+		*status = SANE_STATUS_INVAL;
 		return 0;
 	}
 
+	size_t size;
+	ssize_t read = 0;
+	unsigned char header[12];
+
+	/* read from remainder of buffer */
+	if (s->netptr) {
+		return epsonds_net_read_buf(s, buf, wanted, status);
+	}
+
+	/* receive net header */
+	read = epsonds_net_read_raw(s, header, 12, status);
+	if (read != 12) {
+		return 0;
+	}
+
+	/* validate header */
 	if (header[0] != 'I' || header[1] != 'S') {
 		DBG(1, "header mismatch: %02X %02x\n", header[0], header[1]);
 		*status = SANE_STATUS_IO_ERROR;
 		return 0;
 	}
 
-	// incoming payload size
+	/* parse payload size */
 	size = be32atoh(&header[6]);
-
-	DBG(23, "%s: wanted = %lu, available = %lu\n", __func__,
-		(u_long) wanted, (u_long) size);
 
 	*status = SANE_STATUS_GOOD;
 
-	if (size == wanted) {
+	if (!s->netbuf) {
+		DBG(15, "%s: direct read\n", __func__);
+		DBG(23, "%s: wanted = %lu, available = %lu\n", __func__,
+			(u_long) wanted, (u_long) size);
 
-		DBG(15, "%s: full read\n", __func__);
-
-		if (size) {
-			read = epsonds_net_read_raw(s, buf, size, status);
+		if ((size_t) wanted > size) {
+			wanted = size;
 		}
 
-		if (s->netbuf) {
-			free(s->netbuf);
-			s->netbuf = NULL;
-			s->netlen = 0;
-		}
-
-		if (read < 0) {
-			return 0;
-		}
-
-	} else if (wanted < size) {
-
-		DBG(23, "%s: long tail\n", __func__);
-
-		read = epsonds_net_read_raw(s, s->netbuf, size, status);
-		if (read != size) {
-			return 0;
-		}
-
-		memcpy(buf, s->netbuf, wanted);
-		read = wanted;
-
-		free(s->netbuf);
-		s->netbuf = NULL;
-		s->netlen = 0;
-
+		read = epsonds_net_read_raw(s, buf, wanted, status);
 	} else {
+		DBG(15, "%s: buffered read\n", __func__);
+		DBG(23, "%s: bufferable = %lu, available = %lu\n", __func__,
+			(u_long) s->netlen, (u_long) size);
 
-		DBG(23, "%s: partial read\n", __func__);
-
-		read = epsonds_net_read_raw(s, s->netbuf, size, status);
-		if (read != size) {
-			return 0;
+		if (s->netlen > size) {
+			s->netlen = size;
 		}
 
-		s->netlen = size - wanted;
-		s->netptr += wanted;
-		read = wanted;
+		/* fill buffer */
+		read = epsonds_net_read_raw(s, s->netbuf, s->netlen, status);
+		s->netptr = s->netbuf;
+		s->netlen = (read > 0 ? read : 0);
 
-		DBG(23, "0,4 %02x %02x\n", s->netbuf[0], s->netbuf[4]);
-		DBG(23, "storing %lu to buffer at %p, next read at %p, %lu bytes left\n",
-			(u_long) size, s->netbuf, s->netptr, (u_long) s->netlen);
-
-		memcpy(buf, s->netbuf, wanted);
+		/* copy wanted part */
+		read = epsonds_net_read_buf(s, buf, wanted, status);
 	}
 
 	return read;
@@ -175,27 +177,42 @@ epsonds_net_request_read(epsonds_scanner *s, size_t len)
 	return status;
 }
 
-int
+size_t
 epsonds_net_write(epsonds_scanner *s, unsigned int cmd, const unsigned char *buf,
 			size_t buf_size, size_t reply_len, SANE_Status *status)
 {
 	unsigned char *h1, *h2;
 	unsigned char *packet = malloc(12 + 8);
 
-	/* XXX check allocation failure */
+	if (!packet) {
+		*status = SANE_STATUS_NO_MEM;
+		return 0;
+	}
 
 	h1 = packet;		// packet header
 	h2 = packet + 12;	// data header
 
 	if (reply_len) {
-		s->netbuf = s->netptr = malloc(reply_len);
+		if (s->netbuf) {
+			DBG(23, "%s, freeing %p, %ld bytes unprocessed\n",
+				__func__, (void *) s->netbuf, (u_long) s->netlen);
+			free(s->netbuf);
+			s->netbuf = s->netptr = NULL;
+			s->netlen = 0;
+		}
+		s->netbuf = malloc(reply_len);
+		if (!s->netbuf) {
+			free(packet);
+			*status = SANE_STATUS_NO_MEM;
+			return 0;
+		}
 		s->netlen = reply_len;
-		DBG(24, "allocated %lu bytes at %p\n",
-			(u_long) reply_len, s->netbuf);
+		DBG(24, "%s: allocated %lu bytes at %p\n", __func__,
+			(u_long) s->netlen, (void *) s->netbuf);
 	}
 
 	DBG(24, "%s: cmd = %04x, buf = %p, buf_size = %lu, reply_len = %lu\n",
-		__func__, cmd, buf, (u_long) buf_size, (u_long) reply_len);
+		__func__, cmd, (void *) buf, (u_long) buf_size, (u_long) reply_len);
 
 	memset(h1, 0x00, 12);
 	memset(h2, 0x00, 8);
@@ -276,3 +293,228 @@ epsonds_net_unlock(struct epsonds_scanner *s)
 /*	epsonds_net_read(s, buf, 1, &status); */
 	return status;
 }
+#if WITH_AVAHI
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <avahi-client/lookup.h>
+#include <avahi-common/error.h>
+#include <avahi-common/simple-watch.h>
+#include <sys/time.h>
+#include <errno.h>
+
+static AvahiSimplePoll *simple_poll = NULL;
+
+static struct timeval borowseEndTime;
+
+static int resolvedCount = 0;
+static int browsedCount = 0;
+static int waitResolver = 0;
+
+typedef struct {
+    AvahiClient* client;
+    Device_Found_CallBack callBack;
+}EDSAvahiUserData;
+
+static int my_avahi_simple_poll_loop(AvahiSimplePoll *s) {
+    struct timeval currentTime;
+
+    for (;;)
+    {
+         int r = avahi_simple_poll_iterate(s, 1);
+		if (r != 0)
+		{
+			if (r >= 0 || errno != EINTR)
+			{
+					DBG(10, "my_avahi_simple_poll_loop end\n");
+					return r;
+			}
+		}
+
+		if (waitResolver) {
+			gettimeofday(&currentTime, NULL);
+
+			if ((currentTime.tv_sec - borowseEndTime.tv_sec) >= 3)
+			{
+				avahi_simple_poll_quit(simple_poll);
+				DBG(10, "resolve timeout\n");
+				return 0;
+			}
+		}
+    }
+}
+
+static void
+epsonds_resolve_callback(AvahiServiceResolver *r, AVAHI_GCC_UNUSED AvahiIfIndex interface,
+                            AVAHI_GCC_UNUSED AvahiProtocol protocol,
+                            AvahiResolverEvent event, const char *name,
+                            const char  *type,
+                            const char  *domain,
+                            const char  *host_name,
+                            const AvahiAddress *address, uint16_t port, AvahiStringList *txt,
+                            AvahiLookupResultFlags  flags,
+                            void  *userdata)
+{
+	// unused parameter
+	(void)r;
+	(void)type;
+	(void)domain;
+	(void)host_name;
+	(void)port;
+	(void)flags;
+    EDSAvahiUserData* data = userdata;
+    char ipAddr[AVAHI_ADDRESS_STR_MAX];
+
+	DBG(10, "epsonds_searchDevices resolve_callback\n");
+
+
+    resolvedCount++;
+
+    switch (event) {
+    case AVAHI_RESOLVER_FAILURE:
+        break;
+    case AVAHI_RESOLVER_FOUND:
+        avahi_address_snprint(ipAddr, sizeof(ipAddr), address);
+	   DBG(10, "epsonds_searchDevices name = %s \n", name);
+        if (strlen(name) > 7)
+        {
+            if (strncmp(name, "EPSON", 5) == 0)
+            {
+				while(txt != NULL)
+				{
+					char* text = (char*)avahi_string_list_get_text(txt);
+					DBG(10, "avahi string = %s\n", text);
+
+					if (strlen(text) > 4 && strncmp(text, "mdl=", 4) == 0)
+					{
+						if (data->callBack)
+                		{
+							data->callBack(&text[4], ipAddr);
+							break;
+                		}
+					}
+					txt = avahi_string_list_get_next(txt);
+				}
+
+            }
+        }
+		break;
+    }
+}
+
+static void
+browse_callback(AvahiServiceBrowser *b, AvahiIfIndex interface,
+                            AvahiProtocol protocol, AvahiBrowserEvent event,
+                            const char *name, const char *type,
+                            const char *domain,
+                            AvahiLookupResultFlags flags,
+                            void* userdata)
+{
+    DBG(10, "browse_callback event = %d\n", event);
+
+	//unused parameter
+	(void)b;
+	(void)flags;
+
+    EDSAvahiUserData *data = userdata;
+    switch (event) {
+    case AVAHI_BROWSER_FAILURE:
+        avahi_simple_poll_quit(simple_poll);
+        return;
+    case AVAHI_BROWSER_NEW:
+	    DBG(10, "browse_callback name = %s\n", name);
+		browsedCount++;
+        if (!(avahi_service_resolver_new(data->client, interface, protocol, name,
+                                                               type, domain,
+                                                               AVAHI_PROTO_UNSPEC, 0,
+                                                               epsonds_resolve_callback, data)))
+		{
+			DBG(10, "avahi_service_resolver_new fails\n");
+		    break;
+		}
+    case AVAHI_BROWSER_REMOVE:
+        break;
+    case AVAHI_BROWSER_ALL_FOR_NOW:
+		DBG(10, "AVAHI_BROWSER_ALL_FOR_NOW\n");
+        gettimeofday(&borowseEndTime, NULL);
+
+        if (browsedCount > resolvedCount)
+        {
+			  DBG(10, "WAIT RESOLVER\n");
+               waitResolver = 1;
+         }else{
+			 DBG(10, "QUIT POLL\n");
+             avahi_simple_poll_quit(simple_poll);
+         }
+		break;
+    case AVAHI_BROWSER_CACHE_EXHAUSTED:
+		 DBG(10, "AVAHI_BROWSER_CACHE_EXHAUSTED\n");
+        break;
+    }
+}
+
+static void
+client_callback(AvahiClient *c, AvahiClientState state,
+                         AVAHI_GCC_UNUSED void *userdata)
+{
+    assert(c);
+    if (state == AVAHI_CLIENT_FAILURE)
+        avahi_simple_poll_quit(simple_poll);
+}
+
+SANE_Status epsonds_searchDevices(Device_Found_CallBack deviceFoundCallBack)
+{
+	int result = SANE_STATUS_GOOD;
+
+    AvahiClient *client = NULL;
+    AvahiServiceBrowser *sb = NULL;
+
+    EDSAvahiUserData data;
+
+    resolvedCount = 0;
+	browsedCount = 0;
+	waitResolver = 0;
+
+
+	int error = 0;
+    DBG(10, "epsonds_searchDevices\n");
+
+    if (!(simple_poll = avahi_simple_poll_new())) {
+        DBG(10, "avahi_simple_poll_new failed\n");
+		result = SANE_STATUS_INVAL;
+        goto fail;
+    }
+    client = avahi_client_new(avahi_simple_poll_get(simple_poll), 0,
+                                               client_callback, NULL, &error);
+    if (!client) {
+        DBG(10, "avahi_client_new failed %s\n", avahi_strerror(error));
+		result = SANE_STATUS_INVAL;
+        goto fail;
+    }
+    data.client = client;
+    data.callBack = deviceFoundCallBack;
+
+    if (!(sb = avahi_service_browser_new(client, AVAHI_IF_UNSPEC,
+                                                                   AVAHI_PROTO_UNSPEC, "_scanner._tcp",
+                                                                   NULL, 0, browse_callback, &data))) {
+        DBG(10, "avahi_service_browser_new failed: %s\n",
+                              avahi_strerror(avahi_client_errno(client)));
+		result = SANE_STATUS_INVAL;
+        goto fail;
+    }
+    my_avahi_simple_poll_loop(simple_poll);
+fail:
+    if (sb)
+        avahi_service_browser_free(sb);
+    if (client)
+        avahi_client_free(client);
+    if (simple_poll)
+        avahi_simple_poll_free(simple_poll);
+
+    DBG(10, "epsonds_searchDevices fin\n");
+
+    return result;
+}
+#endif

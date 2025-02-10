@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -40,7 +38,6 @@
 */
 
 /*
-	$Id$
         This file implements a SANE backend for Ricoh flatbed scanners.
 */
 
@@ -167,7 +164,7 @@ attach (const char *devnam, Ricoh_Device ** devp)
   status = object_position (fd);
   if (status != SANE_STATUS_GOOD)
     {
-      DBG (1, "attach: OBJECT POSTITION failed\n");
+      DBG (1, "attach: OBJECT POSITION failed\n");
       sanei_scsi_close (fd);
       return (SANE_STATUS_INVAL);
     }
@@ -222,12 +219,14 @@ attach (const char *devnam, Ricoh_Device ** devp)
 
   dev->sane.name = strdup (devnam);
   dev->sane.vendor = "RICOH";
-  str = malloc (sizeof(ibuf.product) + sizeof(ibuf.revision) + 1);
+
+  size_t prod_rev_size = sizeof(ibuf.product) + sizeof(ibuf.revision) + 1;
+  str = malloc (prod_rev_size);
   if (str)
     {
-      str[0] = '\0';
-      strncat (str, (char *)ibuf.product, sizeof(ibuf.product));
-      strncat (str, (char *)ibuf.revision, sizeof(ibuf.revision));
+      snprintf (str, prod_rev_size, "%.*s%.*s",
+                (int) sizeof(ibuf.product), (const char *) ibuf.product,
+                (int) sizeof(ibuf.revision), (const char *) ibuf.revision);
     }
   dev->sane.model = str;
   dev->sane.type = "flatbed scanner";
@@ -241,7 +240,7 @@ attach (const char *devnam, Ricoh_Device ** devp)
   dev->info.yres_default = _2btol(wbuf.y_res);
   dev->info.image_mode_default = wbuf.image_comp;
 
-  /* if you throw the MRIF bit the brighness control reverses too */
+  /* if you throw the MRIF bit the brightness control reverses too */
   /* so I reverse the reversal in software for symmetry's sake */
   /* I should make this into an option */
 
@@ -465,7 +464,7 @@ do_cancel (Ricoh_Scanner * s)
   status = object_position (s->fd);
   if (status != SANE_STATUS_GOOD)
     {
-      DBG (1, "cancel: OBJECT POSTITION failed\n");
+      DBG (1, "cancel: OBJECT POSITION failed\n");
     }
 
   s->scanning = SANE_FALSE;
@@ -486,7 +485,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   char devnam[PATH_MAX] = "/dev/scanner";
   FILE *fp;
 
-  authorize = authorize;		/* silence gcc */
+  (void) authorize;		/* silence gcc */
 
   DBG_INIT ();
   DBG (11, ">> sane_init\n");
@@ -496,7 +495,7 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
 #endif
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open(RICOH_CONFIG_FILE);
   if (fp)
@@ -515,7 +514,8 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
             continue;                   /* ignore empty lines */
 
 	  /* skip white space: */
-	  for (lp = line; isspace(*lp); ++lp);
+	  for (lp = line; isspace(*lp); ++lp)
+            ;
           strcpy (devnam, lp);
         }
       fclose (fp);
@@ -551,7 +551,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   Ricoh_Device *dev;
   int i;
 
-  local_only = local_only;		/* silence gcc */
+  (void) local_only;		/* silence gcc */
 
   DBG (11, ">> sane_get_devices\n");
 
@@ -847,7 +847,7 @@ sane_start (SANE_Handle handle)
   _lto4b(s->length, wbuf.length);
 
   wbuf.image_comp = s->image_composition;
-  /* if you throw the MRIF bit the brighness control reverses too */
+  /* if you throw the MRIF bit the brightness control reverses too */
   /* so I reverse the reversal in software for symmetry's sake */
   if (wbuf.image_comp == RICOH_GRAYSCALE || wbuf.image_comp == RICOH_DITHERED_MONOCHROME)
     {
@@ -1008,8 +1008,8 @@ sane_cancel (SANE_Handle handle)
 SANE_Status
 sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 {
-  handle = handle;				/* silence gcc */
-  non_blocking = non_blocking;	/* silence gcc */
+  (void) handle;		/* silence gcc */
+  (void) non_blocking;		/* silence gcc */
 
   DBG (5, ">> sane_set_io_mode\n");
   DBG (5, "<< sane_set_io_mode\n");
@@ -1020,8 +1020,8 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
 {
-  handle = handle;				/* silence gcc */
-  fd = fd;						/* silence gcc */
+  (void) handle;		/* silence gcc */
+  (void) fd;			/* silence gcc */
 
   DBG (5, ">> sane_get_select_fd\n");
   DBG (5, "<< sane_get_select_fd\n");

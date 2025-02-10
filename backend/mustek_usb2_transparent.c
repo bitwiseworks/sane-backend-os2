@@ -17,9 +17,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -84,37 +82,37 @@ Transparent_Reset ()
       DBG (DBG_FUNC, "Transparent_Reset: scanner has been opened\n");
       return FALSE;
     }
-  if (STATUS_GOOD != Asic_Open (&g_chip, g_pDeviceFile))
+  if (SANE_STATUS_GOOD != Asic_Open (&g_chip, g_pDeviceFile))
     {
       DBG (DBG_FUNC, "Transparent_Reset: can not open scanner\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_Reset (&g_chip))
+  if (SANE_STATUS_GOOD != Asic_Reset (&g_chip))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_Reset return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_SetSource (&g_chip, LS_POSITIVE))
+  if (SANE_STATUS_GOOD != Asic_SetSource (&g_chip, LS_POSITIVE))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_SetSource return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_TurnLamp (&g_chip, FALSE))
+  if (SANE_STATUS_GOOD != Asic_TurnLamp (&g_chip, FALSE))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_TurnLamp return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_TurnTA (&g_chip, TRUE))
+  if (SANE_STATUS_GOOD != Asic_TurnTA (&g_chip, TRUE))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_TurnTA return error\n");
       return FALSE;
     }
 
-  if (STATUS_GOOD != Asic_Close (&g_chip))
+  if (SANE_STATUS_GOOD != Asic_Close (&g_chip))
     {
       DBG (DBG_FUNC, "Reflective_Reset: Asic_Close return error\n");
       return FALSE;
@@ -133,10 +131,10 @@ Transparent_Reset ()
 /**********************************************************************
 Author: Jack            Date: 2005/05/13
 Routine Description:
-	get suggest parameter of scaning
+	get suggest parameter of scanning
 Parameters:
-	pTarget: the information of scaning
-	pSuggest: the suggest parameter of scaning
+	pTarget: the information of scanning
+	pSuggest: the suggest parameter of scanning
 Return value:
 	if operation is success
 	return TRUE
@@ -307,7 +305,7 @@ Transparent_SetupScan (COLORMODE ColorMode, unsigned short XDpi, unsigned short 
   SANE_Bool hasTA;
   unsigned short wTAShadingMinus = 0;
 
-  isInvert = isInvert;
+  (void) isInvert;
   DBG (DBG_FUNC, "Transparent_SetupScan: call in\n");
 
   if (g_bOpened)
@@ -393,7 +391,7 @@ Transparent_SetupScan (COLORMODE ColorMode, unsigned short XDpi, unsigned short 
       break;
     }
 
-  if (Asic_Open (&g_chip, g_pDeviceFile) != STATUS_GOOD)
+  if (Asic_Open (&g_chip, g_pDeviceFile) != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC, "Transparent_SetupScan: Asic_Open return error\n");
       return FALSE;
@@ -401,13 +399,13 @@ Transparent_SetupScan (COLORMODE ColorMode, unsigned short XDpi, unsigned short 
 
   g_bOpened = TRUE;
 
-  if (STATUS_GOOD != Asic_TurnLamp (&g_chip, FALSE))
+  if (SANE_STATUS_GOOD != Asic_TurnLamp (&g_chip, FALSE))
     {
       DBG (DBG_FUNC, "Transparent_SetupScan: Asic_TurnLamp return error\n");
       return FALSE;
     }
 
-  if (Asic_IsTAConnected (&g_chip, &hasTA) != STATUS_GOOD)
+  if (Asic_IsTAConnected (&g_chip, &hasTA) != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC,
 	   "Transparent_SetupScan: Asic_IsTAConnected return error\n");
@@ -419,7 +417,7 @@ Transparent_SetupScan (COLORMODE ColorMode, unsigned short XDpi, unsigned short 
       return FALSE;
     }
 
-  if (Asic_TurnTA (&g_chip, TRUE) != STATUS_GOOD)
+  if (Asic_TurnTA (&g_chip, TRUE) != SANE_STATUS_GOOD)
     {
       DBG (DBG_FUNC, "Transparent_SetupScan: Asic_TurnTA return error\n");
       return FALSE;
@@ -1382,7 +1380,7 @@ Transparent_LineCalibration16Bits (unsigned short wTAShadingMinus)
 
   memset (lpBuf, 0, 50);
   stream = fopen ("/root/darkshading(Tra).pnm", "wb+\n");
-  sprintf (lpBuf, "P6\n%d %d\n65535\n", wCalWidth * wCalHeight);
+  sprintf (lpBuf, "P6\n%d %d\n65535\n", wCalWidth, wCalHeight);
   fwrite (lpBuf, sizeof (SANE_Byte), strlen (lpBuf), stream);
   fwrite (lpDarkData, sizeof (SANE_Byte), wCalWidth * wCalHeight * 3 * 2, stream);
   fclose (stream);

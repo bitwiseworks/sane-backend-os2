@@ -29,6 +29,12 @@
 :mfg "Avision"
 :url "http://www.avision.com"
 
+:model "AD345F"
+:interface "USB"
+:usbid "0x0638" "0x2e59"
+:comment "sheetfed duplex + flatbed scanner; ADF limitation: one sheet per one scan, scanner reboot needed otherwise"
+:status :basic
+
 :model "AV100CS"
 :interface "SCSI"
 :status :untested
@@ -88,6 +94,18 @@
 :usbid "0x0638" "0x0a2f"
 :comment "sheetfed scanner"
 :status :complete
+
+:model "AV186+"
+:interface "USB"
+:usbid "0x0638" "0x1a33"
+:comment "sheetfed scanner"
+:status :good
+
+:model "AV188"
+:interface "USB"
+:usbid "0x0638" "0x2ad9"
+:comment "sheetfed scanner"
+:status :untested
 
 :model "AV210D2+"
 :interface "USB"
@@ -333,6 +351,12 @@
 :model "FB2080E"
 :interface "USB"
 :usbid "0x0638" "0x0a84"
+:comment "1 pass, 600 dpi, zero-edge" ASIC 7
+:status :basic
+
+:model "FB2280E"
+:interface "USB"
+:usbid "0x0638" "0x2a1f"
 :comment "1 pass, 600 dpi, zero-edge" ASIC 7
 :status :basic
 
@@ -612,6 +636,12 @@
 :model "i80"
 :interface "USB"
 :usbid "0x040a" "0x6005"
+:status :good
+
+:model "i1120"
+:interface "USB"
+:usbid "0x040a" "0x6013"
+:comment "duplex sheetfed scanner"
 :status :good
 
 

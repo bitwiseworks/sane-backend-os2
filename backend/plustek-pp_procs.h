@@ -44,9 +44,7 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  * As a special exception, the authors of SANE give permission for
  * additional uses of the libraries contained in this release of SANE.
@@ -221,13 +219,6 @@ _LOC void IORegisterDirectToScanner( pScanData, Byte bReg );
 _LOC void IOSoftwareReset          ( pScanData ps );
 _LOC void IOReadScannerImageData   ( pScanData ps, pUChar pBuf, ULong size );
 
-#ifdef __KERNEL__
-_LOC void IOOut       ( Byte data, UShort port );
-_LOC void IOOutDelayed( Byte data, UShort port );
-_LOC Byte IOIn        ( UShort port );
-_LOC Byte IOInDelayed ( UShort port );
-#endif
-
 /*
  * implementation in plustek-pp_tpa.c
  */
@@ -239,16 +230,6 @@ _LOC void TPAP98003Reshading         ( pScanData ps );
  * implementation in plustek-pp_scale.c
  */
 _LOC void ScaleX( pScanData ps, pUChar inBuf, pUChar outBuf );
-
-/*
- * implementation in plustek-pp_procfs.c (Kernel-mode only)
- */
-#ifdef __KERNEL__
-int  ProcFsInitialize      ( void );
-void ProcFsShutdown        ( void );
-void ProcFsRegisterDevice  ( pScanData ps );
-void ProcFsUnregisterDevice( pScanData ps );
-#endif
 
 #endif	/* guard __PROCS_H__ */
 

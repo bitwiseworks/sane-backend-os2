@@ -34,8 +34,8 @@
 
 #include "../include/sane/sanei_debug.h"
 
-/* SANE backend operations, see Sane standard 1.04 documents (sane_dev.pdf)
-   for details */
+/* SANE backend operations, see SANE Standard for details
+   https://sane-project.gitlab.io/standard/ */
 
 /* Init the KV-S1025 SANE backend. This function must be called before any other
    SANE function can be called. */
@@ -51,11 +51,11 @@ sane_init (SANE_Int * version_code,
 
   DBG (DBG_error,
        "This is panasonic KV-S1020C / KV-S1025C version %d.%d build %d\n",
-       V_MAJOR, V_MINOR, V_BUILD);
+       SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, V_BUILD);
 
   if (version_code)
     {
-      *version_code = SANE_VERSION_CODE (V_MAJOR, V_MINOR, V_BUILD);
+      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, V_BUILD);
     }
 
   /* Initialize USB */
@@ -442,15 +442,15 @@ sane_cancel (SANE_Handle handle)
 SANE_Status
 sane_set_io_mode (SANE_Handle h, SANE_Bool m)
 {
-  h=h;
-  m=m;
+  (void) h;
+  (void) m;
   return SANE_STATUS_UNSUPPORTED;
 }
 
 SANE_Status
 sane_get_select_fd (SANE_Handle h, SANE_Int * fd)
 {
-  h=h;
-  fd=fd;
+  (void) h;
+  (void) fd;
   return SANE_STATUS_UNSUPPORTED;
 }

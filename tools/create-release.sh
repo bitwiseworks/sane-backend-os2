@@ -54,6 +54,10 @@ cat << EOF >> release.json
 }
 EOF
 
+echo '=================================================='
+cat release.json
+echo '=================================================='
+
 curl --silent --fail --write-out "%{http_code}\n"\
      --header "PRIVATE-TOKEN: $PRIVATE_TOKEN" \
      --header "Content-Type: application/json" \

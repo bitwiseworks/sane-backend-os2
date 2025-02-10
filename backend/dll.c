@@ -13,9 +13,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -89,6 +87,20 @@ posix_dlsym (void *handle, const char *func)
 }
 # pragma GCC diagnostic pop
 
+  /* Similar to the above, GCC also warns about conversion between
+     pointers to functions.  The ISO C standard says that invoking a
+     converted pointer to a function whose type is not compatible with
+     the pointed-to type, the behavior is undefined.  Although GCC is
+     correct to warn about this, the dll backend has been using these
+     conversions without issues for a very long time already.
+
+     Rather than push/pop around every use, which would get very ugly
+     real fast, ignore this particular warning for the remainder of
+     the file.
+   */
+# pragma GCC diagnostic ignored "-Wpragmas" /* backward compatibility */
+# pragma GCC diagnostic ignored "-Wcast-function-type"
+
   /* Older versions of dlopen() don't define RTLD_NOW and RTLD_LAZY.
      They all seem to use a mode of 1 to indicate RTLD_NOW and some do
      not support RTLD_LAZY at all.  Hence, unless defined, we define
@@ -128,6 +140,10 @@ posix_dlsym (void *handle, const char *func)
 # define PATH_MAX       1024
 #endif
 
+#ifndef NAME_MAX
+# define NAME_MAX FILENAME_MAX
+#endif
+
 #if defined(_WIN32) || defined(HAVE_OS2_H)
 # define DIR_SEP        ";"
 #else
@@ -138,6 +154,8 @@ posix_dlsym (void *handle, const char *func)
 #include "../include/sane/sanei_config.h"
 #define DLL_CONFIG_FILE "dll.conf"
 #define DLL_ALIASES_FILE "dll.aliases"
+
+#include "../include/sane/sanei_usb.h"
 
 enum SANE_Ops
 {
@@ -457,9 +475,6 @@ load (struct backend *be)
 	  DBG (1, "load: malloc failed: %s\n", strerror (errno));
 	  return SANE_STATUS_NO_MEM;
 	}
-      if (orig_src)
-        free (orig_src);
-      orig_src = src;
       snprintf (src, src_len, "%s%s%s", path, DIR_SEP, LIBDIR);
     }
   else
@@ -474,6 +489,7 @@ load (struct backend *be)
     }
   DBG (3, "load: searching backend `%s' in `%s'\n", be->name, src);
 
+  orig_src = src;
   dir = strsep (&src, DIR_SEP);
 
   while (dir)
@@ -797,7 +813,8 @@ read_dlld (void)
   DIR *dlld;
   struct dirent *dllconf;
   struct stat st;
-  char conffile[PATH_MAX], dlldir[PATH_MAX];
+  char dlldir[PATH_MAX];
+  char conffile[PATH_MAX + strlen("/") + NAME_MAX];
   size_t len, plen;
   const char *dir_list;
   char *copy, *next, *dir;
@@ -849,7 +866,7 @@ read_dlld (void)
           || (dllconf->d_name[len-1] == '#'))
         continue;
 
-      snprintf (conffile, PATH_MAX, "%s/%s", dlldir, dllconf->d_name);
+      snprintf (conffile, sizeof(conffile), "%s/%s", dlldir, dllconf->d_name);
 
       DBG (5, "sane_init/read_dlld: considering %s\n", conffile);
 
@@ -1051,7 +1068,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   char *full_name;
   int i, num_devs;
   size_t len;
-#define ASSERT_SPACE(n)                                                    \
+#define ASSERT_SPACE(n) do                                                 \
   {                                                                        \
     if (devlist_len + (n) > devlist_size)                                  \
       {                                                                    \
@@ -1063,7 +1080,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
         if (!devlist)                                                      \
           return SANE_STATUS_NO_MEM;                                       \
       }                                                                    \
-  }
+  } while (0)
 
   DBG (3, "sane_get_devices\n");
 
@@ -1177,18 +1194,73 @@ sane_open (SANE_String_Const full_name, SANE_Handle * meta_handle)
     }
 
   dev_name = strchr (full_name, ':');
+
+  int is_fakeusb = 0, is_fakeusbdev = 0, is_fakeusbout = 0;
+
   if (dev_name)
     {
-      be_name = strndup(full_name, dev_name - full_name);
-      ++dev_name;		/* skip colon */
+      is_fakeusb = strncmp(full_name, "fakeusb", dev_name - full_name) == 0 &&
+          dev_name - full_name == 7;
+      is_fakeusbdev = strncmp(full_name, "fakeusbdev", dev_name - full_name) == 0 &&
+          dev_name - full_name == 10;
+      is_fakeusbout = strncmp(full_name, "fakeusbout", dev_name - full_name) == 0 &&
+          dev_name - full_name == 10;
+    }
+
+  if (is_fakeusb || is_fakeusbdev)
+    {
+      ++dev_name; // skip colon
+      status = sanei_usb_testing_enable_replay(dev_name, is_fakeusbdev);
+      if (status != SANE_STATUS_GOOD)
+        return status;
+
+      be_name = sanei_usb_testing_get_backend();
+      if (be_name == NULL)
+        {
+          DBG (0, "%s: unknown backend for testing\n", __func__);
+          return SANE_STATUS_ACCESS_DENIED;
+        }
     }
   else
     {
-      /* if no colon interpret full_name as the backend name; an empty
-         backend device name will cause us to open the first device of
-         that backend.  */
-      be_name = strdup(full_name);
-      dev_name = "";
+      char* fakeusbout_path = NULL;
+      if (is_fakeusbout)
+      {
+        ++dev_name; // skip colon
+
+        const char* path_end = strchr(dev_name, ':');
+        if (path_end == NULL)
+          {
+            DBG (0, "%s: the device name does not contain path\n", __func__);
+            return SANE_STATUS_INVAL;
+          }
+        fakeusbout_path = strndup(dev_name, path_end - dev_name);
+
+        full_name = path_end + 1; // skip colon
+        dev_name = strchr(full_name, ':');
+      }
+
+      if (dev_name)
+        {
+          be_name = strndup(full_name, dev_name - full_name);
+          ++dev_name;		/* skip colon */
+        }
+      else
+        {
+          /* if no colon interpret full_name as the backend name; an empty
+             backend device name will cause us to open the first device of
+             that backend.  */
+          be_name = strdup(full_name);
+          dev_name = "";
+        }
+
+      if (is_fakeusbout)
+        {
+          status = sanei_usb_testing_enable_record(fakeusbout_path, be_name);
+          free(fakeusbout_path);
+          if (status != SANE_STATUS_GOOD)
+            return status;
+        }
     }
 
   if (!be_name)
@@ -1293,7 +1365,7 @@ sane_read (SANE_Handle handle, SANE_Byte * data, SANE_Int max_length,
   struct meta_scanner *s = handle;
 
   DBG (3, "sane_read(handle=%p,data=%p,maxlen=%d,lenp=%p)\n",
-       handle, data, max_length, (void *) length);
+       handle, (void *) data, max_length, (void *) length);
   return (*(op_read_t)s->be->op[OP_READ]) (s->handle, data, max_length, length);
 }
 

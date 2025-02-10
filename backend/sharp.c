@@ -18,9 +18,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -1678,7 +1676,7 @@ set_gamma_caps(SHARP_Scanner *s)
 
 /* The next function is a slightly modified version of sanei_constrain_value
    Instead of returning status information like STATUS_INVAL, it adjusts
-   an invaild value to the nearest allowed one.
+   an invalid value to the nearest allowed one.
 */
 static void
 clip_value (const SANE_Option_Descriptor * opt, void * value)
@@ -2096,7 +2094,7 @@ init_options (SHARP_Scanner * s)
 
 #ifdef USE_COLOR_THRESHOLD
   s->opt[OPT_THRESHOLD_R].name = SANE_NAME_THRESHOLD "-red";
-  /* xxx the titles and decriptions are confusing:
+  /* xxx the titles and descriptions are confusing:
      "set white point (red)"
      Any idea? maybe "threshold to get the red component on"
   */
@@ -2363,7 +2361,7 @@ sane_init (SANE_Int * version_code,
 #endif
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open (SHARP_CONFIG_FILE);
   if (!fp)
@@ -2825,6 +2823,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	case OPT_BR_Y:
 	  if (info && s->val[option].w != *(SANE_Word *) val)
 	    *info |= SANE_INFO_RELOAD_PARAMS;
+          // fall through
 	case OPT_NUM_OPTS:
 	case OPT_THRESHOLD:
 	  /* xxx theoretically, we could use OPT_THRESHOLD in
@@ -3144,7 +3143,7 @@ sprint_gamma(Option_Value val, SANE_Byte *dst)
   SANE_Byte *p = dst;
 
   p += sprintf((char *) p, "%i", val.wa[0] > 255 ? 255 : val.wa[0]);
-  /* val.wa[i] is over 255, so val.wa[i] is limitied to 255 */
+  /* val.wa[i] is over 255, so val.wa[i] is limited to 255 */
   for (i = 1; i < 256; i++)
     p += sprintf((char *) p, ",%i", val.wa[i] > 255 ? 255 : val.wa[i]);
   return p - dst;

@@ -15,8 +15,8 @@
    for more details.
 
    You should have received a copy of the GNU General Public License
-   along with sane; see the file COPYING.  If not, write to the Free
-   Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   along with sane; see the file COPYING.
+   If not, see <https://www.gnu.org/licenses/>.
 
    This file implements a SANE backend for Siemens 9036 flatbed scanners.  */
 
@@ -124,8 +124,8 @@ test_ready (int fd)
 static SANE_Status
 sense_handler (int scsi_fd, u_char *result, void *arg)
 {
-  scsi_fd = scsi_fd;
-  arg = arg; /* silence compilation warnings */
+  (void) scsi_fd;
+  (void) arg; /* silence compilation warnings */
 
   if (result[0])
     {
@@ -141,7 +141,7 @@ sense_handler (int scsi_fd, u_char *result, void *arg)
 static SANE_Status
 stop_scan (int fd)
 {
-  fd = fd; /* silence compilation warnings */
+  (void) fd; /* silence compilation warnings */
 
   /* XXX don't know how to stop the scanner. To be tested ! */
 #if 0
@@ -295,7 +295,7 @@ set_window (S9036_Scanner * s)
   /* ranges from 20 (little contrast) down to -20 = 235 (much contrast) */
   int contr_adjust = auto_contr ? (256 - s->val[OPT_CONTR_ADJUST]) % 256 : 0;
 
-  /* Warning ! The following structur SEEMS to be an valid SCSI-2
+  /* Warning ! The following structure SEEMS to be an valid SCSI-2
      SET_WINDOW command.  But e.g. the limits for the window are only
      2 Bytes instead of 4.  The scanner was built at about 1990, so
      SCSI-2 wasn't available for development...
@@ -829,12 +829,12 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback authorize)
   size_t len;
   FILE *fp;
 
-  authorize = authorize; /* silence compilation warnings */
+  (void) authorize; /* silence compilation warnings */
 
   DBG_INIT ();
 
   if (version_code)
-    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, 0);
+    *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, 0);
 
   fp = sanei_config_open ("s9036.conf");
   if (!fp)
@@ -882,7 +882,7 @@ sane_get_devices (const SANE_Device *** device_list, SANE_Bool local_only)
   S9036_Device *dev;
   int i;
 
-  local_only = local_only; /* silence compilation warnings */
+  (void) local_only; /* silence compilation warnings */
 
   if (devlist)
     free (devlist);
@@ -1022,6 +1022,7 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
 	case OPT_BR_Y:
 	  if (info)
 	    *info |= SANE_INFO_RELOAD_PARAMS;
+          // fall through
 	case OPT_BRIGHT_ADJUST:
 	case OPT_CONTR_ADJUST:
 	  s->val[option] = *(SANE_Word *) val;
@@ -1326,7 +1327,7 @@ sane_cancel (SANE_Handle handle)
 SANE_Status
 sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 {
-  handle = handle; /* silence compilation warnings */
+  (void) handle; /* silence compilation warnings */
 
   DBG (1, "sane_set_io_mode(%d)\n", non_blocking);
 
@@ -1337,8 +1338,8 @@ sane_set_io_mode (SANE_Handle handle, SANE_Bool non_blocking)
 SANE_Status
 sane_get_select_fd (SANE_Handle handle, SANE_Int * fd)
 {
-  handle = handle;
-  fd = fd; /* silence compilation warnings */
+  (void) handle;
+  (void) fd; /* silence compilation warnings */
 
   return SANE_STATUS_UNSUPPORTED;
 }

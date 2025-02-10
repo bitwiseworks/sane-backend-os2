@@ -16,9 +16,7 @@
    General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place - Suite 330, Boston,
-   MA 02111-1307, USA.
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
    As a special exception, the authors of SANE give permission for
    additional uses of the libraries contained in this release of SANE.
@@ -43,7 +41,6 @@
 */
 
 /*
-   $Id$
    TECO scanner VM3575, VM656A, VM6575, VM6586, VM356A, VM3564
    update 2003/02/14, Patch for VM356A Gerard Klaver
    update 2003/03/19, traces, tests VM356A Gerard Klaver, Michael Hoeller
@@ -1368,7 +1365,7 @@ teco_do_calibration (Teco_Scanner * dev)
 	      {
 		      tmp_min_buf[3 * j + 1]  = dev->buffer[3 * j + 1];
 	      }
-	      /* get hightest value */
+	      /* get highest value */
 	      if (tmp_max_buf[3 * j + 1]  < dev->buffer[3 * j + 1])
 	      {
 		      tmp_max_buf[3 * j + 1]  = dev->buffer[3 * j + 1];
@@ -2141,7 +2138,7 @@ teco_wait_scanner (Teco_Scanner * dev)
  * sane is waiting for a group of 3 bytes per color. To make things
  * funnier, the rasters are shifted. As a result, color planes appear to be shifted be a few pixels.
  *
- * The order of the color is dependant on each scanners. Also the same
+ * The order of the color is dependent on each scanners. Also the same
  * scanner can change the order depending on the resolution.
  *
  * For instance, the VM6586 at 300dpi has a color shift of 2 lines. The rasters sent are:
@@ -2149,7 +2146,7 @@ teco_wait_scanner (Teco_Scanner * dev)
  *   then red in added            - BRBR
  *   then green                   - BRG ... (most of the picture)
  *   then blue is removed         - RGRG
- *   and finaly only green stays  - GG
+ *   and finally only green stays  - GG
  *
  * Overall there is the same number of RGB rasters.
  * The VM3575 is a variant (when factor_x is 0). It does not keep the same order,
@@ -2522,12 +2519,12 @@ sane_init (SANE_Int * version_code, SANE_Auth_Callback __sane_unused__ authorize
   DBG (DBG_sane_init, "sane_init\n");
 
   DBG (DBG_error, "This is sane-teco2 version %d.%d-%d\n", SANE_CURRENT_MAJOR,
-       V_MINOR, BUILD);
+       SANE_CURRENT_MINOR, BUILD);
   DBG (DBG_error, "(C) 2002 - 2003 by Frank Zago, update 2003 - 2008 by Gerard Klaver\n");
 
   if (version_code)
     {
-      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, V_MINOR, BUILD);
+      *version_code = SANE_VERSION_CODE (SANE_CURRENT_MAJOR, SANE_CURRENT_MINOR, BUILD);
     }
 
   fp = sanei_config_open (TECO2_CONFIG_FILE);
@@ -3192,7 +3189,7 @@ sane_start (SANE_Handle handle)
 	  return SANE_STATUS_NO_MEM;
 	}
 
-      /* Rasters are meaningfull only in color mode. */
+      /* Rasters are meaningful only in color mode. */
       dev->raster_size = dev->params.pixels_per_line;
       dev->raster_real = dev->params.lines * 3;
       dev->raster_num = 0;

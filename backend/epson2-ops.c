@@ -291,16 +291,19 @@ e2_dev_post_init(struct Epson_Device *dev)
 	dev->need_reset_on_source_change = SANE_FALSE;
 
 	if (e2_dev_model(dev, "ES-9000H") || e2_dev_model(dev, "GT-30000")) {
-		dev->cmd->set_focus_position = 0;
+		dev->focusSupport = SANE_FALSE;
 		dev->cmd->feed = 0x19;
 	}
 
 	if (e2_dev_model(dev, "GT-8200") || e2_dev_model(dev, "Perfection1650")
 	    || e2_dev_model(dev, "Perfection1640") || e2_dev_model(dev, "GT-8700")) {
+		dev->focusSupport = SANE_FALSE;
 		dev->cmd->feed = 0;
-		dev->cmd->set_focus_position = 0;
 		dev->need_reset_on_source_change = SANE_TRUE;
 	}
+
+	if (e2_dev_model(dev, "DS-G20000"))
+		dev->cmd->bright_range.min = -3;
 
 	return SANE_STATUS_GOOD;
 }
@@ -585,7 +588,7 @@ e2_discover_capabilities(Epson_Scanner *s)
 	/* ESC F, request status */
 	status = esci_request_status(s, &scanner_status);
 	if (status != SANE_STATUS_GOOD)
-		return status;;
+		return status;
 
 	/* set capabilities */
 	if (scanner_status & STATUS_OPTION)
@@ -814,32 +817,20 @@ e2_discover_capabilities(Epson_Scanner *s)
 	DBG(1, "maximum supported color depth: %d\n", dev->maxDepth);
 
 	/*
-	 * Check for "request focus position" command. If this command is
-	 * supported, then the scanner does also support the "set focus
-	 * position" command.
-	 * XXX ???
+	 * We assume that setting focus is supported when we can get the focus.
+	 * This assumption may be overridden in e2_dev_post_init()
 	 */
-
 	if (esci_request_focus_position(s, &s->currentFocusPosition) ==
 	    SANE_STATUS_GOOD) {
-		DBG(1, "setting focus is supported\n");
+		DBG(1, "getting focus is supported, current focus: %u\n", s->currentFocusPosition);
 		dev->focusSupport = SANE_TRUE;
-		s->opt[OPT_FOCUS].cap &= ~SANE_CAP_INACTIVE;
-
-		/* reflect the current focus position in the GUI */
-		if (s->currentFocusPosition < 0x4C) {
-			/* focus on glass */
-			s->val[OPT_FOCUS].w = 0;
-		} else {
-			/* focus 2.5mm above glass */
-			s->val[OPT_FOCUS].w = 1;
-		}
-
+		s->opt[OPT_FOCUS_POS].cap &= ~SANE_CAP_INACTIVE;
+		s->val[OPT_FOCUS_POS].w = s->currentFocusPosition;
 	} else {
-		DBG(1, "setting focus is not supported\n");
+		DBG(1, "getting focus is not supported\n");
 		dev->focusSupport = SANE_FALSE;
-		s->opt[OPT_FOCUS].cap |= SANE_CAP_INACTIVE;
-		s->val[OPT_FOCUS].w = 0;	/* on glass - just in case */
+		s->opt[OPT_FOCUS_POS].cap |= SANE_CAP_INACTIVE;
+		s->val[OPT_FOCUS_POS].w = FOCUS_ON_GLASS;	/* just in case */
 	}
 
 	/* Set defaults for no extension. */
@@ -948,8 +939,6 @@ e2_set_extended_scanning_parameters(Epson_Scanner * s)
 
 		/* ESC e */
 		buf[26] = extensionCtrl;
-
-		/* XXX focus */
 	}
 
 	/* ESC g, scanning mode (normal or high speed) */
@@ -1063,24 +1052,6 @@ e2_set_scanning_parameters(Epson_Scanner * s)
 		 * buffer to set the scan area for
 		 * ES-9000H and GT-30000
 		 */
-
-		/*
-		 * set the focus position according to the extension used:
-		 * if the TPU is selected, then focus 2.5mm above the glass,
-		 * otherwise focus on the glass. Scanners that don't support
-		 * this feature, will just ignore these calls.
-		 */
-
-		if (s->hw->focusSupport == SANE_TRUE) {
-			if (s->val[OPT_FOCUS].w == 0) {
-				DBG(1, "setting focus to glass surface\n");
-				esci_set_focus_position(s, 0x40);
-			} else {
-				DBG(1,
-				    "setting focus to 2.5mm above glass\n");
-				esci_set_focus_position(s, 0x59);
-			}
-		}
 	}
 
 	/* ESC C, Set color */
@@ -1496,7 +1467,7 @@ e2_wait_button(Epson_Scanner * s)
 			else
 				sleep(1);
 		} else {
-			/* we run into an error condition, just continue */
+			/* we ran into an error condition, just continue */
 			s->hw->wait_for_button = SANE_FALSE;
 		}
 	}
@@ -1622,7 +1593,7 @@ e2_check_adf(Epson_Scanner * s)
 
 		status = esci_request_extended_status(s, &buf, NULL);
 		if (status != SANE_STATUS_GOOD)
-			return status;;
+			return status;
 
 		t = buf[1];
 
@@ -1675,9 +1646,21 @@ e2_start_ext_scan(Epson_Scanner * s)
 	if (buf[0] != STX)
 		return SANE_STATUS_INVAL;
 
-	if (buf[1] & 0x80) {
+	if (buf[1] & STATUS_FER) {
 		DBG(1, "%s: fatal error\n", __func__);
 		return SANE_STATUS_IO_ERROR;
+	}
+
+	/*
+	 * The 12000XL signals busy only with FS+G, all other status queries
+	 * say non-busy. Probably because you can in deed communicate with the
+	 * device, just scanning is not yet possible. I tried polling with FS+G
+	 * every 5 seconds, but that made scary noises. So, bail out and let
+	 * the user retry manually.
+	 */
+	if (buf[1] & STATUS_NOT_READY) {
+		DBG(1, "%s: device not ready\n", __func__);
+		return SANE_STATUS_DEVICE_BUSY;
 	}
 
 	s->ext_block_len = le32atoh(&buf[2]);
@@ -1997,7 +1980,7 @@ color_shuffle(SANE_Handle handle, int *new_length)
 				 * We just finished the line in line_buffer[0] - write it to the
 				 * output buffer and continue.
 				 *
-				 * The ouput buffer ist still "buf", but because we are
+				 * The output buffer is still "buf", but because we are
 				 * only overwriting from the beginning of the memory area
 				 * we are not interfering with the "still to shuffle" data
 				 * in the same area.

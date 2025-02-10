@@ -11,8 +11,6 @@ bin_PROGRAMS = sane-find-scanner gamma4scanimage
 noinst_PROGRAMS = sane-desc
 if INSTALL_UMAX_PP_TOOLS
 bin_PROGRAMS += umax_pp
-else
-noinst_PROGRAMS += umax_pp
 endif
 
 if CROSS_COMPILING
@@ -36,21 +34,22 @@ EXTRA_DIST = check-po.awk libtool-get-dll-ext mustek600iin-off.c \
 EXTRA_DIST += style-check.sh
 EXTRA_DIST += create-changelog.sh
 EXTRA_DIST += update-upstreams.sh
+EXTRA_DIST += epson2usb.pl
 
 sane_find_scanner_SOURCES = sane-find-scanner.c
 if have_usblib
 sane_find_scanner_SOURCES += check-usb-chip.c
 endif
 sane_find_scanner_LDADD = ../sanei/libsanei.la ../lib/liblib.la \
-			  $(USB_LIBS) $(IEEE1284_LIBS) $(SCSI_LIBS) \
+                          $(USB_LIBS) $(IEEE1284_LIBS) $(SCSI_LIBS) $(XML_LIBS) \
 			  ../backend/sane_strstatus.lo
 
 gamma4scanimage_SOURCES = gamma4scanimage.c
 gamma4scanimage_LDADD = $(MATH_LIB)
 
-umax_pp_SOURCES = umax_pp.c
-umax_pp_LDADD = ../sanei/libsanei.la ../lib/liblib.la $(MATH_LIB) \
-	        ../backend/umax_pp_low.lo
+umax_pp_SOURCES  = umax_pp.c
+umax_pp_SOURCES += ../backend/umax_pp_low.c
+umax_pp_LDADD = ../sanei/libsanei.la ../lib/liblib.la $(MATH_LIB)
 
 sane_desc_SOURCES = sane-desc.c
 sane_desc_LDADD = ../sanei/libsanei.la ../lib/liblib.la
