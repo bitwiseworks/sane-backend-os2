@@ -7,6 +7,7 @@
 */
 #include "../include/sane/config.h"
 #include <string.h>
+#include <pthread.h>
 
 #define DEBUG_DECLARE_ONLY
 #define BACKEND_NAME kvs40xx
