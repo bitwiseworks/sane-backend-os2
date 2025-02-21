@@ -836,7 +836,7 @@ libgenesys_la_CPPFLAGS = $(AM_CPPFLAGS) -DBACKEND_NAME=genesys
 nodist_libsane_genesys_la_SOURCES = genesys-s.cpp
 libsane_genesys_la_CPPFLAGS = $(AM_CPPFLAGS) -DBACKEND_NAME=genesys
 libsane_genesys_la_LDFLAGS = $(DIST_SANELIBS_LDFLAGS)
-libsane_genesys_la_LDFLAGS += -shortname genesys
+libsane_genesys_la_LDFLAGS += -shortname genesys -export-symbols-regex '^(sane|sanei).*'
 libsane_genesys_la_LIBADD = $(COMMON_LIBS) libgenesys.la \
     ../sanei/sanei_init_debug.lo \
     ../sanei/sanei_constrain_value.lo \
